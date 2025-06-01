@@ -65,7 +65,8 @@ const resolvePath = (routePath: string) => {
   margin: 4px 8px;
   border-radius: 6px;
   min-height: 40px;
-  /* padding: 0 12px; */
+  height: 48px;
+  padding: 0 12px;
 }
 
 .menu-sub {
@@ -75,7 +76,8 @@ const resolvePath = (routePath: string) => {
 :deep(.el-sub-menu__title) {
   border-radius: 6px;
   min-height: 40px;
-  /* padding: 0 12px; */
+  padding: 0 12px;
+  height: 48px;
 }
 
 /* 折叠时图标居中 */

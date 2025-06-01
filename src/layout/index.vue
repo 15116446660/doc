@@ -3,7 +3,7 @@
     <el-aside :width="isCollapse ? '64px' : '240px'" class="sidebar">
       <div class="logo-container">
         <el-icon class="logo-icon" :size="28">
-          <Document color="#6366F1" />
+          <img src="/assets/svg/logo.svg" alt="logo" />
         </el-icon>
         <div class="logo-title-container">
           <h1 class="logo-title" v-show="!isCollapse">景智标书</h1>
@@ -76,7 +76,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import SidebarItem from './components/SidebarItem.vue'
 import Breadcrumb from './components/Breadcrumb.vue'
-import { Fold, Expand, CaretBottom, Document, Plus } from '@element-plus/icons-vue'
+import { Fold, Expand, CaretBottom, Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -137,7 +137,11 @@ const handleLogout = async () => {
 .logo-icon {
   min-width: 28px;
   margin-right: 12px;
-  color: #6366F1;
+}
+
+.logo-icon img {
+  width: 100%;
+  height: 100%;
 }
 
 .logo-title-container {
@@ -148,11 +152,14 @@ const handleLogout = async () => {
 }
 
 .logo-title {
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 600;
-  color: #111827;
+  color: transparent;
   margin: 0;
   white-space: nowrap;
+  background-image: linear-gradient(to right, #2563eb, #9333ea);
+  -webkit-background-clip: text;
+  background-clip: text;
 }
 
 .logo-subtitle {
