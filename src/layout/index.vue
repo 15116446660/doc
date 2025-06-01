@@ -15,7 +15,7 @@
         :default-active="activeMenu"
         class="el-menu-vertical"
         :collapse="isCollapse"
-        background-color="#f9fafb"
+        background-color="#fff"
         text-color="#4B5563"
         active-text-color="#6366F1"
       >
@@ -24,6 +24,7 @@
           :key="route.path"
           :item="route"
           :base-path="route.path"
+          :is-collapse="isCollapse"
         />
       </el-menu>
       <div class="version-info" v-show="!isCollapse">
@@ -116,7 +117,7 @@ const handleLogout = async () => {
 }
 
 .sidebar {
-  background-color: #f9fafb;
+  background-color: #fff;
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-right: 1px solid #e5e7eb;
   display: flex;

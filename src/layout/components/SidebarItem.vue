@@ -17,8 +17,8 @@
         <el-icon v-if="item.meta?.icon" class="menu-icon">
           <component :is="item.meta.icon" />
         </el-icon>
-        <span class="menu-title">{{ item.meta?.title }}</span>
-        <span v-if="item.meta?.count" class="menu-count">{{ item.meta.count }}</span>
+        <span v-if="!isCollapse" class="menu-title">{{ item.meta?.title }}</span>
+        <span v-if="!isCollapse && item.meta?.count" class="menu-count">{{ item.meta.count }}</span>
       </template>
 
       <sidebar-item
@@ -26,6 +26,7 @@
         :key="child.path"
         :item="child"
         :base-path="resolvePath(basePath)"
+        :is-collapse="isCollapse"
       />
     </el-sub-menu>
   </div>
@@ -39,6 +40,7 @@ import path from 'path-browserify'
 const props = defineProps<{
   item: RouteRecordRaw
   basePath: string
+  isCollapse: boolean
 }>()
 
 // 判断是否有子菜单
@@ -63,8 +65,7 @@ const resolvePath = (routePath: string) => {
   margin: 4px 8px;
   border-radius: 6px;
   min-height: 40px;
-  height: 48px;
-  padding: 0 12px;
+  /* padding: 0 12px; */
 }
 
 .menu-sub {
@@ -74,8 +75,23 @@ const resolvePath = (routePath: string) => {
 :deep(.el-sub-menu__title) {
   border-radius: 6px;
   min-height: 40px;
-  height: 48px;
-  padding: 0 12px;
+  /* padding: 0 12px; */
+}
+
+/* 折叠时图标居中 */
+:deep(.el-menu--collapse) .el-menu-item,
+:deep(.el-menu--collapse) .el-sub-menu__title {
+  padding: 0 !important;
+  text-align: center;
+  justify-content: center;
+}
+
+:deep(.el-menu--collapse) .menu-icon {
+  margin: 0 auto !important;
+}
+
+:deep(.el-sub-menu__icon-arrow) {
+  display: v-bind('isCollapse ? "none" : "block"');
 }
 
 .menu-item.is-active {
@@ -85,7 +101,7 @@ const resolvePath = (routePath: string) => {
 }
 
 .menu-icon {
-  margin-right: 12px;
+  margin-right: v-bind('isCollapse ? "0px" : "12px"');
   width: 16px;
   height: 16px;
   color: inherit;
