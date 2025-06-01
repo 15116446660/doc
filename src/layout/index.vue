@@ -1,11 +1,23 @@
 <template>
   <el-container class="layout-container">
-    <el-aside width="200px" class="sidebar">
+    <el-aside :width="isCollapse ? '64px' : '240px'" class="sidebar">
+      <div class="logo-container">
+        <el-icon class="logo-icon" :size="28">
+          <Document color="#6366F1" />
+        </el-icon>
+        <div class="logo-title-container">
+          <h1 class="logo-title" v-show="!isCollapse">景智标书</h1>
+          <span class="logo-subtitle" v-show="!isCollapse">人工智能标书管理平台</span>
+        </div>
+      </div>
       <el-menu
         :router="true"
         :default-active="activeMenu"
         class="el-menu-vertical"
         :collapse="isCollapse"
+        background-color="#f9fafb"
+        text-color="#4B5563"
+        active-text-color="#6366F1"
       >
         <sidebar-item
           v-for="route in routes"
@@ -14,6 +26,10 @@
           :base-path="route.path"
         />
       </el-menu>
+      <div class="version-info" v-show="!isCollapse">
+        <span class="version-label">当前版本</span>
+        <span class="version-number">v1.0.0 Beta</span>
+      </div>
     </el-aside>
     <el-container>
       <el-header height="60px" class="header">
@@ -25,6 +41,10 @@
           <breadcrumb />
         </div>
         <div class="header-right">
+          <el-button type="primary" class="new-doc-btn">
+            <el-icon><Plus /></el-icon>
+            新建文档
+          </el-button>
           <el-dropdown>
             <span class="user-info">
               {{ userInfo.name }}
@@ -38,7 +58,7 @@
           </el-dropdown>
         </div>
       </el-header>
-      <el-main>
+      <el-main class="main-content">
         <router-view v-slot="{ Component }">
           <transition name="fade-transform" mode="out-in">
             <component :is="Component" />
@@ -55,7 +75,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import SidebarItem from './components/SidebarItem.vue'
 import Breadcrumb from './components/Breadcrumb.vue'
-import { Fold, Expand, CaretBottom } from '@element-plus/icons-vue'
+import { Fold, Expand, CaretBottom, Document, Plus } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -92,24 +112,86 @@ const handleLogout = async () => {
 <style scoped>
 .layout-container {
   height: 100vh;
+  background-color: #f9fafb;
 }
 
 .sidebar {
-  background-color: #304156;
-  transition: width 0.3s;
+  background-color: #f9fafb;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.logo-container {
+  height: 60px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid #e5e7eb;
+  overflow: hidden;
+}
+
+.logo-icon {
+  min-width: 28px;
+  margin-right: 12px;
+  color: #6366F1;
+}
+
+.logo-title-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.logo-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.logo-subtitle {
+  font-size: 12px;
+  color: #6B7280;
+  white-space: nowrap;
 }
 
 .el-menu-vertical {
   border-right: none;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.version-info {
+  padding: 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  font-size: 12px;
+}
+
+.version-label {
+  color: #6B7280;
+}
+
+.version-number {
+  color: #111827;
+  font-weight: 500;
 }
 
 .header {
   background-color: #fff;
-  border-bottom: 1px solid #dcdfe6;
+  border-bottom: 1px solid #e5e7eb;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .header-left {
@@ -121,12 +203,45 @@ const handleLogout = async () => {
   font-size: 20px;
   cursor: pointer;
   margin-right: 20px;
+  color: #4B5563;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.new-doc-btn {
+  background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+  border: none;
+  border-radius: 6px;
+  padding: 0 16px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.3s;
+}
+
+.new-doc-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .user-info {
   display: flex;
   align-items: center;
+  gap: 4px;
   cursor: pointer;
+  color: #4B5563;
+  font-size: 14px;
+}
+
+.main-content {
+  padding: 20px;
+  background-color: #f9fafb;
+  overflow-y: auto;
 }
 
 .fade-transform-enter-active,
