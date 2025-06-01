@@ -1,141 +1,106 @@
 <template>
   <div class="login-container">
-    <el-form
-      ref="loginFormRef"
-      :model="loginForm"
-      :rules="loginRules"
-      class="login-form"
-      autocomplete="on"
-      label-position="left"
-    >
-      <div class="title-container">
-        <h3 class="title">标书管理系统</h3>
-      </div>
-
-      <el-form-item prop="username">
-        <el-input
-          v-model="loginForm.username"
-          placeholder="用户名"
-          type="text"
-          tabindex="1"
-          autocomplete="on"
-        >
-          <template #prefix>
-            <el-icon><User /></el-icon>
-          </template>
-        </el-input>
-      </el-form-item>
-
-      <el-form-item prop="password">
-        <el-input
-          v-model="loginForm.password"
-          :type="passwordVisible ? 'text' : 'password'"
-          placeholder="密码"
-          tabindex="2"
-          autocomplete="on"
-        >
-          <template #prefix>
-            <el-icon><Lock /></el-icon>
-          </template>
-          <template #suffix>
-            <el-icon class="cursor-pointer" @click="passwordVisible = !passwordVisible">
-              <View v-if="passwordVisible" />
-              <Hide v-else />
-            </el-icon>
-          </template>
-        </el-input>
-      </el-form-item>
-
-      <el-button
-        :loading="loading"
-        type="primary"
-        style="width: 100%; margin-bottom: 30px"
-        @click="handleLogin"
-      >
-        登录
-      </el-button>
-    </el-form>
+    <el-card class="login-card">
+      <template #header>
+        <div class="card-header">
+          <span>标书智能管理平台</span>
+        </div>
+      </template>
+      <el-form ref="loginFormRef" :model="loginForm" :rules="loginRules" label-width="0px" class="login-form">
+        <el-form-item prop="username">
+          <el-input v-model="loginForm.username" placeholder="用户名">
+            <template #prefix>
+              <el-icon><User /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+        <el-form-item prop="password">
+          <el-input v-model="loginForm.password" type="password" placeholder="密码" @keyup.enter="handleLogin">
+            <template #prefix>
+              <el-icon><Lock /></el-icon>
+            </template>
+          </el-input>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="loading" @click="handleLogin" style="width: 100%;">
+            登录
+          </el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/store/auth' // 导入 auth store
 import { ElMessage } from 'element-plus'
-import { User, Lock, View, Hide } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
-const loginFormRef = ref<FormInstance>()
-const loading = ref(false)
-const passwordVisible = ref(false)
+const authStore = useAuthStore()
 
+const loginFormRef = ref<FormInstance>()
 const loginForm = reactive({
   username: '',
   password: ''
 })
 
-const loginRules: FormRules = {
-  username: [{ required: true, trigger: 'blur', message: '请输入用户名' }],
-  password: [{ required: true, trigger: 'blur', message: '请输入密码' }]
-}
+const loginRules = reactive<FormRules>({
+  username: [
+    { required: true, message: '请输入用户名', trigger: 'blur' },
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能少于 6 个字符', trigger: 'blur' },
+  ],
+})
+
+const loading = ref(false)
 
 const handleLogin = async () => {
   if (!loginFormRef.value) return
-  
+
   try {
-    await loginFormRef.value.validate()
+    const valid = await loginFormRef.value.validate()
+    if (!valid) {
+      console.log('error submit!')
+      return
+    }
+
     loading.value = true
-    
-    // TODO: 实现实际的登录逻辑
-    // 模拟登录成功
-    setTimeout(() => {
-      localStorage.setItem('token', 'dummy-token')
-      ElMessage.success('登录成功')
-      router.push('/')
-      loading.value = false
-    }, 1000)
-  } catch (error) {
-    console.error('登录验证失败:', error)
+    await authStore.login(loginForm.username, loginForm.password)
+    // 登录成功，重定向到仪表盘
+    router.push({ path: '/dashboard' })
+  } catch (error: any) {
+    ElMessage.error(error.message || '登录失败')
+  } finally {
+    loading.value = false
   }
 }
 </script>
 
 <style scoped>
 .login-container {
-  min-height: 100vh;
-  width: 100%;
-  background-color: #2d3a4b;
-  overflow: hidden;
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: #f0f2f5;
 }
 
-.login-form {
+.login-card {
   width: 400px;
-  max-width: 100%;
-  padding: 35px;
-  margin: 0 auto;
-  overflow: hidden;
-  background: #fff;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
-.title-container {
+.card-header {
   text-align: center;
-  margin-bottom: 30px;
-}
-
-.title {
-  font-size: 26px;
-  color: #333;
-  margin: 0;
+  font-size: 18px;
   font-weight: bold;
 }
 
-.cursor-pointer {
-  cursor: pointer;
+.login-form {
+  padding: 0 20px;
 }
 </style> 

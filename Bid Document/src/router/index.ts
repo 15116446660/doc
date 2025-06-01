@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
+import { useAuthStore } from '@/store/auth'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -9,11 +10,6 @@ const routes: Array<RouteRecordRaw> = [
     name: 'Login',
     component: () => import('../views/login/index.vue'),
     meta: { title: '登录', hidden: true }
-  },
-  {
-    path: '/',
-    redirect: '/dashboard',
-    meta: { hidden: true }
   },
   {
     path: '/dashboard',
@@ -72,15 +68,15 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   NProgress.start()
-  const token = localStorage.getItem('token')
-  if (to.path === '/login') {
-    next()
+  const authStore = useAuthStore()
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+
+  if (requiresAuth && !authStore.isAuthenticated) {
+    next('/login')
+  } else if (to.path === '/login' && authStore.isAuthenticated) {
+    next('/')
   } else {
-    if (!token) {
-      next('/login')
-    } else {
-      next()
-    }
+    next()
   }
 })
 
