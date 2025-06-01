@@ -3,11 +3,11 @@
 ## 1. 技术栈选型
 
 ### 1.1 核心框架与库
-- **框架**: React 18.x
+- **框架**: Vue3
 - **类型系统**: TypeScript 5.x
-- **状态管理**: Redux Toolkit
-- **路由**: React Router 6.x
-- **UI组件库**: Ant Design 5.x
+- **状态管理**: Pinia
+- **路由**: Vue Router
+- **UI组件库**: element-plus
 - **样式解决方案**: 
   - TailwindCSS
   - CSS Modules
@@ -28,8 +28,8 @@
 - **构建工具**: Vite
 - **包管理器**: pnpm
 - **代码规范**: ESLint + Prettier
-- **测试框架**: Jest + React Testing Library
-- **E2E测试**: Cypress
+- **测试框架**: 
+- **E2E测试**: 
 
 ## 2. 项目架构
 

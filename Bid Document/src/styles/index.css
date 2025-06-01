@@ -1,0 +1,69 @@
+/* Reset CSS */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Global styles */
+html, body {
+  height: 100%;
+  font-size: 14px;
+  color: #333;
+  background-color: #f0f2f5;
+}
+
+/* Element Plus overrides */
+.el-menu {
+  border-right: none !important;
+}
+
+.el-menu-item.is-active {
+  background-color: #1890ff !important;
+}
+
+.el-menu-item:hover {
+  background-color: #263445 !important;
+}
+
+/* Common utility classes */
+.flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.mt-10 {
+  margin-top: 10px;
+}
+
+.mb-10 {
+  margin-bottom: 10px;
+}
+
+.ml-10 {
+  margin-left: 10px;
+}
+
+.mr-10 {
+  margin-right: 10px;
+}
+
+/* Transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+} 
