@@ -18,15 +18,14 @@ const routes: Array<RouteRecordRaw> = [
   },
   {
     path: '/dashboard',
+    name: 'Dashboard',
     component: () => import('../layout/index.vue'),
-    redirect: '/dashboard/index',
-    meta: { title: '仪表盘', icon: 'Odometer', alwaysShow: true },
+    meta: { title: '仪表盘', icon: 'Odometer' },
     children: [
       {
-        path: 'index',
-        name: 'Dashboard',
+        path: '',
         component: () => import('../views/dashboard/index.vue'),
-        meta: { title: '仪表盘' }
+        meta: { hidden: true }
       }
     ]
   },

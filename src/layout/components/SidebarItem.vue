@@ -63,6 +63,7 @@ const resolvePath = (routePath: string) => {
   margin: 4px 8px;
   border-radius: 6px;
   min-height: 40px;
+  height: 48px;
   padding: 0 12px;
 }
 
@@ -73,6 +74,7 @@ const resolvePath = (routePath: string) => {
 :deep(.el-sub-menu__title) {
   border-radius: 6px;
   min-height: 40px;
+  height: 48px;
   padding: 0 12px;
 }
 
