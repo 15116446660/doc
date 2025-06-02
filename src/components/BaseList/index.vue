@@ -1,0 +1,342 @@
+<template>
+  <div class="base-list">
+    <!-- 过滤条件 -->
+    <list-filter
+      v-if="filterConfig"
+      :filter-config="filterConfig"
+      :enable-advanced-filter="enableAdvancedFilter"
+      @filter-change="handleFilterChange"
+    />
+
+    <!-- 视图切换和操作按钮 -->
+    <div class="list-header">
+      <div class="left-section">
+        <slot name="header-left" />
+      </div>
+      <div class="right-section">
+        <slot name="header-right">
+          <div v-if="enableViewSwitch" class="view-toggle">
+            <el-button-group>
+              <el-button
+                :type="viewType === 'table' ? 'primary' : ''"
+                @click="handleViewChange('table')"
+              >
+                <el-icon><List /></el-icon>
+              </el-button>
+              <el-button
+                :type="viewType === 'cards' ? 'primary' : ''"
+                @click="handleViewChange('cards')"
+              >
+                <el-icon><Grid /></el-icon>
+              </el-button>
+            </el-button-group>
+          </div>
+        </slot>
+      </div>
+    </div>
+
+    <!-- 列表内容 -->
+    <div class="list-content" v-loading="loading">
+      <!-- 表格视图 -->
+      <el-table
+        v-if="viewType === 'table'"
+        ref="tableRef"
+        v-bind="tableProps"
+        :data="list"
+        @selection-change="handleSelectionChange"
+        @sort-change="handleSortChange"
+      >
+        <!-- 配置生成的列 -->
+        <template v-if="columns && columns.length > 0">
+          <el-table-column
+            v-for="(column, index) in columns"
+            :key="column.prop || column.slot || index"
+            v-bind="getColumnProps(column)"
+          >
+            <!-- 自定义表头 -->
+            <template v-if="column.headerSlot && $slots[column.headerSlot]" #header>
+              <slot :name="column.headerSlot" />
+            </template>
+            
+            <!-- 自定义单元格 -->
+            <template v-if="column.slot && $slots[column.slot]" #default="scope">
+              <slot :name="column.slot" v-bind="scope" />
+            </template>
+            
+            <!-- 默认单元格 -->
+            <template v-else-if="column.formatter" #default="scope">
+              {{ column.formatter(scope.row, scope.column, scope.row[column.prop || ''], scope.$index) }}
+            </template>
+          </el-table-column>
+        </template>
+        
+        <!-- 默认插槽 -->
+        <slot />
+      </el-table>
+
+      <!-- 卡片视图 -->
+      <div
+        v-else
+        class="card-view"
+        v-bind="cardContainerProps"
+      >
+        <template v-if="$slots.card">
+          <slot
+            name="card"
+            v-for="item in list"
+            :key="getItemKey(item)"
+            :item="item"
+          />
+        </template>
+        <template v-else>
+          <el-card
+            v-for="item in list"
+            :key="getItemKey(item)"
+            class="card-item"
+          >
+            {{ item }}
+          </el-card>
+        </template>
+      </div>
+
+      <!-- 分页 -->
+      <div v-if="enablePagination" class="pagination-wrapper">
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="currentPageSize"
+          v-bind="paginationProps"
+          :total="totalItems"
+          @size-change="handleSizeChange"
+          @current-change="handleCurrentChange"
+        />
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted, watch } from 'vue'
+import { List, Grid } from '@element-plus/icons-vue'
+import type { TableInstance } from 'element-plus'
+import ListFilter from './components/ListFilter.vue'
+import type { 
+  BaseListProps, 
+  BaseListEmits,
+  ViewType,
+  FilterChangeEvent,
+  TableColumn
+} from './types'
+
+const props = withDefaults(defineProps<BaseListProps>(), {
+  filterConfig: undefined,
+  enableAdvancedFilter: false,
+  enableViewSwitch: true,
+  defaultViewType: 'table',
+  enablePagination: true,
+  paginationConfig: () => ({
+    pageSize: 10,
+    pageSizes: [10, 20, 50, 100],
+    layout: 'total, sizes, prev, pager, next, jumper'
+  }),
+  requestApi: undefined,
+  requestParams: () => ({}),
+  responseHandler: (response: any) => ({
+    list: response.data?.list || [],
+    total: response.data?.total || 0
+  }),
+  tableProps: () => ({}),
+  cardContainerProps: () => ({}),
+  columns: () => []
+})
+
+const emit = defineEmits<BaseListEmits>()
+
+// 视图类型
+const viewType = ref<ViewType>(props.defaultViewType)
+// 表格实例
+const tableRef = ref<TableInstance>()
+// 加载状态
+const loading = ref(false)
+// 列表数据
+const list = ref<any[]>([])
+// 总数
+const total = ref(0)
+// 当前页码
+const currentPage = ref(1)
+// 每页条数
+const currentPageSize = ref(props.paginationConfig?.pageSize || 10)
+// 过滤条件
+const filterValues = ref<Record<string, any>>({})
+// 排序条件
+const sortInfo = ref<{ prop?: string, order?: string }>({})
+
+// 合并请求参数
+const requestParams = computed(() => {
+  return {
+    page: currentPage.value,
+    limit: currentPageSize.value,
+    ...filterValues.value,
+    ...sortInfo.value,
+    ...props.requestParams
+  }
+})
+
+// 分页属性
+const paginationProps = computed(() => {
+  const { pageSize, ...rest } = props.paginationConfig || {}
+  return rest
+})
+
+// 总条数（确保为数字）
+const totalItems = computed(() => {
+  return total.value || 0
+})
+
+// 获取列属性
+const getColumnProps = (column: TableColumn) => {
+  const { slot, headerSlot, formatter, ...rest } = column
+  return rest
+}
+
+// 获取列表数据
+const fetchData = async () => {
+  if (!props.requestApi) return
+
+  loading.value = true
+  try {
+    const response = await props.requestApi(requestParams.value)
+    const { list: dataList, total: dataTotal } = props.responseHandler(response)
+    list.value = dataList
+    total.value = dataTotal || 0
+  } catch (error) {
+    console.error('Failed to fetch data:', error)
+  } finally {
+    loading.value = false
+  }
+}
+
+// 获取数据项的key
+const getItemKey = (item: any) => {
+  if (item.id) return item.id
+  if (item.key) return item.key
+  return JSON.stringify(item)
+}
+
+// 处理视图切换
+const handleViewChange = (type: ViewType) => {
+  viewType.value = type
+  emit('view-change', type)
+}
+
+// 处理过滤条件变化
+const handleFilterChange = (event: FilterChangeEvent) => {
+  filterValues.value = event.values
+  currentPage.value = 1
+  emit('filter-change', event)
+  fetchData()
+}
+
+// 处理排序变化
+const handleSortChange = (sort: { prop: string, order: string }) => {
+  sortInfo.value = sort
+  emit('sort-change', sort)
+  fetchData()
+}
+
+// 处理选择变化
+const handleSelectionChange = (selection: any[]) => {
+  emit('selection-change', selection)
+}
+
+// 处理每页条数变化
+const handleSizeChange = (size: number) => {
+  currentPageSize.value = size
+  emit('size-change', size)
+  fetchData()
+}
+
+// 处理页码变化
+const handleCurrentChange = (page: number) => {
+  currentPage.value = page
+  emit('page-change', page)
+  fetchData()
+}
+
+// 监听请求参数变化
+watch(() => props.requestParams, () => {
+  currentPage.value = 1
+  fetchData()
+}, { deep: true })
+
+// 初始化
+onMounted(() => {
+  fetchData()
+})
+
+// 暴露方法
+defineExpose({
+  refresh: fetchData,
+  getList: () => list.value,
+  getTotal: () => total.value,
+  getCurrentPage: () => currentPage.value,
+  getPageSize: () => currentPageSize.value,
+  getFilterValues: () => filterValues.value,
+  getSortInfo: () => sortInfo.value,
+  getTableRef: () => tableRef.value
+})
+</script>
+
+<style scoped>
+.base-list {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.right-section {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.list-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-view {
+  flex: 1;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+  padding: 1px;
+}
+
+.card-item {
+  height: 100%;
+}
+
+.pagination-wrapper {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+:deep(.el-table) {
+  flex: 1;
+}
+
+:deep(.el-loading-mask) {
+  background-color: var(--el-mask-color);
+}
+</style> 

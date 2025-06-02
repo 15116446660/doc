@@ -24,6 +24,7 @@ const routes: Array<RouteRecordRaw> = [
     children: [
       {
         path: '',
+        name: 'DashboardIndex',
         component: () => import('../views/dashboard/index.vue'),
         meta: { hidden: true }
       }
