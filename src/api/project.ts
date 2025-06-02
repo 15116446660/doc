@@ -113,4 +113,9 @@ export const getProjectTagOptions = () => {
 // 创建项目（模拟post，实际开发请用axios.post）
 export const createProject = (data: any) => {
   return get('/api/project/create', data)
+}
+
+// 更新项目（模拟put，实际开发请用axios.put）
+export const updateProject = (id: number, data: any) => {
+  return get(`/api/project/update/${id}`, data)
 } 

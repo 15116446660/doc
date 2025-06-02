@@ -1,7 +1,7 @@
 <template>
   <el-dialog
     v-model="dialogVisible"
-    title="新建投标项目"
+    :title="isEdit ? '编辑项目信息' : '新建投标项目'"
     width="60%"
     destroy-on-close
     class="create-project-dialog"
@@ -425,7 +425,8 @@ import {
   getExternalExpertOptions,
   getQualificationOptions,
   getProjectTagOptions,
-  createProject
+  createProject,
+  updateProject
 } from '@/api/project'
 
 // 标签页活动标签
@@ -434,6 +435,10 @@ const activeTab = ref('basic')
 // 对话框可见性
 const dialogVisible = ref(false)
 const createFormRef = ref()
+
+// 是否为编辑模式
+const isEdit = ref(false)
+const currentProjectId = ref<number | null>(null)
 
 // 表单选项数据
 const formOptions = ref({
@@ -574,7 +579,20 @@ watch(() => dialogInstance.isVisible('projectCreate'), (visible) => {
     // 如果有传递的属性，可以在这里处理
     const props = dialogInstance.getProps('projectCreate')
     if (props.initialData) {
+      isEdit.value = true
+      currentProjectId.value = props.initialData.id
       Object.assign(createForm, props.initialData)
+    } else {
+      isEdit.value = false
+      currentProjectId.value = null
+      // 重置表单
+      Object.keys(createForm).forEach(key => {
+        createForm[key] = ''
+      })
+      // 设置默认值
+      createForm.status = '进行中'
+      createForm.risk = '低'
+      createForm.progress = 0
     }
   }
 })
@@ -594,11 +612,17 @@ const handleSubmit = async () => {
   try {
     await createFormRef.value.validate()
     
-    // 调用创建项目API
-    const response = await createProject(createForm)
+    let response
+    if (isEdit.value && currentProjectId.value) {
+      // 调用编辑项目API
+      response = await updateProject(currentProjectId.value, createForm)
+    } else {
+      // 调用创建项目API
+      response = await createProject(createForm)
+    }
     
     if (response.data.code === 200) {
-      ElMessage.success(response.data.message || '项目创建成功')
+      ElMessage.success(response.data.message || (isEdit.value ? '项目更新成功' : '项目创建成功'))
       
       // 触发回调事件
       const result = dialogInstance.emit('projectCreate', 'submit', response.data.data)
@@ -611,11 +635,11 @@ const handleSubmit = async () => {
       
       return result
     } else {
-      throw new Error(response.data.message || '创建失败')
+      throw new Error(response.data.message || (isEdit.value ? '更新失败' : '创建失败'))
     }
   } catch (error: any) {
-    console.error('创建项目失败:', error)
-    ElMessage.error(error.message || '创建失败')
+    console.error(isEdit.value ? '更新项目失败:' : '创建项目失败:', error)
+    ElMessage.error(error.message || (isEdit.value ? '更新失败' : '创建失败'))
     // 触发错误回调
     dialogInstance.emit('projectCreate', 'error', error)
   }

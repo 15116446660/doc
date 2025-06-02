@@ -88,6 +88,7 @@ import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
 import dialogInstance from '@/hooks/useDialog'
 import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
 import { getProjectList, getProjectStatusOptions, getProjectRiskOptions, getTeamMemberOptions } from '@/api/project'
+import type { Project } from '@/api/project'
 
 // 列表实例
 const listRef = ref()
@@ -306,8 +307,24 @@ const handleCreateProject = () => {
 }
 
 // 处理编辑
-const handleEdit = (row: any) => {
-  console.log('Edit:', row)
+const handleEdit = (row: Project) => {
+  dialogInstance.open('projectCreate', 
+    // 属性
+    { 
+      initialData: row
+    }, 
+    // 事件回调
+    {
+      submit: (formData: Project) => {
+        console.log('项目更新成功，表单数据:', formData)
+        // 刷新列表
+        listRef.value?.refresh()
+      },
+      error: (error: Error) => {
+        console.error('更新项目失败:', error)
+      }
+    }
+  )
 }
 
 // 处理删除
