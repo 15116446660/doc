@@ -23,11 +23,8 @@
       
       <!-- 项目名称自定义插槽 -->
       <template #project-name="{ row }">
-        <div class="project-name">
-          <!-- <el-avatar :size="32" :src="row.logo">
-            {{ row?.title?.charAt(0) || 'P' }}
-          </el-avatar> -->
-          <span>{{ row.title || '未命名项目' }}</span>
+        <div class="project-name" @click="handleViewProject(row)">
+          <span class="project-title">{{ row.title || '未命名项目' }}</span>
         </div>
       </template>
 
@@ -89,10 +86,12 @@ import dialogInstance from '@/hooks/useDialog'
 import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
 import { getProjectList, getProjectStatusOptions, getProjectRiskOptions, getTeamMemberOptions } from '@/api/project'
 import type { Project } from '@/api/project'
+import { useRouter } from 'vue-router'
 
 // 列表实例
 const listRef = ref()
 const projectCreateDialogRef = ref()
+const router = useRouter()
 
 // 表格列配置
 const columns = ref<TableColumn[]>([
@@ -346,9 +345,8 @@ const handleDelete = async (row: any) => {
 }
 
 // 处理查看项目
-const handleViewProject = (project: any) => {
-  console.log('View project:', project)
-  // 这里可以实现跳转到项目详情页的逻辑
+const handleViewProject = (project: Project) => {
+  router.push(`/project/detail/${project.id}`)
 }
 
 // 监听项目列表刷新事件
@@ -445,5 +443,14 @@ window.addEventListener('project-list-refresh', () => {
 
 .date-info p {
   margin: 0;
+}
+
+.project-title {
+  cursor: pointer;
+  color: var(--el-color-primary);
+  
+  &:hover {
+    text-decoration: underline;
+  }
 }
 </style>

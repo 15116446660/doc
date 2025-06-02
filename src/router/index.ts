@@ -53,13 +53,26 @@ const routes: Array<RouteRecordRaw> = [
         path: 'list',
         name: 'ProjectList',
         component: () => import('../views/project/list/index.vue'),
-        meta: { title: '项目列表' }
+        meta: {
+          title: '项目列表',
+          icon: 'list'
+        }
       },
       {
         path: 'board',
         name: 'ProjectBoard',
         component: () => import('../views/project/board/index.vue'),
         meta: { title: '项目看板' }
+      },
+      {
+        path: 'detail/:id',
+        name: 'ProjectDetail',
+        component: () => import('../views/project/detail/index.vue'),
+        meta: {
+          title: '项目详情',
+          icon: 'document',
+          hidden: true
+        }
       }
     ]
   },

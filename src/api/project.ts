@@ -118,4 +118,9 @@ export const createProject = (data: any) => {
 // 更新项目（模拟put，实际开发请用axios.put）
 export const updateProject = (id: number, data: any) => {
   return get(`/api/project/update/${id}`, data)
+}
+
+// 获取项目详情
+export const getProjectDetail = (id: number) => {
+  return get<Project>(`/api/project/detail/${id}`)
 } 
