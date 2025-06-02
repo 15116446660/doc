@@ -24,9 +24,9 @@
       <!-- 项目名称自定义插槽 -->
       <template #project-name="{ row }">
         <div class="project-name">
-          <el-avatar :size="32" :src="row.logo">
+          <!-- <el-avatar :size="32" :src="row.logo">
             {{ row?.title?.charAt(0) || 'P' }}
-          </el-avatar>
+          </el-avatar> -->
           <span>{{ row.title || '未命名项目' }}</span>
         </div>
       </template>
@@ -96,15 +96,18 @@ const projectCreateDialogRef = ref()
 // 表格列配置
 const columns = ref<TableColumn[]>([
   {
-    type: 'selection',
+    type: 'index',
+    label: '序号',
     width: 55,
-    fixed: 'left'
+    fixed: 'left',
+    align: 'center'
   },
   {
     prop: 'title',
     label: '项目名称',
     minWidth: 200,
     fixed: 'left',
+    align: 'center',
     slot: 'project-name'
   },
   {

@@ -15,7 +15,7 @@
   background-color: var(--el-table-header-bg-color);
   color: #606266;
   font-weight: 600;
-  text-align: left;
+  /* text-align: left; */
   padding: 12px 0;
   border-bottom: 1px solid var(--el-table-border-color);
 }

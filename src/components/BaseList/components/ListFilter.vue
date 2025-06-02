@@ -22,7 +22,7 @@
             <div class="form-item-content" :style="getItemStyle(item)">
               <component
                 :is="getFormItemComponent(item.type)"
-                v-model="formData[item.field]"
+              v-model="formData[item.field]"
                 v-bind="getComponentProps(item)"
                 :class="{ 'search-input': item.type === 'input' }"
                 @change="handleItemChange"
@@ -31,12 +31,12 @@
                   <el-icon><search /></el-icon>
                 </template>
                 <template v-if="item.type === 'select'" #default>
-                  <el-option
-                    v-for="option in getOptions(item)"
-                    :key="option.value"
-                    :label="option.label"
-                    :value="option.value"
-                  />
+              <el-option
+                v-for="option in getOptions(item)"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              />
                 </template>
               </component>
             </div>
@@ -48,17 +48,17 @@
           <el-form-item :label-width="0" class="search-buttons-item">
             <div class="search-buttons">
               <el-button type="primary" @click="handleSearch">查询</el-button>
-              <el-button @click="handleReset">重置</el-button>
+          <el-button @click="handleReset">重置</el-button>
               <div
                 v-if="enableAdvancedFilter && hasAdvancedItems"
                 class="advanced-search-toggle"
                 :class="{ 'is-active': showAdvanced }"
-                @click="toggleAdvanced"
-              >
+            @click="toggleAdvanced"
+          >
                 {{ showAdvanced ? '收起' : '展开' }}
                 <el-icon><arrow-down /></el-icon>
-              </div>
-            </div>
+        </div>
+      </div>
           </el-form-item>
         </el-col>
 
@@ -67,22 +67,22 @@
           <el-col :span="24" v-show="showAdvanced">
             <div class="advanced-filters">
               <el-row :gutter="16">
-                <el-col
-                  v-for="item in advancedFilterItems"
-                  :key="item.field"
+          <el-col
+            v-for="item in advancedFilterItems"
+            :key="item.field"
                   :span="getColSpan(item)"
-                >
-                  <el-form-item
-                    :label="item.label"
-                    :prop="item.field"
-                    :rules="item.rules"
+          >
+            <el-form-item
+              :label="item.label"
+              :prop="item.field"
+              :rules="item.rules"
                     :label-width="item.labelWidth"
-                  >
+            >
                     <div class="form-item-content" :style="getItemStyle(item)">
-                      <component
+              <component
                         :is="getFormItemComponent(item.type)"
-                        v-model="formData[item.field]"
-                        v-bind="getComponentProps(item)"
+                v-model="formData[item.field]"
+                v-bind="getComponentProps(item)"
                         :class="{ 'search-input': item.type === 'input' }"
                         @change="handleItemChange"
                       >
@@ -91,18 +91,18 @@
                         </template>
                         <template v-if="item.type === 'select'" #default>
                           <el-option
-                            v-for="option in getOptions(item)"
-                            :key="option.value"
-                            :label="option.label"
-                            :value="option.value"
-                          />
-                        </template>
-                      </component>
+                    v-for="option in getOptions(item)"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </template>
+              </component>
                     </div>
-                  </el-form-item>
-                </el-col>
-              </el-row>
-            </div>
+            </el-form-item>
+          </el-col>
+        </el-row>
+      </div>
           </el-col>
         </template>
       </el-row>
@@ -192,8 +192,8 @@ const getComponentProps = (item: FilterFormItem): Record<string, any> => {
   }
 
   if (item.type === 'date') {
-    return {
-      ...baseProps,
+  return {
+    ...baseProps,
       type: 'date',
       valueFormat: 'YYYY-MM-DD'
     }
