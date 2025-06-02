@@ -1,20 +1,5 @@
 <template>
   <div class="base-list">
-    <!-- 过滤条件 -->
-    <list-filter
-      v-if="filterItems.length > 0"
-      :filter-config="filterItems"
-      :enable-advanced-filter="enableAdvancedFilter"
-      :label-width="filterLabelWidth"
-      :item-width="filterItemWidth"
-      @filter-change="handleFilterChange"
-    />
-
-    <!-- 工具栏 -->
-    <div class="list-toolbar">
-      <slot name="toolbar"></slot>
-    </div>
-
     <!-- 视图切换和操作按钮 -->
     <div v-if="hasHeaderContent" class="list-header">
       <div class="left-section">
@@ -23,6 +8,10 @@
         </slot>
       </div>
       <div class="right-section">
+        <!-- 工具栏 -->
+        <div class="header-toolbar">
+          <slot name="toolbar"></slot>
+        </div>
         <slot name="header-right">
           <div v-if="enableViewSwitch" class="view-toggle">
             <div class="view-toggle-buttons">
@@ -45,6 +34,16 @@
         </slot>
       </div>
     </div>
+
+    <!-- 过滤条件 -->
+    <list-filter
+      v-if="filterItems.length > 0"
+      :filter-config="filterItems"
+      :enable-advanced-filter="enableAdvancedFilter"
+      :label-width="filterLabelWidth"
+      :item-width="filterItemWidth"
+      @filter-change="handleFilterChange"
+    />
 
     <!-- 列表内容 -->
     <div class="list-content" v-loading="loading">
@@ -488,6 +487,12 @@ defineExpose({
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.header-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .list-content {

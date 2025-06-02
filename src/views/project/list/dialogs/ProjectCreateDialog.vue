@@ -26,10 +26,12 @@
               
               <el-form-item label="项目分类" prop="categoryName">
                 <el-select v-model="createForm.categoryName" placeholder="请选择项目分类">
-                  <el-option label="政府项目" value="政府项目" />
-                  <el-option label="企业项目" value="企业项目" />
-                  <el-option label="事业单位项目" value="事业单位项目" />
-                  <el-option label="国际项目" value="国际项目" />
+                  <el-option
+                    v-for="category in formOptions.projectCategories"
+                    :key="category"
+                    :label="category"
+                    :value="category"
+                  />
                 </el-select>
               </el-form-item>
               
@@ -102,20 +104,24 @@
                 <el-col :span="12">
                   <el-form-item label="项目状态" prop="status">
                     <el-select v-model="createForm.status" placeholder="请选择项目状态">
-                      <el-option label="进行中" value="进行中" />
-                      <el-option label="待审核" value="待审核" />
-                      <el-option label="已暂停" value="已暂停" />
-                      <el-option label="已完成" value="已完成" />
+                      <el-option
+                        v-for="status in formOptions.statusOptions"
+                        :key="status"
+                        :label="status"
+                        :value="status"
+                      />
                     </el-select>
                   </el-form-item>
                 </el-col>
                 <el-col :span="12">
                   <el-form-item label="风险等级" prop="risk">
                     <el-select v-model="createForm.risk" placeholder="请选择风险等级">
-                      <el-option label="低" value="低" />
-                      <el-option label="中" value="中" />
-                      <el-option label="高" value="高" />
-                      <el-option label="严重" value="严重" />
+                      <el-option
+                        v-for="risk in formOptions.riskLevels"
+                        :key="risk"
+                        :label="risk"
+                        :value="risk"
+                      />
                     </el-select>
                   </el-form-item>
                 </el-col>
@@ -132,9 +138,12 @@
             <div class="tab-content">
               <el-form-item label="项目经理" prop="manager">
                 <el-select v-model="createForm.manager" placeholder="请选择项目经理">
-                  <el-option label="张三" value="张三" />
-                  <el-option label="李四" value="李四" />
-                  <el-option label="王五" value="王五" />
+                  <el-option
+                    v-for="manager in formOptions.managers"
+                    :key="manager"
+                    :label="manager"
+                    :value="manager"
+                  />
                 </el-select>
               </el-form-item>
               
@@ -143,9 +152,12 @@
                 <div class="team-content">
                   <el-form-item label="技术负责人" prop="technicalLead">
                     <el-select v-model="createForm.technicalLead" placeholder="请选择技术负责人">
-                      <el-option label="赵六" value="赵六" />
-                      <el-option label="钱七" value="钱七" />
-                      <el-option label="孙八" value="孙八" />
+                      <el-option
+                        v-for="lead in formOptions.technicalTeam.leads"
+                        :key="lead"
+                        :label="lead"
+                        :value="lead"
+                      />
                     </el-select>
                   </el-form-item>
                   
@@ -156,11 +168,12 @@
                       collapse-tags
                       placeholder="请选择技术团队成员"
                     >
-                      <el-option label="赵六" value="赵六" />
-                      <el-option label="钱七" value="钱七" />
-                      <el-option label="孙八" value="孙八" />
-                      <el-option label="周九" value="周九" />
-                      <el-option label="吴十" value="吴十" />
+                      <el-option
+                        v-for="member in formOptions.technicalTeam.members"
+                        :key="member"
+                        :label="member"
+                        :value="member"
+                      />
                     </el-select>
                   </el-form-item>
                 </div>
@@ -171,9 +184,12 @@
                 <div class="team-content">
                   <el-form-item label="商务负责人" prop="businessLead">
                     <el-select v-model="createForm.businessLead" placeholder="请选择商务负责人">
-                      <el-option label="李一" value="李一" />
-                      <el-option label="王二" value="王二" />
-                      <el-option label="张三" value="张三" />
+                      <el-option
+                        v-for="lead in formOptions.businessTeam.leads"
+                        :key="lead"
+                        :label="lead"
+                        :value="lead"
+                      />
                     </el-select>
                   </el-form-item>
                   
@@ -184,11 +200,12 @@
                       collapse-tags
                       placeholder="请选择商务团队成员"
                     >
-                      <el-option label="李一" value="李一" />
-                      <el-option label="王二" value="王二" />
-                      <el-option label="张三" value="张三" />
-                      <el-option label="赵四" value="赵四" />
-                      <el-option label="钱五" value="钱五" />
+                      <el-option
+                        v-for="member in formOptions.businessTeam.members"
+                        :key="member"
+                        :label="member"
+                        :value="member"
+                      />
                     </el-select>
                   </el-form-item>
                 </div>
@@ -199,8 +216,12 @@
                 <div class="team-content">
                   <el-form-item label="法务负责人" prop="legalLead">
                     <el-select v-model="createForm.legalLead" placeholder="请选择法务负责人">
-                      <el-option label="陈一" value="陈一" />
-                      <el-option label="林二" value="林二" />
+                      <el-option
+                        v-for="lead in formOptions.legalTeam.leads"
+                        :key="lead"
+                        :label="lead"
+                        :value="lead"
+                      />
                     </el-select>
                   </el-form-item>
                   
@@ -211,9 +232,12 @@
                       collapse-tags
                       placeholder="请选择法务团队成员"
                     >
-                      <el-option label="陈一" value="陈一" />
-                      <el-option label="林二" value="林二" />
-                      <el-option label="黄三" value="黄三" />
+                      <el-option
+                        v-for="member in formOptions.legalTeam.members"
+                        :key="member"
+                        :label="member"
+                        :value="member"
+                      />
                     </el-select>
                   </el-form-item>
                 </div>
@@ -231,9 +255,12 @@
                       default-first-option
                       placeholder="请输入或选择外部专家"
                     >
-                      <el-option label="刘教授" value="刘教授" />
-                      <el-option label="张工程师" value="张工程师" />
-                      <el-option label="王顾问" value="王顾问" />
+                      <el-option
+                        v-for="expert in formOptions.externalExperts"
+                        :key="expert"
+                        :label="expert"
+                        :value="expert"
+                      />
                     </el-select>
                   </el-form-item>
                 </div>
@@ -271,12 +298,12 @@
                   collapse-tags
                   placeholder="请选择所需资质"
                 >
-                  <el-option label="营业执照" value="营业执照" />
-                  <el-option label="资质证书" value="资质证书" />
-                  <el-option label="纳税证明" value="纳税证明" />
-                  <el-option label="社保缴纳证明" value="社保缴纳证明" />
-                  <el-option label="银行资信证明" value="银行资信证明" />
-                  <el-option label="无重大违法记录证明" value="无重大违法记录证明" />
+                  <el-option
+                    v-for="qual in formOptions.qualifications"
+                    :key="qual"
+                    :label="qual"
+                    :value="qual"
+                  />
                 </el-select>
               </el-form-item>
             </div>
@@ -313,7 +340,7 @@
                   placeholder="请输入或选择标签"
                 >
                   <el-option
-                    v-for="tag in tagOptions"
+                    v-for="tag in formOptions.projectTags"
                     :key="tag"
                     :label="tag"
                     :value="tag"
@@ -384,9 +411,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import dialogInstance from '@/hooks/useDialog'
+import axios from 'axios'
 
 // 标签页活动标签
 const activeTab = ref('basic')
@@ -395,18 +423,39 @@ const activeTab = ref('basic')
 const dialogVisible = ref(false)
 const createFormRef = ref()
 
+// 表单选项数据
+const formOptions = ref({
+  projectCategories: [],
+  statusOptions: [],
+  riskLevels: [],
+  managers: [],
+  technicalTeam: {
+    leads: [],
+    members: []
+  },
+  businessTeam: {
+    leads: [],
+    members: []
+  },
+  legalTeam: {
+    leads: [],
+    members: []
+  },
+  externalExperts: [],
+  qualifications: [],
+  projectTags: []
+})
+
 // 创建表单数据
 const createForm = reactive({
   title: '',
   categoryName: '',
   description: '',
   client: '',
-  // 招标方联系人信息
   clientContactName: '',
   clientContactTitle: '',
   clientContactPhone: '',
   clientContactEmail: '',
-  // 时间信息
   date: '',
   dueDate: '',
   status: '进行中',
@@ -415,7 +464,6 @@ const createForm = reactive({
   team: '',
   manager: '',
   teamMembers: [],
-  // 新增团队分类字段
   technicalLead: '',
   technicalTeam: [],
   businessLead: '',
@@ -423,7 +471,6 @@ const createForm = reactive({
   legalLead: '',
   legalTeam: [],
   externalExperts: [],
-  // 原有字段
   budget: 0,
   deposit: 0,
   qualifications: [],
@@ -435,6 +482,24 @@ const createForm = reactive({
   inquiryDeadline: '',
   submissionDeadline: '',
   openingTime: ''
+})
+
+// 获取表单选项数据
+const fetchFormOptions = async () => {
+  try {
+    const response = await axios.get('/api/project/form-options')
+    if (response.data.code === 200) {
+      formOptions.value = response.data.data
+    }
+  } catch (error) {
+    console.error('获取表单选项失败:', error)
+    ElMessage.error('获取表单选项失败')
+  }
+}
+
+// 组件挂载时获取表单选项
+onMounted(() => {
+  fetchFormOptions()
 })
 
 // 表单验证规则
@@ -455,18 +520,6 @@ const createRules = {
     { type: 'email', message: '请输入正确的邮箱地址', trigger: 'blur' }
   ]
 }
-
-// 标签选项
-const tagOptions = [
-  '政府采购',
-  '信息化建设',
-  '软件开发',
-  '系统集成',
-  '硬件采购',
-  '咨询服务',
-  '工程建设',
-  '运维服务'
-]
 
 // 监听对话框状态
 watch(() => dialogInstance.isVisible('projectCreate'), (visible) => {
@@ -495,25 +548,28 @@ const handleSubmit = async () => {
   try {
     await createFormRef.value.validate()
     
-    // 这里可以添加创建项目的API调用
-    console.log('创建项目:', createForm)
+    // 调用创建项目API
+    const response = await axios.post('/api/project/create', createForm)
     
-    // 模拟创建成功
-    ElMessage.success('项目创建成功')
-    
-    // 触发回调事件
-    const result = dialogInstance.emit('projectCreate', 'submit', createForm)
-    
-    // 关闭对话框
-    dialogInstance.close('projectCreate')
-    
-    // 触发刷新事件
-    window.dispatchEvent(new CustomEvent('project-list-refresh'))
-    
-    // 返回回调结果
-    return result
+    if (response.data.code === 200) {
+      ElMessage.success(response.data.message || '项目创建成功')
+      
+      // 触发回调事件
+      const result = dialogInstance.emit('projectCreate', 'submit', response.data.data)
+      
+      // 关闭对话框
+      dialogInstance.close('projectCreate')
+      
+      // 触发刷新事件
+      window.dispatchEvent(new CustomEvent('project-list-refresh'))
+      
+      return result
+    } else {
+      throw new Error(response.data.message || '创建失败')
+    }
   } catch (error) {
-    console.error('表单验证失败:', error)
+    console.error('创建项目失败:', error)
+    ElMessage.error(error.message || '创建失败')
     // 触发错误回调
     dialogInstance.emit('projectCreate', 'error', error)
   }

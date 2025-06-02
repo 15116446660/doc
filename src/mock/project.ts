@@ -172,6 +172,45 @@ function generateTags(): string[] {
 
 const projectList = generateProjects(50)
 
+// 项目表单选项数据
+const formOptions = {
+  projectCategories: ['政府项目', '企业项目', '事业单位项目', '国际项目'],
+  statusOptions: ['进行中', '待审核', '已暂停', '已完成'],
+  riskLevels: ['低', '中', '高', '严重'],
+  managers: ['张三', '李四', '王五', '赵六'],
+  technicalTeam: {
+    leads: ['赵六', '钱七', '孙八'],
+    members: ['赵六', '钱七', '孙八', '周九', '吴十']
+  },
+  businessTeam: {
+    leads: ['李一', '王二', '张三'],
+    members: ['李一', '王二', '张三', '赵四', '钱五']
+  },
+  legalTeam: {
+    leads: ['陈一', '林二'],
+    members: ['陈一', '林二', '黄三']
+  },
+  externalExperts: ['刘教授', '张工程师', '王顾问', '李专家', '赵博士'],
+  qualifications: [
+    '营业执照',
+    '资质证书',
+    '纳税证明',
+    '社保缴纳证明',
+    '银行资信证明',
+    '无重大违法记录证明'
+  ],
+  projectTags: [
+    '政府采购',
+    '信息化建设',
+    '软件开发',
+    '系统集成',
+    '硬件采购',
+    '咨询服务',
+    '工程建设',
+    '运维服务'
+  ]
+}
+
 const mockData: MockMethod[] = [
   {
     url: '/api/project/categories',
@@ -229,6 +268,47 @@ const mockData: MockMethod[] = [
           page: Number(page),
           limit: Number(limit)
         }
+      }
+    }
+  },
+  {
+    url: '/api/project/form-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: formOptions
+      }
+    }
+  },
+  {
+    url: '/api/project/create',
+    method: 'post',
+    response: (req: any) => {
+      const projectData = req.body
+      // 生成新的项目ID
+      const newId = projectList.length + 1
+      const newProject = {
+        id: newId,
+        ...projectData,
+        // 添加一些默认值
+        statusClass: 'status-in-progress',
+        statusColor: '#60A5FA',
+        progressColor: '#60A5FA',
+        members: [
+          'https://placeholder.pics/svg/30/DEDEDE/555555/U',
+          'https://placeholder.pics/svg/30/DEDEDE/555555/U'
+        ],
+        documents: 0
+      }
+      
+      // 将新项目添加到列表中
+      projectList.unshift(newProject)
+      
+      return {
+        code: 200,
+        data: newProject,
+        message: '项目创建成功'
       }
     }
   }

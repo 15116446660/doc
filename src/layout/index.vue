@@ -42,10 +42,6 @@
           <breadcrumb />
         </div>
         <div class="header-right">
-          <el-button type="primary" class="new-doc-btn">
-            <el-icon><Plus /></el-icon>
-            新建文档
-          </el-button>
           <el-dropdown>
             <span class="user-info">
               {{ userInfo.name }}
