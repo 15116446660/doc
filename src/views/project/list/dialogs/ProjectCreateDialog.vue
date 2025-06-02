@@ -28,9 +28,9 @@
                 <el-select v-model="createForm.categoryName" placeholder="请选择项目分类">
                   <el-option
                     v-for="category in formOptions.projectCategories"
-                    :key="category"
-                    :label="category"
-                    :value="category"
+                    :key="category.value"
+                    :label="category.label"
+                    :value="category.value"
                   />
                 </el-select>
               </el-form-item>
@@ -106,9 +106,9 @@
                     <el-select v-model="createForm.status" placeholder="请选择项目状态">
                       <el-option
                         v-for="status in formOptions.statusOptions"
-                        :key="status"
-                        :label="status"
-                        :value="status"
+                        :key="status.value"
+                        :label="status.label"
+                        :value="status.value"
                       />
                     </el-select>
                   </el-form-item>
@@ -118,9 +118,9 @@
                     <el-select v-model="createForm.risk" placeholder="请选择风险等级">
                       <el-option
                         v-for="risk in formOptions.riskLevels"
-                        :key="risk"
-                        :label="risk"
-                        :value="risk"
+                        :key="risk.value"
+                        :label="risk.label"
+                        :value="risk.value"
                       />
                     </el-select>
                   </el-form-item>
@@ -140,9 +140,9 @@
                 <el-select v-model="createForm.manager" placeholder="请选择项目经理">
                   <el-option
                     v-for="manager in formOptions.managers"
-                    :key="manager"
-                    :label="manager"
-                    :value="manager"
+                    :key="manager.value"
+                    :label="manager.label"
+                    :value="manager.value"
                   />
                 </el-select>
               </el-form-item>
@@ -154,9 +154,9 @@
                     <el-select v-model="createForm.technicalLead" placeholder="请选择技术负责人">
                       <el-option
                         v-for="lead in formOptions.technicalTeam.leads"
-                        :key="lead"
-                        :label="lead"
-                        :value="lead"
+                        :key="lead.value"
+                        :label="lead.label"
+                        :value="lead.value"
                       />
                     </el-select>
                   </el-form-item>
@@ -170,9 +170,9 @@
                     >
                       <el-option
                         v-for="member in formOptions.technicalTeam.members"
-                        :key="member"
-                        :label="member"
-                        :value="member"
+                        :key="member.value"
+                        :label="member.label"
+                        :value="member.value"
                       />
                     </el-select>
                   </el-form-item>
@@ -186,9 +186,9 @@
                     <el-select v-model="createForm.businessLead" placeholder="请选择商务负责人">
                       <el-option
                         v-for="lead in formOptions.businessTeam.leads"
-                        :key="lead"
-                        :label="lead"
-                        :value="lead"
+                        :key="lead.value"
+                        :label="lead.label"
+                        :value="lead.value"
                       />
                     </el-select>
                   </el-form-item>
@@ -202,9 +202,9 @@
                     >
                       <el-option
                         v-for="member in formOptions.businessTeam.members"
-                        :key="member"
-                        :label="member"
-                        :value="member"
+                        :key="member.value"
+                        :label="member.label"
+                        :value="member.value"
                       />
                     </el-select>
                   </el-form-item>
@@ -218,9 +218,9 @@
                     <el-select v-model="createForm.legalLead" placeholder="请选择法务负责人">
                       <el-option
                         v-for="lead in formOptions.legalTeam.leads"
-                        :key="lead"
-                        :label="lead"
-                        :value="lead"
+                        :key="lead.value"
+                        :label="lead.label"
+                        :value="lead.value"
                       />
                     </el-select>
                   </el-form-item>
@@ -234,9 +234,9 @@
                     >
                       <el-option
                         v-for="member in formOptions.legalTeam.members"
-                        :key="member"
-                        :label="member"
-                        :value="member"
+                        :key="member.value"
+                        :label="member.label"
+                        :value="member.value"
                       />
                     </el-select>
                   </el-form-item>
@@ -257,9 +257,9 @@
                     >
                       <el-option
                         v-for="expert in formOptions.externalExperts"
-                        :key="expert"
-                        :label="expert"
-                        :value="expert"
+                        :key="expert.value"
+                        :label="expert.label"
+                        :value="expert.value"
                       />
                     </el-select>
                   </el-form-item>
@@ -300,9 +300,9 @@
                 >
                   <el-option
                     v-for="qual in formOptions.qualifications"
-                    :key="qual"
-                    :label="qual"
-                    :value="qual"
+                    :key="qual.value"
+                    :label="qual.label"
+                    :value="qual.value"
                   />
                 </el-select>
               </el-form-item>
@@ -341,9 +341,9 @@
                 >
                   <el-option
                     v-for="tag in formOptions.projectTags"
-                    :key="tag"
-                    :label="tag"
-                    :value="tag"
+                    :key="tag.value"
+                    :label="tag.label"
+                    :value="tag.value"
                   />
                 </el-select>
               </el-form-item>
@@ -414,7 +414,19 @@
 import { ref, reactive, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import dialogInstance from '@/hooks/useDialog'
-import axios from 'axios'
+import {
+  getProjectCategoryOptions,
+  getProjectStatusOptions,
+  getProjectRiskOptions,
+  getTeamMemberOptions,
+  getTechnicalTeamOptions,
+  getBusinessTeamOptions,
+  getLegalTeamOptions,
+  getExternalExpertOptions,
+  getQualificationOptions,
+  getProjectTagOptions,
+  createProject
+} from '@/api/project'
 
 // 标签页活动标签
 const activeTab = ref('basic')
@@ -487,9 +499,43 @@ const createForm = reactive({
 // 获取表单选项数据
 const fetchFormOptions = async () => {
   try {
-    const response = await axios.get('/api/project/form-options')
-    if (response.data.code === 200) {
-      formOptions.value = response.data.data
+    // 并行请求所有选项数据
+    const [
+      categoryRes,
+      statusRes,
+      riskRes,
+      teamRes,
+      technicalRes,
+      businessRes,
+      legalRes,
+      expertRes,
+      qualificationRes,
+      tagRes
+    ] = await Promise.all([
+      getProjectCategoryOptions(),
+      getProjectStatusOptions(),
+      getProjectRiskOptions(),
+      getTeamMemberOptions(),
+      getTechnicalTeamOptions(),
+      getBusinessTeamOptions(),
+      getLegalTeamOptions(),
+      getExternalExpertOptions(),
+      getQualificationOptions(),
+      getProjectTagOptions()
+    ])
+
+    // 更新表单选项数据
+    formOptions.value = {
+      projectCategories: categoryRes,
+      statusOptions: statusRes,
+      riskLevels: riskRes,
+      managers: teamRes,
+      technicalTeam: technicalRes,
+      businessTeam: businessRes,
+      legalTeam: legalRes,
+      externalExperts: expertRes,
+      qualifications: qualificationRes,
+      projectTags: tagRes
     }
   } catch (error) {
     console.error('获取表单选项失败:', error)
@@ -549,7 +595,7 @@ const handleSubmit = async () => {
     await createFormRef.value.validate()
     
     // 调用创建项目API
-    const response = await axios.post('/api/project/create', createForm)
+    const response = await createProject(createForm)
     
     if (response.data.code === 200) {
       ElMessage.success(response.data.message || '项目创建成功')
@@ -567,7 +613,7 @@ const handleSubmit = async () => {
     } else {
       throw new Error(response.data.message || '创建失败')
     }
-  } catch (error) {
+  } catch (error: any) {
     console.error('创建项目失败:', error)
     ElMessage.error(error.message || '创建失败')
     // 触发错误回调

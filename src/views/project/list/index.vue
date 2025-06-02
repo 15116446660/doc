@@ -86,8 +86,8 @@ import BaseList from '@/components/BaseList/index.vue'
 import ProjectCard from '@/components/ProjectCard.vue'
 import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
 import dialogInstance from '@/hooks/useDialog'
-import type { FilterFormItem, TableColumn } from '@/components/BaseList/types'
-import { getProjectList } from '@/api/project'
+import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
+import { getProjectList, getProjectStatusOptions, getProjectRiskOptions, getTeamMemberOptions } from '@/api/project'
 
 // 列表实例
 const listRef = ref()
@@ -171,23 +171,31 @@ const filterConfig = ref<FilterFormItem[]>([
     type: 'select',
     field: 'status',
     label: '状态',
-    options: [
-      { label: '进行中', value: '进行中' },
-      { label: '已完成', value: '已完成' },
-      { label: '待审核', value: '待审核' },
-      { label: '已暂停', value: '已暂停' }
-    ]
+    placeholder: '请选择状态',
+    props: {
+      remote: false,
+      loading: false
+    },
+    options: async () => {
+      const res = await getProjectStatusOptions()
+      return res as unknown as OptionItem[]
+    }
   },
   {
     type: 'select',
     field: 'risk',
     label: '风险',
-    options: [
-      { label: '低', value: '低' },
-      { label: '中', value: '中' },
-      { label: '高', value: '高' },
-      { label: '严重', value: '严重' }
-    ]
+    placeholder: '请选择风险',
+    props: {
+      filterable: true,
+      remote: true,
+      reserveKeyword: true,
+      loading: false
+    },
+    options: async () => {
+      const res = await getProjectRiskOptions()
+      return res as unknown as OptionItem[]
+    }
   },
   {
     type: 'daterange',
@@ -200,13 +208,16 @@ const filterConfig = ref<FilterFormItem[]>([
     field: 'leader',
     label: '负责人',
     advanced: true,
+    placeholder: '请选择负责人',
+    props: {
+      filterable: true,
+      remote: true,
+      reserveKeyword: true,
+      loading: false
+    },
     options: async () => {
-      // 模拟异步获取负责人列表
-      return [
-        { label: '张三', value: '张三' },
-        { label: '李四', value: '李四' },
-        { label: '王五', value: '王五' }
-      ]
+      const res = await getTeamMemberOptions()
+      return res as unknown as OptionItem[]
     }
   }
 ])

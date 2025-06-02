@@ -211,6 +211,14 @@ const formOptions = {
   ]
 }
 
+// 生成选项数据
+const generateOptions = (count: number, prefix: string) => {
+  return Array.from({ length: count }, (_, index) => ({
+    label: `${prefix}${index + 1}`,
+    value: `${prefix}${index + 1}`
+  }))
+}
+
 const mockData: MockMethod[] = [
   {
     url: '/api/project/categories',
@@ -309,6 +317,157 @@ const mockData: MockMethod[] = [
         code: 200,
         data: newProject,
         message: '项目创建成功'
+      }
+    }
+  },
+  // 获取项目状态选项
+  {
+    url: '/api/project/status-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: [
+          { label: '进行中', value: '进行中' },
+          { label: '已完成', value: '已完成' },
+          { label: '待审核', value: '待审核' },
+          { label: '已暂停', value: '已暂停' }
+        ]
+      }
+    }
+  },
+
+  // 获取项目风险选项
+  {
+    url: '/api/project/risk-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: [
+          { label: '低', value: '低' },
+          { label: '中', value: '中' },
+          { label: '高', value: '高' },
+          { label: '严重', value: '严重' }
+        ]
+      }
+    }
+  },
+
+  // 获取项目分类选项
+  {
+    url: '/api/project/category-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: generateOptions(5, '项目分类')
+      }
+    }
+  },
+
+  // 获取团队成员选项
+  {
+    url: '/api/project/team-member-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: generateOptions(10, '成员')
+      }
+    }
+  },
+
+  // 获取技术团队选项
+  {
+    url: '/api/project/technical-team-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: {
+          leads: generateOptions(3, '技术负责人'),
+          members: generateOptions(8, '技术成员')
+        }
+      }
+    }
+  },
+
+  // 获取商务团队选项
+  {
+    url: '/api/project/business-team-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: {
+          leads: generateOptions(2, '商务负责人'),
+          members: generateOptions(5, '商务成员')
+        }
+      }
+    }
+  },
+
+  // 获取法务团队选项
+  {
+    url: '/api/project/legal-team-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: {
+          leads: generateOptions(2, '法务负责人'),
+          members: generateOptions(4, '法务成员')
+        }
+      }
+    }
+  },
+
+  // 获取外部专家选项
+  {
+    url: '/api/project/external-expert-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: generateOptions(6, '专家')
+      }
+    }
+  },
+
+  // 获取资质要求选项
+  {
+    url: '/api/project/qualification-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: [
+          { label: 'ISO9001认证', value: 'ISO9001认证' },
+          { label: 'CMMI5认证', value: 'CMMI5认证' },
+          { label: '高新技术企业', value: '高新技术企业' },
+          { label: '软件企业认定', value: '软件企业认定' },
+          { label: '信息系统集成资质', value: '信息系统集成资质' }
+        ]
+      }
+    }
+  },
+
+  // 获取项目标签选项
+  {
+    url: '/api/project/tag-options',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: [
+          { label: 'Web开发', value: 'Web开发' },
+          { label: '移动应用', value: '移动应用' },
+          { label: '人工智能', value: '人工智能' },
+          { label: '大数据', value: '大数据' },
+          { label: '云计算', value: '云计算' },
+          { label: '物联网', value: '物联网' }
+        ]
       }
     }
   }
