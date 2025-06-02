@@ -2,12 +2,12 @@
   <div class="project-list-container">
     <base-list
       ref="listRef"
+      title="项目列表"
       :filter-config="filterConfig"
       :columns="columns"
       :enable-advanced-filter="true"
       :enable-view-switch="true"
-      :request-api="fetchProjects"
-      :response-handler="handleResponse"
+      :request-api="getProjectList"
       :table-props="tableProps"
       :pagination-config="paginationConfig"
       @filter-change="handleFilterChange"
@@ -18,9 +18,9 @@
       <template #project-name="{ row }">
         <div class="project-name">
           <el-avatar :size="32" :src="row.logo">
-            {{ row?.name?.charAt(0) || 'P' }}
+            {{ row?.title?.charAt(0) || 'P' }}
           </el-avatar>
-          <span>{{ row.name || '未命名项目' }}</span>
+          <span>{{ row.title || '未命名项目' }}</span>
         </div>
       </template>
 
@@ -43,9 +43,9 @@
       <template #leader="{ row }">
         <div class="user-info">
           <el-avatar :size="24" :src="row.leaderAvatar">
-            {{ row?.leader?.charAt(0) || 'U' }}
+            {{ row?.team?.charAt(0) || 'U' }}
           </el-avatar>
-          <span>{{ row.leader || '未分配' }}</span>
+          <span>{{ row.team || '未分配' }}</span>
         </div>
       </template>
 
@@ -61,11 +61,11 @@
           <div class="card-header">
             <div class="header-left">
               <el-avatar :size="40" :src="item.logo">
-                {{ item?.name?.charAt(0) || 'P' }}
+                {{ item?.title?.charAt(0) || 'P' }}
               </el-avatar>
               <div class="project-info">
-                <h3>{{ item.name || '未命名项目' }}</h3>
-                <p>{{ item.category || '未分类' }}</p>
+                <h3>{{ item.title || '未命名项目' }}</h3>
+                <p>{{ item.categoryName || '未分类' }}</p>
               </div>
             </div>
             <div class="header-right">
@@ -99,16 +99,16 @@
               <span class="label">负责人：</span>
               <div class="user-info">
                 <el-avatar :size="24" :src="item.leaderAvatar">
-                  {{ item?.leader?.charAt(0) || 'U' }}
+                  {{ item?.team?.charAt(0) || 'U' }}
                 </el-avatar>
-                <span>{{ item.leader || '未分配' }}</span>
+                <span>{{ item.team || '未分配' }}</span>
               </div>
             </div>
           </div>
           <div class="card-footer">
             <div class="date-info">
-              <p>开始：{{ item.startDate || '未设置' }}</p>
-              <p>结束：{{ item.endDate || '未设置' }}</p>
+              <p>开始：{{ item.date || '未设置' }}</p>
+              <p>结束：{{ item.dueDate || '未设置' }}</p>
             </div>
           </div>
         </el-card>
@@ -136,14 +136,14 @@ const columns = ref<TableColumn[]>([
     fixed: 'left'
   },
   {
-    prop: 'name',
+    prop: 'title',
     label: '项目名称',
     minWidth: 200,
     fixed: 'left',
     slot: 'project-name'
   },
   {
-    prop: 'category',
+    prop: 'categoryName',
     label: '分类',
     width: 120
   },
@@ -166,18 +166,18 @@ const columns = ref<TableColumn[]>([
     slot: 'progress'
   },
   {
-    prop: 'leader',
+    prop: 'team',
     label: '负责人',
     width: 120,
     slot: 'leader'
   },
   {
-    prop: 'startDate',
+    prop: 'date',
     label: '开始时间',
     width: 120
   },
   {
-    prop: 'endDate',
+    prop: 'dueDate',
     label: '结束时间',
     width: 120
   },
@@ -276,7 +276,10 @@ const fetchProjects = async (params: any) => {
       dateRange: params.dateRange,
       leader: params.leader
     })
-    return response
+    // 直接返回响应数据，不需要再处理
+    return {
+      data: response
+    }
   } catch (error) {
     console.error('Failed to fetch projects:', error)
     return {
@@ -290,7 +293,7 @@ const fetchProjects = async (params: any) => {
 
 // 处理响应数据
 const handleResponse = (response: any) => {
-  console.log('API Response:', response) // 添加日志以便调试
+  console.log('API Response:', response)
   if (!response?.data) {
     return {
       list: [],
@@ -298,11 +301,8 @@ const handleResponse = (response: any) => {
     }
   }
 
-  // 确保返回正确的数据结构
-  return {
-    list: response.data.list || [],
-    total: response.data.total || 0
-  }
+  // 直接返回数据
+  return response.data
 }
 
 // 获取状态类型
@@ -351,7 +351,7 @@ const handleEdit = (row: any) => {
 const handleDelete = async (row: any) => {
   try {
     await ElMessageBox.confirm(
-      `确定要删除项目"${row.name}"吗？`,
+      `确定要删除项目"${row.title}"吗？`,
       '删除确认',
       {
         confirmButtonText: '确定',

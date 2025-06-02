@@ -1,4 +1,5 @@
-import axios from 'axios'
+import { get } from './request'
+import type { PaginationResponse, QueryParams } from './types'
 
 // 项目分类接口
 export interface ProjectCategory {
@@ -9,9 +10,7 @@ export interface ProjectCategory {
 }
 
 // 项目列表请求参数
-export interface ProjectListParams {
-  page?: number
-  limit?: number
+export interface ProjectListParams extends QueryParams {
   categoryId?: string
   status?: string
   risk?: string
@@ -21,12 +20,7 @@ export interface ProjectListParams {
 }
 
 // 项目列表响应数据
-export interface ProjectListResponse {
-  list: Project[]
-  total: number
-  page: number
-  limit: number
-}
+export type ProjectListResponse = PaginationResponse<Project>
 
 // 项目数据接口
 export interface Project {
@@ -56,10 +50,10 @@ export interface Project {
 
 // 获取项目分类
 export function getProjectCategories() {
-  return axios.get<{code: number, data: ProjectCategory[]}>('/api/project/categories')
+  return get<ProjectCategory[]>('/api/project/categories')
 }
 
 // 获取项目列表
 export function getProjectList(params: ProjectListParams) {
-  return axios.get<{code: number, data: ProjectListResponse}>('/api/project/list', { params })
+  return get<ProjectListResponse>('/api/project/list', params)
 } 

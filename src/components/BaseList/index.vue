@@ -2,16 +2,20 @@
   <div class="base-list">
     <!-- 过滤条件 -->
     <list-filter
-      v-if="filterConfig"
-      :filter-config="filterConfig"
+      v-if="filterItems.length > 0"
+      :filter-config="filterItems"
       :enable-advanced-filter="enableAdvancedFilter"
+      :label-width="filterLabelWidth"
+      :item-width="filterItemWidth"
       @filter-change="handleFilterChange"
     />
 
     <!-- 视图切换和操作按钮 -->
-    <div class="list-header">
+    <div v-if="hasHeaderContent" class="list-header">
       <div class="left-section">
-        <slot name="header-left" />
+        <slot name="header-left">
+          <h2 v-if="title" class="list-title">{{ title }}</h2>
+        </slot>
       </div>
       <div class="right-section">
         <slot name="header-right">
@@ -65,7 +69,7 @@
             
             <!-- 默认单元格 -->
             <template v-else-if="column.formatter" #default="scope">
-              {{ column.formatter(scope.row, scope.column, scope.row[column.prop || ''], scope.$index) }}
+              {{ column.formatter && column.formatter(scope.row, scope.column, scope.row[column.prop || ''], scope.$index) }}
             </template>
           </el-table-column>
         </template>
@@ -115,7 +119,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, useSlots } from 'vue'
 import { List, Grid } from '@element-plus/icons-vue'
 import type { TableInstance } from 'element-plus'
 import ListFilter from './components/ListFilter.vue'
@@ -124,7 +128,11 @@ import type {
   BaseListEmits,
   ViewType,
   FilterChangeEvent,
-  TableColumn
+  TableColumn,
+  ApiResponse,
+  PaginationResponse,
+  FilterFormItem,
+  FilterConfig
 } from './types'
 
 const props = withDefaults(defineProps<BaseListProps>(), {
@@ -136,17 +144,59 @@ const props = withDefaults(defineProps<BaseListProps>(), {
   paginationConfig: () => ({
     pageSize: 10,
     pageSizes: [10, 20, 50, 100],
-    layout: 'total, sizes, prev, pager, next, jumper'
+    layout: 'total, sizes, prev, pager, next, jumper',
+    background: true,
+    small: false
   }),
   requestApi: undefined,
   requestParams: () => ({}),
-  responseHandler: (response: any) => ({
-    list: response.data?.list || [],
-    total: response.data?.total || 0
-  }),
+  responseHandler: undefined,
   tableProps: () => ({}),
   cardContainerProps: () => ({}),
-  columns: () => []
+  columns: () => [],
+  title: undefined
+})
+
+// 提取过滤条件配置
+const filterItems = computed<FilterFormItem[]>(() => {
+  if (!props.filterConfig) return []
+  
+  // 如果是FilterConfig类型
+  if ('items' in props.filterConfig) {
+    return props.filterConfig.items
+  }
+  
+  // 如果是FilterFormItem[]类型
+  return props.filterConfig as FilterFormItem[]
+})
+
+// 提取过滤表单标签宽度
+const filterLabelWidth = computed(() => {
+  if (!props.filterConfig) return '80px' // 默认宽度
+  
+  // 如果是FilterConfig类型且定义了labelWidth
+  if ('items' in props.filterConfig && props.filterConfig.labelWidth !== undefined) {
+    return props.filterConfig.labelWidth
+  }
+  
+  return '80px' // 默认宽度
+})
+
+// 提取过滤表单项宽度
+const filterItemWidth = computed(() => {
+  if (!props.filterConfig) return '200px' // 默认宽度
+  
+  // 如果是FilterConfig类型且定义了itemWidth
+  if ('items' in props.filterConfig && props.filterConfig.itemWidth !== undefined) {
+    return props.filterConfig.itemWidth
+  }
+  
+  return '200px' // 默认宽度
+})
+
+// 判断是否有头部内容
+const hasHeaderContent = computed(() => {
+  return props.title || props.enableViewSwitch || !!slots['header-left'] || !!slots['header-right']
 })
 
 const emit = defineEmits<BaseListEmits>()
@@ -184,8 +234,17 @@ const requestParams = computed(() => {
 // 分页属性
 const paginationProps = computed(() => {
   const { pageSize, ...rest } = props.paginationConfig || {}
-  return rest
+  // 设置分页组件的中文文本
+  return {
+    ...rest,
+    prevText: '上一页',
+    nextText: '下一页',
+    totalText: '共 {total} 条'
+  }
 })
+
+// 获取slots
+const slots = useSlots()
 
 // 总条数（确保为数字）
 const totalItems = computed(() => {
@@ -198,6 +257,104 @@ const getColumnProps = (column: TableColumn) => {
   return rest
 }
 
+// 默认的响应处理函数
+const defaultResponseHandler = (response: any) => {
+  // 移除调试语句
+  // debugger
+  
+  // 处理 AxiosResponse 类型响应
+  if (response && typeof response === 'object' && response.data !== undefined && response.status !== undefined) {
+    // 这是一个 AxiosResponse，提取 data 部分继续处理
+    return defaultResponseHandler(response.data);
+  }
+
+  // 处理标准API响应格式 (ApiResponse)
+  if (response && typeof response === 'object' && response.code !== undefined) {
+    const apiResponse = response as ApiResponse<any>;
+    if (apiResponse.code === 200 && apiResponse.data !== undefined) {
+      const data = apiResponse.data;
+      
+      // 处理分页数据格式 (PaginationResponse)
+      if (data && typeof data === 'object' && 'list' in data && 'total' in data) {
+        return {
+          list: (data as PaginationResponse<any>).list || [],
+          total: (data as PaginationResponse<any>).total || 0
+        };
+      }
+      
+      // 处理数组格式
+      if (Array.isArray(data)) {
+        return {
+          list: data,
+          total: data.length
+        };
+      }
+      
+      // 处理对象格式（包含列表数据）
+      if (data && typeof data === 'object') {
+        if (Array.isArray(data.data)) {
+          return {
+            list: data.data,
+            total: data.total || data.data.length
+          };
+        }
+        
+        // 如果data是对象但不包含预期的数据结构，尝试将其作为单个项目
+        return {
+          list: [data],
+          total: 1
+        };
+      }
+    }
+    
+    // API 请求失败或数据格式不符合预期
+    console.error('API request failed or invalid data format:', apiResponse.message);
+    return { list: [], total: 0 };
+  }
+  
+  // 直接处理分页响应格式 (PaginationResponse)
+  if (response && typeof response === 'object' && 'list' in response && 'total' in response) {
+    return {
+      list: response.list || [],
+      total: response.total || 0
+    };
+  }
+
+  // 处理直接返回数组的情况
+  if (Array.isArray(response)) {
+    return {
+      list: response,
+      total: response.length
+    };
+  }
+
+  // 处理包含data属性且data为数组的情况
+  if (response && typeof response === 'object' && Array.isArray(response.data)) {
+    return {
+      list: response.data,
+      total: response.total || response.count || response.data.length
+    };
+  }
+  
+  // 处理单个对象的情况
+  if (response && typeof response === 'object' && !Array.isArray(response)) {
+    // 如果不是null且是一个普通对象，将其作为单个项目
+    if (Object.keys(response).length > 0) {
+      return {
+        list: [response],
+        total: 1
+      };
+    }
+  }
+
+  // 默认返回空数据
+  console.warn('Response format not recognized:', response);
+  return {
+    list: [],
+    total: 0
+  };
+}
+
 // 获取列表数据
 const fetchData = async () => {
   if (!props.requestApi) return
@@ -205,11 +362,15 @@ const fetchData = async () => {
   loading.value = true
   try {
     const response = await props.requestApi(requestParams.value)
-    const { list: dataList, total: dataTotal } = props.responseHandler(response)
+    // 使用自定义或默认的响应处理函数
+    const handler = props.responseHandler || defaultResponseHandler
+    const { list: dataList, total: dataTotal } = handler(response)
     list.value = dataList
     total.value = dataTotal || 0
   } catch (error) {
     console.error('Failed to fetch data:', error)
+    list.value = []
+    total.value = 0
   } finally {
     loading.value = false
   }
@@ -300,6 +461,13 @@ defineExpose({
   margin-bottom: 16px;
 }
 
+.list-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
 .right-section {
   display: flex;
   align-items: center;
@@ -329,7 +497,7 @@ defineExpose({
 .pagination-wrapper {
   margin-top: 16px;
   display: flex;
-  justify-content: center;
+  justify-content: flex-end;
 }
 
 :deep(.el-table) {

@@ -7,6 +7,7 @@ import './styles/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import { createPinia } from 'pinia'
 import { useAuthStore } from '@/store/auth' // 导入 auth store
+import './api/request' // 导入请求配置
 
 const app = createApp(App)
 const pinia = createPinia()

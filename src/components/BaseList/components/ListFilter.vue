@@ -3,166 +3,31 @@
     <el-form
       ref="formRef"
       :model="formData"
-      :rules="formRules"
-      inline
-      @submit.prevent="handleSubmit"
+      :label-width="labelWidth"
+      class="filter-form"
     >
-      <!-- 简单过滤区域 -->
-      <div class="simple-filter">
-        <template v-for="item in simpleFilterItems" :key="item.field">
+      <el-row :gutter="16">
+        <!-- 常规筛选项 -->
+        <el-col
+          v-for="item in normalFilterItems"
+          :key="item.field"
+          :span="item.colSpan || 6"
+        >
           <el-form-item
             :label="item.label"
             :prop="item.field"
             :rules="item.rules"
+            :label-width="item.labelWidth"
           >
-            <!-- 输入框 -->
-            <el-input
-              v-if="item.type === 'input'"
-              v-model="formData[item.field]"
-              v-bind="item.props"
-              :placeholder="item.placeholder || `请输入${item.label}`"
-              clearable
-              @change="handleFilterChange"
-            />
-
-            <!-- 选择框 -->
-            <el-select
-              v-else-if="item.type === 'select'"
-              v-model="formData[item.field]"
-              v-bind="item.props"
-              :placeholder="item.placeholder || `请选择${item.label}`"
-              clearable
-              @change="handleFilterChange"
-            >
-              <el-option
-                v-for="option in getOptions(item)"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </el-select>
-
-            <!-- 日期选择器 -->
-            <el-date-picker
-              v-else-if="item.type === 'date'"
-              v-model="formData[item.field]"
-              v-bind="item.props"
-              :type="item.dateType || 'date'"
-              :placeholder="item.placeholder || `请选择${item.label}`"
-              clearable
-              @change="handleFilterChange"
-            />
-
-            <!-- 日期范围选择器 -->
-            <el-date-picker
-              v-else-if="item.type === 'daterange'"
-              v-model="formData[item.field]"
-              v-bind="item.props"
-              type="daterange"
-              range-separator="至"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              clearable
-              @change="handleFilterChange"
-            />
-
-            <!-- 数字输入框 -->
-            <el-input-number
-              v-else-if="item.type === 'number'"
-              v-model="formData[item.field]"
-              v-bind="item.props"
-              :placeholder="item.placeholder || `请输入${item.label}`"
-              clearable
-              @change="handleFilterChange"
-            />
-
-            <!-- 复选框组 -->
-            <el-checkbox-group
-              v-else-if="item.type === 'checkbox'"
-              v-model="formData[item.field]"
-              v-bind="item.props"
-              @change="handleFilterChange"
-            >
-              <el-checkbox
-                v-for="option in getOptions(item)"
-                :key="option.value"
-                :label="option.value"
-              >
-                {{ option.label }}
-              </el-checkbox>
-            </el-checkbox-group>
-
-            <!-- 单选框组 -->
-            <el-radio-group
-              v-else-if="item.type === 'radio'"
-              v-model="formData[item.field]"
-              v-bind="item.props"
-              @change="handleFilterChange"
-            >
-              <el-radio
-                v-for="option in getOptions(item)"
-                :key="option.value"
-                :label="option.value"
-              >
-                {{ option.label }}
-              </el-radio>
-            </el-radio-group>
-
-            <!-- 级联选择器 -->
-            <el-cascader
-              v-else-if="item.type === 'cascader'"
-              v-model="formData[item.field]"
-              v-bind="item.props"
-              :options="getOptions(item)"
-              :placeholder="item.placeholder || `请选择${item.label}`"
-              clearable
-              @change="handleFilterChange"
-            />
-          </el-form-item>
-        </template>
-
-        <!-- 操作按钮 -->
-        <div class="filter-actions">
-          <el-button type="primary" @click="handleSubmit">查询</el-button>
-          <el-button @click="handleReset">重置</el-button>
-          <el-button 
-            v-if="enableAdvancedFilter && hasAdvancedFields" 
-            type="primary" 
-            text
-            @click="toggleAdvanced"
-          >
-            {{ isAdvanced ? '收起' : '展开' }}
-            <el-icon>
-              <ArrowUpIcon v-if="isAdvanced" />
-              <ArrowDownIcon v-else />
-            </el-icon>
-          </el-button>
-        </div>
-      </div>
-
-      <!-- 高级过滤区域 -->
-      <div v-if="enableAdvancedFilter && hasAdvancedFields" class="advanced-filter" :class="{ active: isAdvanced }">
-        <el-row :gutter="20">
-          <el-col
-            v-for="item in advancedFilterItems"
-            :key="item.field"
-            :span="item.colSpan || 8"
-          >
-            <el-form-item
-              :label="item.label"
-              :prop="item.field"
-              :rules="item.rules"
-            >
-              <!-- 复用上面的表单项模板 -->
+            <div class="form-item-content" :style="getItemStyle(item)">
               <component
-                :is="getFormComponent(item.type)"
+                :is="getFormItemComponent(item.type)"
                 v-model="formData[item.field]"
                 v-bind="getComponentProps(item)"
-                @change="handleFilterChange"
+                @change="handleItemChange"
               >
-                <template v-if="hasOptions(item.type)">
-                  <component
-                    :is="getOptionComponent(item.type)"
+                <template v-if="item.type === 'select'" #default>
+                  <el-option
                     v-for="option in getOptions(item)"
                     :key="option.value"
                     :label="option.label"
@@ -170,79 +35,124 @@
                   />
                 </template>
               </component>
-            </el-form-item>
+            </div>
+          </el-form-item>
+        </el-col>
+
+        <!-- 操作按钮 -->
+        <el-col :span="6">
+          <el-form-item :label-width="0">
+            <div class="filter-actions">
+              <el-button type="primary" @click="handleSearch">查询</el-button>
+              <el-button @click="handleReset">重置</el-button>
+              <el-button
+                v-if="enableAdvancedFilter && hasAdvancedItems"
+                type="text"
+                @click="toggleAdvanced"
+              >
+                {{ showAdvanced ? '收起' : '展开' }}
+                <el-icon class="advanced-icon" :class="{ 'is-active': showAdvanced }">
+                  <arrow-up />
+                </el-icon>
+              </el-button>
+            </div>
+          </el-form-item>
+        </el-col>
+
+        <!-- 高级筛选项 -->
+        <template v-if="enableAdvancedFilter && hasAdvancedItems">
+          <el-col :span="24" v-show="showAdvanced">
+            <div class="advanced-filters">
+              <el-row :gutter="16">
+                <el-col
+                  v-for="item in advancedFilterItems"
+                  :key="item.field"
+                  :span="item.colSpan || 6"
+                >
+                  <el-form-item
+                    :label="item.label"
+                    :prop="item.field"
+                    :rules="item.rules"
+                    :label-width="item.labelWidth"
+                  >
+                    <div class="form-item-content" :style="getItemStyle(item)">
+                      <component
+                        :is="getFormItemComponent(item.type)"
+                        v-model="formData[item.field]"
+                        v-bind="getComponentProps(item)"
+                        @change="handleItemChange"
+                      >
+                        <template v-if="item.type === 'select'" #default>
+                          <el-option
+                            v-for="option in getOptions(item)"
+                            :key="option.value"
+                            :label="option.label"
+                            :value="option.value"
+                          />
+                        </template>
+                      </component>
+                    </div>
+                  </el-form-item>
+                </el-col>
+              </el-row>
+            </div>
           </el-col>
-        </el-row>
-      </div>
+        </template>
+      </el-row>
     </el-form>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { ArrowUp as ArrowUpIcon, ArrowDown as ArrowDownIcon } from '@element-plus/icons-vue'
+import { ArrowUp } from '@element-plus/icons-vue'
 import type { FormInstance } from 'element-plus'
-import type { FilterFormItem, FilterChangeEvent } from '../types'
+import type { FilterFormItem } from '../types'
 
-const props = withDefaults(defineProps<{
-  filterConfig?: FilterFormItem[]
+interface ListFilterProps {
+  filterConfig: FilterFormItem[]
   enableAdvancedFilter?: boolean
-}>(), {
+  labelWidth?: string | number
+  itemWidth?: string | number
+}
+
+interface ListFilterEmits {
+  (e: 'filter-change', event: { values: Record<string, any>, isAdvanced: boolean }): void
+}
+
+const props = withDefaults(defineProps<ListFilterProps>(), {
   filterConfig: () => [],
-  enableAdvancedFilter: false
+  enableAdvancedFilter: false,
+  labelWidth: '80px',
+  itemWidth: '200px'
 })
 
-const emit = defineEmits<{
-  (e: 'filter-change', event: FilterChangeEvent): void
-}>()
+const emit = defineEmits<ListFilterEmits>()
 
 // 表单实例
 const formRef = ref<FormInstance>()
 // 表单数据
 const formData = ref<Record<string, any>>({})
-// 是否显示高级搜索
-const isAdvanced = ref(false)
+// 是否显示高级筛选
+const showAdvanced = ref(false)
 
-// 表单验证规则
-const formRules = computed(() => {
-  const rules: Record<string, any> = {}
-  props.filterConfig.forEach(item => {
-    if (item.rules) {
-      rules[item.field] = item.rules
-    }
-  })
-  return rules
-})
-
-// 简单过滤项
-const simpleFilterItems = computed(() => {
+// 常规筛选项
+const normalFilterItems = computed(() => {
   return props.filterConfig.filter(item => !item.advanced)
 })
 
-// 高级过滤项
+// 高级筛选项
 const advancedFilterItems = computed(() => {
   return props.filterConfig.filter(item => item.advanced)
 })
 
-// 是否有高级字段
-const hasAdvancedFields = computed(() => {
+// 是否有高级筛选项
+const hasAdvancedItems = computed(() => {
   return advancedFilterItems.value.length > 0
 })
 
-// 获取选项数据
-const getOptions = (item: FilterFormItem) => {
-  if (typeof item.options === 'function') {
-    // 如果是函数，则调用获取数据
-    item.options().then(options => {
-      item.options = options
-    })
-    return []
-  }
-  return item.options || []
-}
-
-// 获取表单组件
-const getFormComponent = (type: string) => {
+// 获取表单项组件
+const getFormItemComponent = (type: string): string => {
   const componentMap: Record<string, string> = {
     input: 'el-input',
     select: 'el-select',
@@ -253,89 +163,105 @@ const getFormComponent = (type: string) => {
     radio: 'el-radio-group',
     cascader: 'el-cascader'
   }
-  return componentMap[type]
-}
-
-// 获取选项组件
-const getOptionComponent = (type: string) => {
-  const componentMap: Record<string, string> = {
-    select: 'el-option',
-    checkbox: 'el-checkbox',
-    radio: 'el-radio'
-  }
-  return componentMap[type]
-}
-
-// 判断是否有选项
-const hasOptions = (type: string) => {
-  return ['select', 'checkbox', 'radio'].includes(type)
+  return componentMap[type] || 'el-input'
 }
 
 // 获取组件属性
-const getComponentProps = (item: FilterFormItem) => {
+const getComponentProps = (item: FilterFormItem): Record<string, any> => {
   const baseProps = {
     placeholder: item.placeholder || `请输入${item.label}`,
     clearable: true,
     ...item.props
   }
 
-  const typeProps: Record<string, any> = {
-    daterange: {
+  if (item.type === 'daterange') {
+    return {
+      ...baseProps,
       type: 'daterange',
-      rangeSeparator: '至',
       startPlaceholder: '开始日期',
-      endPlaceholder: '结束日期'
+      endPlaceholder: '结束日期',
+      valueFormat: 'YYYY-MM-DD'
     }
   }
 
+  if (item.type === 'date') {
+    return {
+      ...baseProps,
+      type: 'date',
+      valueFormat: 'YYYY-MM-DD'
+    }
+  }
+
+  return baseProps
+}
+
+// 获取表单项样式
+const getItemStyle = (item: FilterFormItem): Record<string, string> => {
   return {
-    ...baseProps,
-    ...(typeProps[item.type] || {})
+    width: `${item.itemWidth || props.itemWidth}`.replace(/^(\d+)$/, '$1px')
   }
 }
 
-// 切换高级搜索
-const toggleAdvanced = () => {
-  isAdvanced.value = !isAdvanced.value
+// 获取选项数据
+const getOptions = (item: FilterFormItem): { label: string; value: any }[] => {
+  if (typeof item.options === 'function') {
+    // 如果是函数，则调用获取数据
+    item.options().then(options => {
+      // 更新选项数据
+      if (Array.isArray(options)) {
+        item.options = options;
+      }
+    });
+    return [];
+  }
+  return Array.isArray(item.options) ? item.options : [];
 }
 
-// 处理过滤条件变化
-const handleFilterChange = () => {
+// 处理表单项变化
+const handleItemChange = (): void => {
   emit('filter-change', {
     values: formData.value,
-    isAdvanced: isAdvanced.value
+    isAdvanced: showAdvanced.value
   })
 }
 
-// 提交表单
-const handleSubmit = async () => {
+// 处理查询
+const handleSearch = async (): Promise<void> => {
   if (!formRef.value) return
   
   try {
     await formRef.value.validate()
-    handleFilterChange()
+    emit('filter-change', {
+      values: formData.value,
+      isAdvanced: showAdvanced.value
+    })
   } catch (error) {
-    console.error('表单验证失败:', error)
+    console.error('Form validation failed:', error)
   }
 }
 
-// 重置表单
-const handleReset = () => {
+// 处理重置
+const handleReset = (): void => {
   if (!formRef.value) return
   
   formRef.value.resetFields()
-  handleFilterChange()
+  emit('filter-change', {
+    values: formData.value,
+    isAdvanced: showAdvanced.value
+  })
+}
+
+// 切换高级筛选
+const toggleAdvanced = (): void => {
+  showAdvanced.value = !showAdvanced.value
 }
 
 // 初始化表单数据
 onMounted(() => {
-  const initialData: Record<string, any> = {}
+  // 初始化表单数据
   props.filterConfig.forEach(item => {
-    if (item.defaultValue !== undefined) {
-      initialData[item.field] = item.defaultValue
-    }
+    formData.value[item.field] = item.defaultValue !== undefined ? item.defaultValue : null
   })
-  formData.value = initialData
 })
 </script>
 
@@ -344,35 +270,53 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.simple-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  align-items: flex-start;
+.filter-form {
+  background-color: var(--el-bg-color);
+  padding: 16px;
+  border-radius: 4px;
+}
+
+.form-item-content {
+  width: 100%;
 }
 
 .filter-actions {
   display: flex;
   align-items: center;
   gap: 8px;
+  height: 32px; /* 与表单项保持一致的高度 */
 }
 
-.advanced-filter {
+.advanced-filters {
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid var(--el-border-color-light);
-  display: none;
+  border-top: 1px dashed var(--el-border-color);
 }
 
-.advanced-filter.active {
-  display: block;
+.advanced-icon {
+  transition: transform 0.3s;
+  margin-left: 4px;
+}
+
+.advanced-icon.is-active {
+  transform: rotate(180deg);
 }
 
 :deep(.el-form-item) {
+  margin-bottom: 16px;
+}
+
+:deep(.el-form-item:last-child) {
   margin-bottom: 0;
 }
 
-:deep(.el-form-item__content) {
-  min-width: 200px;
+/* 确保按钮表单项没有底部边距 */
+:deep(.filter-actions .el-form-item) {
+  margin-bottom: 0;
+}
+
+/* 调整按钮组的垂直对齐 */
+:deep(.filter-actions .el-button) {
+  margin-top: 1px;
 }
 </style> 

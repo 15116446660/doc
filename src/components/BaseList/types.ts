@@ -1,5 +1,15 @@
 import type { FormItemRule } from 'element-plus'
 
+// Axios 响应类型
+export interface AxiosResponse<T = any> {
+  data: T
+  status: number
+  statusText: string
+  headers: Record<string, string>
+  config: any
+  request?: any
+}
+
 // 过滤条件表单项类型
 export type FilterFormItemType = 
   | 'input' 
@@ -31,7 +41,16 @@ export interface FilterFormItem {
   props?: Record<string, any> // 透传给表单控件的属性
   advanced?: boolean // 是否为高级筛选项
   colSpan?: number // 栅格布局占用列数
+  labelWidth?: string | number // 单个表单项的标签宽度
+  itemWidth?: string | number // 单个表单项的整体宽度
   [key: string]: any
+}
+
+// 过滤表单配置
+export interface FilterConfig {
+  labelWidth?: string | number // 统一的表单项标签宽度
+  itemWidth?: string | number // 统一的表单项整体宽度
+  items: FilterFormItem[] // 过滤条件表单项
 }
 
 // 分页配置
@@ -69,7 +88,7 @@ export interface TableColumn {
 // 列表组件属性
 export interface BaseListProps {
   // 过滤条件配置
-  filterConfig?: FilterFormItem[]
+  filterConfig?: FilterFormItem[] | FilterConfig
   // 是否启用高级搜索
   enableAdvancedFilter?: boolean
   // 是否启用视图切换
@@ -92,6 +111,8 @@ export interface BaseListProps {
   cardContainerProps?: Record<string, any>
   // 表格列配置
   columns?: TableColumn[]
+  // 列表标题
+  title?: string
 }
 
 // 过滤条件变更事件
@@ -108,4 +129,19 @@ export interface BaseListEmits {
   (e: 'size-change', size: number): void
   (e: 'selection-change', selection: any[]): void
   (e: 'sort-change', sort: { prop: string, order: string }): void
+}
+
+// 通用API响应接口
+export interface ApiResponse<T = any> {
+  code: number
+  data: T
+  message?: string
+}
+
+// 分页响应接口
+export interface PaginationResponse<T = any> {
+  list: T[]
+  total: number
+  page?: number
+  limit?: number
 } 
