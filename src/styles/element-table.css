@@ -1,0 +1,237 @@
+/* Element UI 表格全局样式美化 */
+
+/* 表格整体样式 */
+.el-table {
+  --el-table-border-color: #ebeef5;
+  --el-table-header-bg-color: #f5f7fa;
+  --el-table-row-hover-bg-color: #f5f7fa;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* 表头样式 */
+.el-table th.el-table__cell {
+  background-color: var(--el-table-header-bg-color);
+  color: #606266;
+  font-weight: 600;
+  text-align: left;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--el-table-border-color);
+}
+
+/* 表格单元格样式 */
+.el-table td.el-table__cell {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--el-table-border-color);
+}
+
+/* 表格行悬停效果 */
+.el-table tr:hover > td.el-table__cell {
+  background-color: var(--el-table-row-hover-bg-color);
+}
+
+/* 表格斑马纹 */
+.el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background-color: #fafafa;
+}
+
+/* 表格边框 */
+.el-table--border::after,
+.el-table--border::before,
+.el-table__inner-wrapper::after,
+.el-table__inner-wrapper::before {
+  background-color: var(--el-table-border-color);
+}
+
+/* 表格固定列阴影 */
+.el-table__fixed-right-patch {
+  background-color: var(--el-table-header-bg-color);
+}
+
+.el-table .fixed-right-shadow,
+.el-table .fixed-left-shadow {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* 空数据状态 */
+.el-table__empty-block {
+  min-height: 120px;
+}
+
+.el-table__empty-text {
+  color: #909399;
+}
+
+/* 表格行选中状态 */
+.el-table__body tr.current-row > td.el-table__cell {
+  background-color: rgba(24, 144, 255, 0.1);
+}
+
+/* 表格内容垂直居中 */
+.el-table .cell {
+  display: flex;
+  align-items: center;
+  line-height: 1.5;
+}
+
+/* 表格内的按钮组样式 */
+.el-table .cell .table-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* 表格分页器样式 */
+.el-pagination {
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
+/* 表格中的状态标签样式 */
+.el-table .cell .el-tag {
+  margin-right: 0;
+}
+
+/* 表格内的图标样式 */
+.el-table .cell .el-icon {
+  vertical-align: middle;
+  margin-right: 5px;
+}
+
+/* 进度条样式 */
+.el-table .cell .el-progress {
+  width: 100%;
+}
+
+/* 表格中的头像样式 */
+.el-table .cell .el-avatar {
+  vertical-align: middle;
+  margin-right: 8px;
+}
+
+/* 项目表格特定样式 */
+
+/* 状态标签 */
+.el-table .status-tag {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.el-table .status-tag.high-risk {
+  background-color: rgba(245, 108, 108, 0.1);
+  color: #f56c6c;
+}
+
+.el-table .status-tag.in-progress {
+  background-color: rgba(64, 158, 255, 0.1);
+  color: #409eff;
+}
+
+.el-table .status-tag.low-risk {
+  background-color: rgba(103, 194, 58, 0.1);
+  color: #67c23a;
+}
+
+.el-table .status-tag.high {
+  background-color: rgba(230, 162, 60, 0.1);
+  color: #e6a23c;
+}
+
+/* 项目进度条 */
+.el-table .project-progress {
+  width: 100%;
+}
+
+.el-table .project-progress .el-progress-bar__outer {
+  background-color: #e9ecef;
+  border-radius: 4px;
+}
+
+.el-table .project-progress .el-progress-bar__inner {
+  border-radius: 4px;
+}
+
+.el-table .project-progress .el-progress__text {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+/* 项目负责人 */
+.el-table .project-owner {
+  display: flex;
+  align-items: center;
+}
+
+.el-table .project-owner .avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  margin-right: 8px;
+  background-color: #f0f2f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  color: #fff;
+}
+
+.el-table .project-owner .name {
+  font-weight: 500;
+}
+
+.el-table .project-owner .role {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 2px;
+}
+
+/* 操作按钮 */
+.el-table .operate-btns {
+  display: flex;
+  gap: 8px;
+}
+
+.el-table .operate-btns .el-button {
+  padding: 4px 8px;
+}
+
+.el-table .operate-btns .edit-btn {
+  color: #409eff;
+}
+
+.el-table .operate-btns .delete-btn {
+  color: #f56c6c;
+}
+
+/* 项目类型 */
+.el-table .project-type {
+  color: #606266;
+  font-size: 13px;
+}
+
+/* 项目名称列样式 */
+.el-table .project-name-cell {
+  display: flex;
+  align-items: center;
+}
+
+.el-table .project-name-cell .project-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: #f0f2f5;
+  margin-right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-weight: 500;
+}
+
+.el-table .project-name-cell .project-name {
+  font-weight: 500;
+  color: #303133;
+} 

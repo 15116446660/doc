@@ -1,0 +1,129 @@
+/* Element UI 下拉菜单全局样式美化 */
+
+/* 下拉面板基础样式 */
+.el-select-dropdown {
+  padding: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border: none;
+  margin: 4px 0;
+  background-color: var(--el-bg-color);
+}
+
+/* 下拉选项基础样式 */
+.el-select-dropdown__item {
+  height: 32px;
+  line-height: 32px;
+  padding: 0 12px;
+  margin: 0 4px;
+  border-radius: var(--el-border-radius-small);
+  color: var(--el-text-color-regular);
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+/* 下拉选项悬停状态 */
+.el-select-dropdown__item.hover,
+.el-select-dropdown__item:hover {
+  color: var(--el-color-primary);
+  background-color: var(--el-color-primary-light-9) !important;
+}
+
+/* 下拉选项选中状态 */
+.el-select-dropdown__item.selected {
+  color: var(--el-color-primary);
+  font-weight: 500;
+  background-color: var(--el-color-primary-light-9) !important;
+}
+
+/* 下拉选项选中且悬停状态 */
+.el-select-dropdown__item.selected.hover,
+.el-select-dropdown__item.selected:hover {
+  background-color: var(--el-color-primary-light-8) !important;
+}
+
+/* 下拉分组标题样式 */
+.el-select-group__title {
+  padding: 0 16px;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  font-weight: normal;
+  height: 32px;
+  line-height: 32px;
+  margin: 0 4px;
+}
+
+/* 下拉空状态样式 */
+.el-select-dropdown__empty {
+  padding: 8px 12px;
+  margin: 0 4px;
+  text-align: center;
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+}
+
+/* 下拉面板滚动条样式 */
+.el-select-dropdown__wrap {
+  max-height: 274px;
+}
+
+.el-scrollbar__thumb {
+  background-color: var(--el-text-color-placeholder);
+  opacity: 0.3;
+}
+
+.el-scrollbar__thumb:hover {
+  opacity: 0.5;
+}
+
+/* 多选标签样式 */
+.el-select .el-select__tags {
+  padding: 3px 0;
+}
+
+.el-select .el-tag {
+  background-color: var(--el-color-primary-light-9);
+  border-color: transparent;
+  color: var(--el-color-primary);
+  height: 24px;
+  line-height: 24px;
+  border-radius: var(--el-border-radius-small);
+  padding: 0 8px;
+  margin: 2px 4px 2px 0;
+}
+
+.el-select .el-tag .el-tag__close {
+  color: var(--el-color-primary);
+  right: -4px;
+}
+
+.el-select .el-tag .el-tag__close:hover {
+  background-color: var(--el-color-primary);
+  color: white;
+}
+
+/* 下拉箭头样式 */
+.el-select .el-input .el-select__caret {
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+  transition: transform 0.3s ease;
+}
+
+.el-select .el-input .el-select__caret.is-reverse {
+  transform: rotateZ(180deg);
+}
+
+/* 选择器禁用状态 */
+.el-select.is-disabled .el-input__wrapper {
+  background-color: var(--el-fill-color-light);
+  cursor: not-allowed;
+}
+
+/* 下拉选项禁用状态 */
+.el-select-dropdown__item.is-disabled {
+  color: var(--el-text-color-placeholder);
+  cursor: not-allowed;
+}
+
+.el-select-dropdown__item.is-disabled:hover {
+  background-color: transparent;
+} 

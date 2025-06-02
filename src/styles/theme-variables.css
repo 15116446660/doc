@@ -1,0 +1,62 @@
+:root {
+  /* 主色系 - 蓝色 */
+  --el-color-primary: #2563eb;
+  --el-color-primary-light-1: #3b74ed;
+  --el-color-primary-light-2: #5185ef;
+  --el-color-primary-light-3: #6796f1;
+  --el-color-primary-light-4: #7da7f3;
+  --el-color-primary-light-5: #93b8f5;
+  --el-color-primary-light-6: #a9c9f7;
+  --el-color-primary-light-7: #bfdaf9;
+  --el-color-primary-light-8: #d5ebfb;
+  --el-color-primary-light-9: #eaf5fd;
+  --el-color-primary-dark-1: #2159d4;
+  
+  /* 辅助色系 - 紫色 */
+  --el-color-secondary: #9333ea;
+  --el-color-secondary-light-1: #9f4dec;
+  --el-color-secondary-light-2: #ab67ee;
+  --el-color-secondary-light-3: #b781f0;
+  --el-color-secondary-light-4: #c39bf2;
+  --el-color-secondary-light-5: #cfb5f4;
+  --el-color-secondary-light-6: #dbcff6;
+  --el-color-secondary-light-7: #e7e9f8;
+  --el-color-secondary-light-8: #f3f3fa;
+  --el-color-secondary-light-9: #fbfbfd;
+  --el-color-secondary-dark-1: #842ed3;
+  
+  /* 功能色 */
+  --el-color-success: #10b981;
+  --el-color-warning: #f59e0b;
+  --el-color-danger: #ef4444;
+  --el-color-error: #ef4444;
+  --el-color-info: #64748b;
+  
+  /* 中性色 */
+  --el-text-color-primary: #1e293b;
+  --el-text-color-regular: #334155;
+  --el-text-color-secondary: #64748b;
+  --el-text-color-placeholder: #94a3b8;
+  --el-border-color: #e2e8f0;
+  --el-border-color-light: #f1f5f9;
+  --el-border-color-lighter: #f8fafc;
+  --el-border-color-hover: #cbd5e1;
+  --el-fill-color: #f8fafc;
+  --el-fill-color-light: #f1f5f9;
+  --el-fill-color-blank: #ffffff;
+  --el-bg-color: #ffffff;
+  
+  /* 渐变色 */
+  --el-gradient-primary: linear-gradient(to right, #2563eb, #9333ea);
+  
+  /* 边框圆角 */
+  --el-border-radius-base: 4px;
+  --el-border-radius-small: 4px;
+  --el-border-radius-round: 20px;
+  --el-border-radius-circle: 100%;
+  
+  /* 阴影 */
+  --el-box-shadow-light: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --el-box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --el-box-shadow-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+} 

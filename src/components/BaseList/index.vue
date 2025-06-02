@@ -20,20 +20,22 @@
       <div class="right-section">
         <slot name="header-right">
           <div v-if="enableViewSwitch" class="view-toggle">
-            <el-button-group>
-              <el-button
-                :type="viewType === 'table' ? 'primary' : ''"
-                @click="handleViewChange('table')"
-              >
-                <el-icon><List /></el-icon>
-              </el-button>
-              <el-button
-                :type="viewType === 'cards' ? 'primary' : ''"
+            <div class="view-toggle-buttons">
+              <button 
+                class="view-btn" 
+                :class="{ 'active': viewType === 'cards' }"
                 @click="handleViewChange('cards')"
               >
                 <el-icon><Grid /></el-icon>
-              </el-button>
-            </el-button-group>
+              </button>
+              <button 
+                class="view-btn" 
+                :class="{ 'active': viewType === 'table' }"
+                @click="handleViewChange('table')"
+              >
+                <el-icon><List /></el-icon>
+              </button>
+            </div>
           </div>
         </slot>
       </div>
@@ -47,6 +49,8 @@
         ref="tableRef"
         v-bind="tableProps"
         :data="list"
+        stripe
+        border
         @selection-change="handleSelectionChange"
         @sort-change="handleSortChange"
       >
@@ -131,8 +135,7 @@ import type {
   TableColumn,
   ApiResponse,
   PaginationResponse,
-  FilterFormItem,
-  FilterConfig
+  FilterFormItem
 } from './types'
 
 const props = withDefaults(defineProps<BaseListProps>(), {
@@ -163,7 +166,7 @@ const filterItems = computed<FilterFormItem[]>(() => {
   
   // 如果是FilterConfig类型
   if ('items' in props.filterConfig) {
-    return props.filterConfig.items
+    return (props.filterConfig as any).items
   }
   
   // 如果是FilterFormItem[]类型
@@ -175,8 +178,8 @@ const filterLabelWidth = computed(() => {
   if (!props.filterConfig) return '80px' // 默认宽度
   
   // 如果是FilterConfig类型且定义了labelWidth
-  if ('items' in props.filterConfig && props.filterConfig.labelWidth !== undefined) {
-    return props.filterConfig.labelWidth
+  if ('items' in props.filterConfig && (props.filterConfig as any).labelWidth !== undefined) {
+    return (props.filterConfig as any).labelWidth
   }
   
   return '80px' // 默认宽度
@@ -187,8 +190,8 @@ const filterItemWidth = computed(() => {
   if (!props.filterConfig) return '200px' // 默认宽度
   
   // 如果是FilterConfig类型且定义了itemWidth
-  if ('items' in props.filterConfig && props.filterConfig.itemWidth !== undefined) {
-    return props.filterConfig.itemWidth
+  if ('items' in props.filterConfig && (props.filterConfig as any).itemWidth !== undefined) {
+    return (props.filterConfig as any).itemWidth
   }
   
   return '200px' // 默认宽度
@@ -506,5 +509,46 @@ defineExpose({
 
 :deep(.el-loading-mask) {
   background-color: var(--el-mask-color);
+}
+
+.view-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  background-color: var(--el-fill-color-light);
+  border-radius: 4px;
+}
+
+.view-toggle-buttons {
+  display: flex;
+  background-color: var(--el-fill-color-light);
+  border-radius: 4px;
+  padding: 2px;
+}
+
+.view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  color: var(--el-text-color-secondary);
+}
+
+.view-btn.active {
+  background-color: var(--el-color-primary);
+  color: var(--el-color-white);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.view-btn:hover:not(.active) {
+  background-color: var(--el-fill-color);
+  color: var(--el-text-color-primary);
 }
 </style> 

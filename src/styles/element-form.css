@@ -1,0 +1,157 @@
+/* Element UI 表单控件全局样式美化 */
+
+/* 输入框基础样式 */
+.el-input__wrapper {
+  background-color: var(--el-fill-color-blank);
+  box-shadow: 0 0 0 1px var(--el-border-color) !important;
+  padding: 1px 15px !important;
+  height: 32px;
+  transition: all 0.2s;
+}
+
+.el-input__wrapper:hover {
+  box-shadow: 0 0 0 1px var(--el-border-color-hover) !important;
+}
+
+.el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary) !important;
+}
+
+/* 搜索图标样式 */
+.el-input__prefix {
+  color: var(--el-text-color-secondary);
+}
+
+/* 日期选择器样式 */
+.el-date-editor {
+  --el-date-editor-width: 100% !important;
+}
+
+.el-date-range-picker {
+  --el-date-range-picker-panel-border-radius: 8px;
+}
+
+.el-date-range-picker__content {
+  padding: 8px;
+}
+
+.el-date-range-picker__header {
+  margin: 0;
+  padding: 8px;
+}
+
+.el-picker-panel {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* 表单项标签样式 */
+.el-form-item__label {
+  font-weight: 500;
+  color: var(--el-text-color-regular);
+  padding-right: 12px;
+}
+
+/* 表单项间距 */
+.el-form--inline .el-form-item {
+  margin-right: 16px;
+  margin-bottom: 16px;
+}
+
+/* 搜索框特殊样式 */
+.search-input .el-input__wrapper {
+  background-color: var(--el-fill-color-blank);
+}
+
+.search-input .el-input__inner::placeholder {
+  color: var(--el-text-color-placeholder);
+}
+
+/* 禁用状态样式 */
+.el-input.is-disabled .el-input__wrapper {
+  background-color: var(--el-fill-color);
+  box-shadow: 0 0 0 1px var(--el-border-color-light) !important;
+}
+
+/* 错误状态样式 */
+.el-form-item.is-error .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--el-color-danger) !important;
+}
+
+/* 清除按钮样式 */
+.el-input__suffix {
+  color: var(--el-text-color-secondary);
+}
+
+.el-input__suffix:hover {
+  color: var(--el-text-color-regular);
+}
+
+/* 表单项组样式 */
+.el-form-item__content {
+  display: flex;
+  align-items: center;
+}
+
+/* 搜索按钮组样式 */
+.search-buttons {
+  display: flex;
+  gap: 8px;
+  margin-left: 16px;
+}
+
+.search-buttons .el-button {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* 高级搜索展开按钮样式 */
+.advanced-search-toggle {
+  color: var(--el-text-color-secondary);
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  margin-left: 16px;
+}
+
+.advanced-search-toggle:hover {
+  color: var(--el-color-primary);
+}
+
+.advanced-search-toggle .el-icon {
+  margin-left: 4px;
+  transition: transform 0.3s;
+}
+
+/* Select 组件样式 */
+.el-select .el-input__wrapper {
+  cursor: pointer;
+  height: 32px;
+}
+
+.el-select .el-input__wrapper.is-focus {
+  box-shadow: 0 0 0 1px var(--el-color-primary) !important;
+  background-color: var(--el-fill-color-blank);
+}
+
+.el-select .el-input__wrapper:hover {
+  background-color: var(--el-fill-color-light);
+}
+
+.el-select.is-focus .el-input__wrapper {
+  box-shadow: 0 0 0 1px var(--el-color-primary) !important;
+}
+
+/* Select 多选模式下的样式 */
+.el-select.el-select--multiple .el-input__wrapper {
+  padding: 3px 8px;
+  height: auto;
+  min-height: 32px;
+}
+
+.el-select.el-select--multiple .el-input__wrapper.is-focus {
+  background-color: var(--el-fill-color-blank);
+} 
