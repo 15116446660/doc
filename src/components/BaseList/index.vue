@@ -10,6 +10,11 @@
       @filter-change="handleFilterChange"
     />
 
+    <!-- 工具栏 -->
+    <div class="list-toolbar">
+      <slot name="toolbar"></slot>
+    </div>
+
     <!-- 视图切换和操作按钮 -->
     <div v-if="hasHeaderContent" class="list-header">
       <div class="left-section">
@@ -462,6 +467,14 @@ defineExpose({
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+}
+
+.list-toolbar {
+  margin: 16px 0;
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 12px;
 }
 
 .list-title {

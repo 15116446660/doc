@@ -46,6 +46,8 @@ export interface Project {
   members: string[]
   tags: string[]
   documents: number
+  logo?: string
+  leaderAvatar?: string
 }
 
 // 获取项目分类
