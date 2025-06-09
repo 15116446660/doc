@@ -26,13 +26,16 @@
         :expand-on-click-node="false"
         node-key="id"
         highlight-current
-        default-expand-all
+        :default-expanded-keys="defaultExpandedKeys"
         @node-click="handleNodeClick"
         @node-contextmenu="handleContextMenu"
         @node-expand="handleNodeExpand"
         @node-collapse="handleNodeCollapse"
+        :load="loadNode"
+        lazy
+        :render-after-expand="false"
       >
-        <template #default="{ node, data }">
+        <template #default="{ data }">
           <div class="custom-tree-node">
             <div class="node-content">
               <el-icon class="node-icon">
@@ -128,7 +131,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { ref, watch, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { Plus, EditPen, Delete, Search, Folder, FolderOpened } from '@element-plus/icons-vue'
 import type { ElTree } from 'element-plus'
@@ -149,8 +152,14 @@ const treeData = ref<TemplateType[]>([])
 // 树节点配置
 const defaultProps = {
   children: 'children',
-  label: 'typeName'
+  label: 'typeName',
+  isLeaf: (data: TemplateType) => !data.hasChildren
 }
+
+// 默认展开的节点keys
+const defaultExpandedKeys = ref<number[]>([])
+// 展开的节点keys
+const expandedKeys = ref<number[]>([])
 
 // 对话框控制
 const dialogVisible = ref(false)
@@ -182,11 +191,14 @@ const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
 const currentContextNode = ref<TemplateType | null>(null)
 
-// 展开的节点keys
-const expandedKeys = ref<number[]>([])
-
 // 监听搜索关键词变化
 watch(searchKeyword, (val) => {
+  if (val) {
+    // 搜索时展开所有节点以显示匹配结果
+    nextTick(() => {
+      treeRef.value?.expandAll()
+    })
+  }
   treeRef.value?.filter(val)
 })
 
@@ -211,27 +223,33 @@ const handleNodeCollapse = (data: TemplateType) => {
   }
 }
 
-// 初始化时设置所有展开的节点
-const initExpandedKeys = (nodes: TemplateType[]) => {
-  nodes.forEach(node => {
-    expandedKeys.value.push(node.id)
-    if (node.children && node.children.length > 0) {
-      initExpandedKeys(node.children)
+// 懒加载节点
+const loadNode = (node: any, resolve: (data: TemplateType[]) => void) => {
+  // 根节点
+  if (node.level === 0) {
+    // 加载一级节点
+    getTemplateTypeTree().then(data => {
+      // 保存顶级节点ID作为默认展开
+      defaultExpandedKeys.value = data.map(item => item.id)
+      expandedKeys.value = [...defaultExpandedKeys.value]
+      resolve(data)
+    }).catch(() => {
+      ElMessage.error('加载模板分类失败')
+      resolve([])
+    })
+  } else {
+    // 如果节点已经有children属性且不为空，直接使用
+    if (node.data.children && node.data.children.length > 0) {
+      resolve(node.data.children)
+      return
     }
-  })
-}
-
-// 加载树形数据
-const loadTreeData = async () => {
-  try {
-    const data = await getTemplateTypeTree()
-    treeData.value = data
-    // 初始化展开的节点
-    expandedKeys.value = []
-    initExpandedKeys(data)
-  } catch (error) {
-    console.error('加载模板分类失败:', error)
-    ElMessage.error('加载模板分类失败')
+    
+    // 模拟异步加载子节点
+    setTimeout(() => {
+      // 这里应该调用真实API获取子节点，这里仅作演示
+      const children = node.data.children || []
+      resolve(children)
+    }, 100)
   }
 }
 
@@ -261,6 +279,7 @@ const handleAdd = (data: TemplateType) => {
 // 编辑节点
 const handleEdit = (data: TemplateType) => {
   dialogType.value = 'edit'
+  parentNode.value = null
   formData.value = {
     ...data
   }
@@ -282,7 +301,8 @@ const handleDelete = async (data: TemplateType) => {
     
     await deleteTemplateType(data.id)
     ElMessage.success('删除成功')
-    await loadTreeData()
+    // 重新加载数据
+    treeRef.value?.reload()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除分类失败:', error)
@@ -308,7 +328,8 @@ const handleSubmit = async () => {
     }
     
     dialogVisible.value = false
-    await loadTreeData()
+    // 重新加载数据
+    treeRef.value?.reload()
   } catch (error) {
     console.error('保存分类失败:', error)
     ElMessage.error('保存失败')
@@ -349,7 +370,6 @@ const handleContextMenuAction = (action: 'add' | 'edit' | 'delete') => {
       handleAdd(currentContextNode.value)
       break
     case 'edit':
-      parentNode.value = null
       handleEdit(currentContextNode.value)
       break
     case 'delete':
@@ -376,9 +396,6 @@ onBeforeUnmount(() => {
   document.removeEventListener('click', handleClickOutside)
   document.removeEventListener('contextmenu', handleClickOutside)
 })
-
-// 初始化加载数据
-loadTreeData()
 </script>
 
 <style lang="scss" scoped>
