@@ -85,7 +85,7 @@
             </div>
             
             <!-- 标题 -->
-            <h3 class="title">{{ template.title || '产品需求文档模版' }}</h3>
+            <h3 class="title">{{ template.name || template.title || '产品需求文档模版' }}</h3>
           </div>
           
           <div class="header-right">
@@ -133,7 +133,7 @@
           </div>
           
           <!-- 标题 -->
-          <h3 class="title">{{ template.title || '产品需求文档模版' }}</h3>
+          <h3 class="title">{{ template.name || template.title || '产品需求文档模版' }}</h3>
         </template>
         
         <!-- 状态标签 -->
@@ -144,21 +144,24 @@
           <el-tag size="small" :type="getStatusType(template.status)">
             {{ template.status || '草稿' }}
           </el-tag>
+          <el-tag v-if="template.reviewStatus" size="small" type="warning">
+            {{ template.reviewName || template.reviewStatus }}
+          </el-tag>
         </div>
         
         <!-- 信息列表 -->
         <div class="info-list">
           <div class="info-item">
             <span class="info-label">适用范围:</span>
-            <span class="info-value">{{ template.applicableScope || '全部' }}</span>
+            <span class="info-value">{{ template.scope || template.applicableScope || '全部' }}</span>
           </div>
           <div class="info-item" v-if="layout === 'vertical' || !layout">
             <span class="info-label">文件类型:</span>
-            <span class="info-value">{{ template.categoryName || '文档模板' }}</span>
+            <span class="info-value">{{ template.typeName || template.type || 'XP1UDYNDS' }}</span>
           </div>
           <div class="info-item" v-if="layout === 'vertical' || !layout">
-            <span class="info-label">尾缀编码:</span>
-            <span class="info-value">{{ template.suffixCode || 'DOC' }}</span>
+            <span class="info-label">文件格式:</span>
+            <span class="info-value">{{ template.format || 'XP' }}</span>
           </div>
           <div class="info-item">
             <span class="info-label">标准类型:</span>
@@ -170,9 +173,9 @@
         <div class="author-info">
           <div class="author">
             <el-avatar :size="layout === 'horizontal' ? 20 : 24" class="avatar">
-              {{ template?.owner?.charAt(0) || '张' }}
+              {{ template?.creator?.charAt(0) || template?.owner?.charAt(0) || '张' }}
             </el-avatar>
-            <span class="author-name">{{ template.owner || '张小明' }}</span>
+            <span class="author-name">{{ template.creator || template.owner || '张小明' }}</span>
           </div>
           <div class="version">v{{ template.version || '2.1' }}</div>
         </div>

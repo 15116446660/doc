@@ -25,13 +25,19 @@
       <!-- 模板名称自定义插槽 -->
       <template #template-name="{ row }">
         <div class="template-name" @click="handleViewTemplate(row)">
-          <span class="template-title">{{ row.title || '未命名模板' }}</span>
+          <span class="template-title">{{ row.name || row.title || '未命名模板' }}</span>
         </div>
       </template>
 
       <!-- 状态自定义插槽 -->
       <template #status="{ row }">
         <el-tag :type="getStatusType(row.status)">{{ row.status || '未设置' }}</el-tag>
+      </template>
+      
+      <!-- 审核状态自定义插槽 -->
+      <template #review-status="{ row }">
+        <el-tag v-if="row.reviewStatus" type="warning">{{ row.reviewName || row.reviewStatus }}</el-tag>
+        <span v-else>-</span>
       </template>
 
       <!-- 启用状态自定义插槽 -->
@@ -46,13 +52,13 @@
         <el-tag>{{ row.categoryName || '未分类' }}</el-tag>
       </template>
 
-      <!-- 负责人自定义插槽 -->
-      <template #owner="{ row }">
+      <!-- 创建人自定义插槽 -->
+      <template #creator="{ row }">
         <div class="user-info">
           <el-avatar :size="24" :src="row.ownerAvatar">
-            {{ row?.owner?.charAt(0) || 'U' }}
+            {{ (row?.creator || row?.owner || 'U')?.charAt(0) }}
           </el-avatar>
-          <span>{{ row.owner || '未分配' }}</span>
+          <span>{{ row.creator || row.owner || '未分配' }}</span>
         </div>
       </template>
 
@@ -126,7 +132,7 @@ const columns = ref<TableColumn[]>([
     align: 'center'
   },
   {
-    prop: 'title',
+    prop: 'name',
     label: '模板名称',
     minWidth: 180,
     align: 'center',
@@ -141,27 +147,39 @@ const columns = ref<TableColumn[]>([
   },
   {
     prop: 'status',
-    label: '审核状态',
+    label: '状态',
     width: 100,
     slot: 'status'
   },
   {
-    prop: 'applicableScope',
+    prop: 'reviewStatus',
+    label: '审核状态',
+    width: 100,
+    slot: 'review-status'
+  },
+  {
+    prop: 'scope',
     label: '适用范围',
     width: 120,
     showOverflowTooltip: true
   },
   {
-    prop: 'categoryName',
-    label: '文件类型',
-    width: 150,
+    prop: 'type',
+    label: '类型',
+    width: 120,
     showOverflowTooltip: true
   },
   {
-    prop: 'suffixCode',
-    label: '尾缀编码',
-    width: 100,
-    showOverflowTooltip: true
+    prop: 'format',
+    label: '格式',
+    width: 80,
+    align: 'center'
+  },
+  {
+    prop: 'suffix',
+    label: '后缀',
+    width: 80,
+    align: 'center'
   },
   {
     prop: 'standardType',
@@ -170,16 +188,21 @@ const columns = ref<TableColumn[]>([
     showOverflowTooltip: true
   },
   {
-    prop: 'revisionContent',
-    label: '修制定内容',
+    prop: 'reviseContent',
+    label: '修订内容',
     width: 150,
     showOverflowTooltip: true
   },
   {
-    prop: 'owner',
+    prop: 'creator',
     label: '创建人',
     width: 100,
-    slot: 'owner'
+    slot: 'creator'
+  },
+  {
+    prop: 'createTime',
+    label: '创建时间',
+    width: 150
   },
   {
     prop: 'updateTime',
@@ -188,8 +211,9 @@ const columns = ref<TableColumn[]>([
   },
   {
     prop: 'version',
-    label: '当前版本',
-    width: 100
+    label: '版本',
+    width: 80,
+    align: 'center'
   },
   {
     label: '操作',

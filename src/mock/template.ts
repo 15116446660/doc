@@ -80,10 +80,10 @@ const templateCategories = [
 // 生成模板数据
 const generateTemplates = (count: number) => {
   const statusOptions = [
-    { status: '已发布', color: '#10B981' },
-    { status: '草稿', color: '#6B7280' },
-    { status: '审核中', color: '#F59E0B' },
-    { status: '已废弃', color: '#EF4444' }
+    { status: '已发布', reviewStatus: '', reviewName: '', color: '#10B981' },
+    { status: '草稿', reviewStatus: '', reviewName: '', color: '#6B7280' },
+    { status: '审核中', reviewStatus: 'IN_REVIEW', reviewName: '审核中', color: '#F59E0B' },
+    { status: '已废弃', reviewStatus: '', reviewName: '', color: '#EF4444' }
   ]
   
   const templates = []
@@ -93,13 +93,16 @@ const generateTemplates = (count: number) => {
     const subcategoryId = Math.floor(Math.random() * 2) + 1
     const categoryPath = `${categoryId}${subcategoryId}`
     
-    const version = `${Math.floor(Math.random() * 3) + 1}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 10)}`
+    const version = Math.floor(Math.random() * 3) + 1
     const createTime = Random.datetime('yyyy-MM-dd HH:mm:ss')
     const updateTime = Random.datetime('yyyy-MM-dd HH:mm:ss')
+    const templateCode = `0${i % 9 + 1}`
+    const title = Random.ctitle(4, 10)
     
     templates.push({
-      id: `template_${i}`,
-      title: Random.ctitle(4, 10),
+      id: i,
+      name: title,
+      title: title,
       categoryName: getCategoryName(categoryPath),
       status: statusOption.status,
       statusColor: statusOption.color,
@@ -109,7 +112,39 @@ const generateTemplates = (count: number) => {
       description: Random.cparagraph(1, 3),
       content: generateTemplateContent(),
       createTime,
-      updateTime
+      updateTime,
+      downloads: Math.floor(Math.random() * 1000),
+      favorite: Math.random() > 0.7,
+      
+      // 新增字段
+      type: "XP1UDYNDS",
+      typeName: null,
+      format: "XP",
+      templateCode,
+      fileCode: templateCode,
+      fileId: 100 + i,
+      suffix: "docx",
+      delFlag: 0,
+      reviewStatus: statusOption.reviewStatus,
+      reviewName: statusOption.reviewName,
+      isChecklist: null,
+      isExample: null,
+      picture: null,
+      projectId: null,
+      rejectReason: null,
+      reviseContent: null,
+      scope: "全部",
+      standardType: "优秀案例模版",
+      applicableScope: "全部",
+      suffixCode: "DOC",
+      templateDocumentName: `${templateCode} ${title}`,
+      tenantId: null,
+      url: `/template/2025/05/17/${Random.guid()}.docx`,
+      createUid: Math.floor(Math.random() * 10) + 1,
+      creator: "Zoco",
+      updateUid: null,
+      updater: null,
+      enableStatus: Math.random() > 0.3
     })
   }
   return templates

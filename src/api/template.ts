@@ -2,13 +2,14 @@ import { get, post, put, del } from './request'
 import type { OptionItem } from '@/components/BaseList/types'
 
 export interface Template {
-  id: string
-  title: string
-  categoryName: string
+  id: string | number
+  title?: string
+  name: string
+  categoryName?: string
   status: string
-  owner: string
+  owner?: string
   ownerAvatar?: string
-  version: string
+  version: string | number
   description?: string
   content?: string
   createTime: string
@@ -17,14 +18,37 @@ export interface Template {
   favorite?: boolean
   rating?: number
   templateFile?: string
-  templateType?: string
-  templateCode?: string
+  type: string
+  typeName?: string
+  templateCode: string
   applicableScope?: string
   suffixCode?: string
   standardType?: string
-  revisionContent?: string
   alias?: string
   enableStatus?: boolean
+  
+  // 新增字段
+  format: string
+  fileCode: string
+  fileId?: number
+  suffix: string
+  delFlag?: number
+  reviewStatus?: string
+  reviewName?: string
+  isChecklist?: boolean | null
+  isExample?: boolean | null
+  picture?: string | null
+  projectId?: string | number | null
+  rejectReason?: string | null
+  reviseContent?: string | null
+  scope?: string
+  templateDocumentName?: string
+  tenantId?: string | number | null
+  url?: string
+  createUid?: number
+  creator?: string
+  updateUid?: number | null
+  updater?: string | null
 }
 
 export interface TemplateQueryParams {

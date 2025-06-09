@@ -19,10 +19,10 @@
         </div>
       </div>
       <div class="project-card__actions">
-        <div class="project-card__priority" v-if="project.priority">
-          <el-tag :type="getPriorityType(project.priority)" size="small" effect="dark">
-            {{ project.priority }}
-          </el-tag>
+      <div class="project-card__priority" v-if="project.priority">
+        <el-tag :type="getPriorityType(project.priority)" size="small" effect="dark">
+          {{ project.priority }}
+        </el-tag>
         </div>
         <el-dropdown trigger="click" @command="handleCommand">
           <el-button class="more-button" link>
