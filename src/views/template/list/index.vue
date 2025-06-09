@@ -431,6 +431,7 @@ window.addEventListener('template-list-refresh', () => {
   height: 100%;
   padding: 20px;
   background-color: var(--el-bg-color);
+  border-radius: 8px;
 }
 
 .template-name {
