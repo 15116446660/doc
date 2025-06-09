@@ -101,11 +101,11 @@
               :template="item"
               :layout="cardLayout"
               @edit="handleEdit"
-              @copy="handleCopy"
+              @copy="handleDownload"
               @delete="handleDelete"
               @view="handleViewTemplate"
               @preview="handlePreviewTemplate"
-              @download="handleDownloadTemplate"
+              @download="handleDownload"
               @version-history="handleVersionHistory"
             />
           </template>
@@ -400,24 +400,6 @@ const handleEdit = (row: Template) => {
   createDialogVisible.value = true
 }
 
-// 处理复制
-const handleCopy = async (row: Template) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要复制模板"${row.title}"吗？`,
-      '复制确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
-      }
-    )
-    console.log('Copy:', row)
-  } catch {
-    // 用户取消复制
-  }
-}
-
 // 处理下载
 const handleDownload = async (row: Template) => {
   try {
@@ -432,7 +414,18 @@ const handleDownload = async (row: Template) => {
     )
     console.log('Download:', row)
     // 这里实现下载逻辑
-    handleDownloadTemplate(row)
+    // 可以使用浏览器的下载API或调用后端下载接口
+    // 示例：如果有文件URL，可以直接创建下载链接
+    if (row.url) {
+      const link = document.createElement('a')
+      link.href = row.url
+      link.download = `${row.name || row.title || '模板'}.${row.suffix?.toLowerCase() || 'docx'}`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } else {
+      console.error('模板没有可下载的URL')
+    }
   } catch {
     // 用户取消下载
   }
@@ -465,12 +458,6 @@ const handleViewTemplate = (template: Template) => {
 const handlePreviewTemplate = (template: Template) => {
   console.log('预览模板:', template)
   // 这里可以实现预览功能，例如打开一个预览对话框
-}
-
-// 处理下载模板
-const handleDownloadTemplate = (template: Template) => {
-  console.log('下载模板:', template)
-  // 这里可以实现下载功能
 }
 
 // 处理版本历史
