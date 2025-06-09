@@ -24,6 +24,7 @@ export interface Template {
   standardType?: string
   revisionContent?: string
   alias?: string
+  enableStatus?: boolean
 }
 
 export interface TemplateQueryParams {

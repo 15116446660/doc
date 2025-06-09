@@ -33,6 +33,13 @@
         <el-tag :type="getStatusType(row.status)">{{ row.status || '未设置' }}</el-tag>
       </template>
 
+      <!-- 启用状态自定义插槽 -->
+      <template #enable-status="{ row }">
+        <el-tag :type="row.enableStatus ? 'success' : 'info'">
+          {{ row.enableStatus ? '已启用' : '未启用' }}
+        </el-tag>
+      </template>
+
       <!-- 分类自定义插槽 -->
       <template #category="{ row }">
         <el-tag>{{ row.categoryName || '未分类' }}</el-tag>
@@ -63,6 +70,9 @@
           @copy="handleCopy"
           @delete="handleDelete"
           @view="handleViewTemplate"
+          @preview="handlePreviewTemplate"
+          @download="handleDownloadTemplate"
+          @version-history="handleVersionHistory"
         />
       </template>
     </base-list>
@@ -107,46 +117,77 @@ const columns = ref<TableColumn[]>([
     align: 'center'
   },
   {
-    prop: 'title',
-    label: '模板名称',
-    minWidth: 200,
+    prop: 'templateCode',
+    label: '模板编号',
+    width: 120,
     fixed: 'left',
-    align: 'center',
-    slot: 'template-name'
+    align: 'center'
   },
   {
-    prop: 'categoryName',
-    label: '分类',
+    prop: 'title',
+    label: '模板名称',
     minWidth: 180,
-    slot: 'category',
+    align: 'center',
+    slot: 'template-name',
     showOverflowTooltip: true
   },
   {
+    prop: 'enableStatus',
+    label: '启用状态',
+    width: 100,
+    slot: 'enable-status'
+  },
+  {
     prop: 'status',
-    label: '状态',
+    label: '审核状态',
     width: 100,
     slot: 'status'
   },
   {
-    prop: 'owner',
-    label: '负责人',
+    prop: 'applicableScope',
+    label: '适用范围',
     width: 120,
+    showOverflowTooltip: true
+  },
+  {
+    prop: 'categoryName',
+    label: '文件类型',
+    width: 150,
+    showOverflowTooltip: true
+  },
+  {
+    prop: 'suffixCode',
+    label: '尾缀编码',
+    width: 100,
+    showOverflowTooltip: true
+  },
+  {
+    prop: 'standardType',
+    label: '标准类型',
+    width: 120,
+    showOverflowTooltip: true
+  },
+  {
+    prop: 'revisionContent',
+    label: '修制定内容',
+    width: 150,
+    showOverflowTooltip: true
+  },
+  {
+    prop: 'owner',
+    label: '创建人',
+    width: 100,
     slot: 'owner'
   },
   {
-    prop: 'version',
-    label: '版本',
-    width: 100
-  },
-  {
     prop: 'updateTime',
-    label: '更新时间',
-    width: 180
+    label: '修改时间',
+    width: 150
   },
   {
-    prop: 'createTime',
-    label: '创建时间',
-    width: 180
+    prop: 'version',
+    label: '当前版本',
+    width: 100
   },
   {
     label: '操作',
@@ -319,6 +360,24 @@ const handleDelete = async (row: Template) => {
 // 处理查看模板
 const handleViewTemplate = (template: Template) => {
   router.push(`/template/detail/${template.id}`)
+}
+
+// 处理预览模板
+const handlePreviewTemplate = (template: Template) => {
+  console.log('预览模板:', template)
+  // 这里可以实现预览功能，例如打开一个预览对话框
+}
+
+// 处理下载模板
+const handleDownloadTemplate = (template: Template) => {
+  console.log('下载模板:', template)
+  // 这里可以实现下载功能
+}
+
+// 处理版本历史
+const handleVersionHistory = (template: Template) => {
+  console.log('查看版本历史:', template)
+  // 这里可以实现版本历史功能，例如打开一个版本历史对话框
 }
 
 // 处理对话框提交

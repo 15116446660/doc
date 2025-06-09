@@ -1,5 +1,12 @@
 <template>
-  <el-card class="template-card" :body-style="{ padding: '0' }" @click="$emit('view', template)">
+  <el-card 
+    ref="cardRef"
+    class="template-card" 
+    :body-style="{ padding: '0', height: '100%', display: 'flex', flexDirection: 'column' }" 
+    @click="handleCardClick"
+    @mouseenter="handleMouseEnter"
+    @mouseleave="handleMouseLeave"
+  >
     <!-- 文档封面区域 -->
     <div class="document-cover">
       <!-- 文档图标 -->
@@ -27,26 +34,83 @@
           <el-icon :size="20" :color="template.favorite ? '#F7BA2A' : '#909399'"><Star /></el-icon>
         </div>
       </div>
+      
+      <!-- 更多操作按钮和下拉菜单 -->
+      <el-dropdown 
+        class="more-dropdown" 
+        placement="bottom-end"
+        :hide-on-click="false"
+        @click.stop
+      >
+        <div class="more-actions" v-show="isHovered" @click.stop>
+          <el-icon :size="16"><MoreFilled /></el-icon>
+        </div>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item @click.stop="handlePreview">
+              <el-icon><View /></el-icon>
+              <span>预览</span>
+            </el-dropdown-item>
+            <el-dropdown-item @click.stop="handleDownload">
+              <el-icon><Download /></el-icon>
+              <span>下载</span>
+            </el-dropdown-item>
+            <el-dropdown-item @click.stop="handleEdit">
+              <el-icon><EditPen /></el-icon>
+              <span>编辑</span>
+            </el-dropdown-item>
+            <el-dropdown-item @click.stop="handleVersionHistory">
+              <el-icon><Timer /></el-icon>
+              <span>版本历史</span>
+            </el-dropdown-item>
+            <el-dropdown-item divided @click.stop="handleDelete" class="danger-item">
+              <el-icon><Delete /></el-icon>
+              <span>删除</span>
+            </el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
 
     <!-- 文档信息区域 -->
     <div class="card-content">
-      <!-- 标题和描述 -->
-      <div class="document-info">
-        <h3 class="title">{{ template.title || '产品需求文档模版' }}</h3>
-        <p class="description">{{ template.description || '标准的产品需求文档模版，包含完整的需求分析框架' }}</p>
+      <!-- 模板编号 -->
+      <div class="template-code">
+        <span class="label">编号:</span>
+        <span class="value">{{ template.templateCode || 'TMP-001' }}</span>
       </div>
-
-      <!-- 评分 -->
-      <div class="rating">
-        <el-rate
-          v-model="template.rating"
-          disabled
-          allow-half
-          :size="16"
-          :colors="['#F7BA2A', '#F7BA2A', '#F7BA2A']"
-        />
-        <span class="rating-value">({{ template.rating || 4.8 }})</span>
+      
+      <!-- 标题 -->
+      <h3 class="title">{{ template.title || '产品需求文档模版' }}</h3>
+      
+      <!-- 状态标签 -->
+      <div class="status-tags">
+        <el-tag size="small" :type="template.enableStatus ? 'success' : 'info'">
+          {{ template.enableStatus ? '已启用' : '未启用' }}
+        </el-tag>
+        <el-tag size="small" :type="getStatusType(template.status)">
+          {{ template.status || '草稿' }}
+        </el-tag>
+      </div>
+      
+      <!-- 信息列表 -->
+      <div class="info-list">
+        <div class="info-item">
+          <span class="info-label">适用范围:</span>
+          <span class="info-value">{{ template.applicableScope || '全部' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">文件类型:</span>
+          <span class="info-value">{{ template.categoryName || '文档模板' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">尾缀编码:</span>
+          <span class="info-value">{{ template.suffixCode || 'DOC' }}</span>
+        </div>
+        <div class="info-item">
+          <span class="info-label">标准类型:</span>
+          <span class="info-value">{{ template.standardType || '行业标准' }}</span>
+        </div>
       </div>
 
       <!-- 作者和版本 -->
@@ -65,32 +129,37 @@
         <el-icon :size="14"><Clock /></el-icon>
         {{ formatDate(template.updateTime) || '2024-01-20' }}
       </div>
-
-      <!-- 底部标签 -->
-      <div class="tags">
-        <span class="tag">需求</span>
-        <span class="tag">产品</span>
-        <span class="tag">文档</span>
-      </div>
     </div>
   </el-card>
 </template>
 
 <script setup lang="ts">
-import { Document, Star, Download, Clock, Picture } from '@element-plus/icons-vue'
+import { ref } from 'vue'
+import { 
+  Document, Star, Download, Clock, Picture, 
+  MoreFilled, View, EditPen, Delete, Timer
+} from '@element-plus/icons-vue'
 import type { Template } from '@/api/template'
 
-defineProps<{
+const props = defineProps<{
   template: Template
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   (e: 'edit', template: Template): void
   (e: 'copy', template: Template): void
   (e: 'delete', template: Template): void
   (e: 'view', template: Template): void
+  (e: 'preview', template: Template): void
+  (e: 'download', template: Template): void
+  (e: 'version-history', template: Template): void
 }>()
 
+// 鼠标悬浮状态
+const isHovered = ref(false)
+const cardRef = ref<HTMLElement | null>(null)
+
+// 格式化日期
 const formatDate = (date: string) => {
   if (!date) return ''
   return new Date(date).toLocaleDateString('zh-CN', {
@@ -99,12 +168,62 @@ const formatDate = (date: string) => {
     day: '2-digit'
   }).replace(/\//g, '-')
 }
+
+// 获取状态类型
+const getStatusType = (status: string) => {
+  const typeMap: Record<string, string> = {
+    '已发布': 'success',
+    '草稿': 'info',
+    '审核中': 'warning',
+    '已废弃': 'danger'
+  }
+  return typeMap[status] || 'info'
+}
+
+// 处理卡片点击
+const handleCardClick = () => {
+  emit('view', props.template)
+}
+
+// 处理预览
+const handlePreview = () => {
+  emit('preview', props.template)
+}
+
+// 处理下载
+const handleDownload = () => {
+  emit('download', props.template)
+}
+
+// 处理编辑
+const handleEdit = () => {
+  emit('edit', props.template)
+}
+
+// 处理版本历史
+const handleVersionHistory = () => {
+  emit('version-history', props.template)
+}
+
+// 处理删除
+const handleDelete = () => {
+  emit('delete', props.template)
+}
+
+// 鼠标事件处理
+const handleMouseEnter = () => {
+  isHovered.value = true
+}
+
+const handleMouseLeave = () => {
+  isHovered.value = false
+}
 </script>
 
 <style lang="scss" scoped>
 .template-card {
-  height: auto;
-  min-height: 380px;
+  height: 100%;
+  min-height: 420px;
   max-width: 280px;
   width: 100%;
   cursor: pointer;
@@ -114,9 +233,13 @@ const formatDate = (date: string) => {
   flex-direction: column;
   overflow: hidden;
   border: none;
+  position: relative;
 
   :deep(.el-card__body) {
     padding: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   &:hover {
@@ -145,6 +268,7 @@ const formatDate = (date: string) => {
   align-items: flex-start;
   position: relative;
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .document-icon-container {
@@ -248,119 +372,174 @@ const formatDate = (date: string) => {
   }
 }
 
-.card-content {
-  flex: 1;
-  padding: 16px;
+.more-actions {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.9);
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  background-color: #fff;
-}
-
-.document-info {
-  margin-bottom: 12px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
   
-  .title {
-    margin: 0;
-    font-size: 16px;
-    font-weight: 600;
-    color: #303133;
-    line-height: 24px;
+  &:hover {
+    background-color: #fff;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
   }
-
-  .description {
-    margin: 8px 0 0;
-    font-size: 13px;
-    color: #909399;
-    line-height: 20px;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+  
+  .el-icon {
+    color: #606266;
   }
 }
 
-.rating {
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  :deep(.el-rate__icon) {
-    margin-right: 2px;
-    font-size: 14px;
-  }
-
-  .rating-value {
-    color: #909399;
-    font-size: 13px;
+.more-dropdown {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 9;
+  
+  .more-dropdown-link {
+    display: block;
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
   }
 }
 
-.author-info {
-  margin-bottom: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  .author {
+:deep(.el-dropdown-menu) {
+  padding: 6px 0;
+  
+  .el-dropdown-item {
     display: flex;
     align-items: center;
-    gap: 8px;
+    padding: 8px 16px;
+    
+    .el-icon {
+      margin-right: 8px;
+      font-size: 16px;
+    }
+    
+    &.danger-item {
+      color: var(--el-color-danger);
+      
+      .el-icon {
+        color: var(--el-color-danger);
+      }
+    }
   }
+}
 
-  .avatar {
-    background-color: #F2F3F5;
-    color: #606266;
-    font-size: 12px;
-    border: 2px solid #fff;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+.card-content {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow-y: auto;
+}
+
+.template-code {
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
+  
+  .label {
+    margin-right: 4px;
   }
-
-  .author-name {
-    font-size: 13px;
-    color: #606266;
-  }
-
-  .version {
-    font-size: 12px;
-    color: #909399;
-    background-color: #F2F3F5;
-    padding: 2px 8px;
-    border-radius: 12px;
+  
+  .value {
+    color: var(--el-text-color-primary);
     font-weight: 500;
   }
 }
 
-.update-time {
-  margin-bottom: 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  color: #909399;
-  font-size: 12px;
+.title {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0;
+  line-height: 1.4;
+  color: var(--el-text-color-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
 
-  .el-icon {
-    opacity: 0.8;
+.status-tags {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.info-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.info-item {
+  font-size: 12px;
+  display: flex;
+  align-items: flex-start;
+  
+  .info-label {
+    color: var(--el-text-color-secondary);
+    min-width: 65px;
+  }
+  
+  .info-value {
+    color: var(--el-text-color-primary);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
-.tags {
+.author-info {
   display: flex;
-  gap: 12px;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: auto;
+  padding-top: 6px;
+}
 
-  .tag {
-    color: #909399;
-    font-size: 12px;
-    background-color: #F7F8FA;
-    padding: 2px 8px;
-    border-radius: 4px;
-    transition: all 0.3s ease;
-
-    &:hover {
-      background-color: #F2F3F5;
-      color: #606266;
-    }
+.author {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  
+  .avatar {
+    background-color: var(--el-color-primary-light-5);
+    color: var(--el-color-primary);
   }
+  
+  .author-name {
+    font-size: 14px;
+    color: var(--el-text-color-regular);
+  }
+}
+
+.version {
+  font-size: 13px;
+  color: var(--el-color-info);
+  background-color: var(--el-fill-color-light);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.update-time {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--el-text-color-secondary);
 }
 </style> 
