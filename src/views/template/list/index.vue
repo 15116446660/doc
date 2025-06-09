@@ -535,7 +535,7 @@ const handleTypeSelect = (type: TemplateType | null) => {
 
   .sidebar-content {
     height: 100%;
-    overflow: auto;
+    overflow: hidden;
   }
 
   .sidebar-toggle {
@@ -554,10 +554,12 @@ const handleTypeSelect = (type: TemplateType | null) => {
     transform: translateY(-50%);
     transition: all 0.3s;
     z-index: 10;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
 
     &:hover {
       background-color: var(--el-color-primary-light-5);
       color: white;
+      width: 24px;
     }
   }
 }
@@ -565,6 +567,10 @@ const handleTypeSelect = (type: TemplateType | null) => {
 .template-list-main {
   flex: 1;
   min-width: 0;
+  margin-left: 20px;
+  background-color: var(--el-bg-color-overlay);
+  border-radius: 8px;
+  box-shadow: var(--el-box-shadow-light);
 }
 
 .template-name {

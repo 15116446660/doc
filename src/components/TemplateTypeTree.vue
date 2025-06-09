@@ -14,6 +14,7 @@
         placeholder="搜索分类..."
         clearable
         :prefix-icon="Search"
+        size="default"
       />
     </div>
     
@@ -25,43 +26,48 @@
           size="small" 
           :closable="!!currentNode" 
           @close="clearSelection"
-          :type="currentNode ? '' : 'info'"
+          :type="currentNode ? 'primary' : 'info'"
+          effect="light"
+          class="selection-tag"
         >
           {{ currentNode ? currentNode.typeName : '全部' }}
         </el-tag>
       </div>
-      <el-tree
-        ref="treeRef"
-        :data="treeData"
-        :props="defaultProps"
-        :filter-node-method="filterNode"
-        :expand-on-click-node="false"
-        node-key="id"
-        highlight-current
-        :default-expanded-keys="defaultExpandedKeys"
-        @node-click="handleNodeClick"
-        @node-contextmenu="handleContextMenu"
-        @node-expand="handleNodeExpand"
-        @node-collapse="handleNodeCollapse"
-        :load="loadNode"
-        lazy
-        :render-after-expand="false"
-      >
-        <template #default="{ data }">
-          <div class="custom-tree-node">
-            <div class="node-content">
-              <el-icon class="node-icon">
-                <folder-opened v-if="expandedKeys.includes(data.id)" />
-                <folder v-else />
-              </el-icon>
-              <span class="node-label" :class="{ 'is-code': true }">
-                {{ data.typeCode }}
-              </span>
-              <span class="node-label">{{ data.typeName }}</span>
+      <el-scrollbar>
+        <el-tree
+          ref="treeRef"
+          :data="treeData"
+          :props="defaultProps"
+          :filter-node-method="filterNode"
+          :expand-on-click-node="false"
+          node-key="id"
+          highlight-current
+          :default-expanded-keys="defaultExpandedKeys"
+          @node-click="handleNodeClick"
+          @node-contextmenu="handleContextMenu"
+          @node-expand="handleNodeExpand"
+          @node-collapse="handleNodeCollapse"
+          :load="loadNode"
+          lazy
+          :render-after-expand="false"
+          class="custom-tree"
+        >
+          <template #default="{ data, node }">
+            <div class="custom-tree-node" :class="{ 'is-current': node.isCurrent }">
+              <div class="node-content">
+                <el-icon class="node-icon" :class="{ 'is-expanded': expandedKeys.includes(data.id) }">
+                  <folder-opened v-if="expandedKeys.includes(data.id)" />
+                  <folder v-else />
+                </el-icon>
+                <div class="node-labels">
+                  <span class="node-code">{{ data.typeCode }}</span>
+                  <span class="node-name">{{ data.typeName }}</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </template>
-      </el-tree>
+          </template>
+        </el-tree>
+      </el-scrollbar>
     </div>
 
     <!-- 右键菜单 -->
@@ -460,16 +466,16 @@ onBeforeUnmount(() => {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background-color: var(--el-bg-color-overlay);
+  background-color: var(--el-bg-color);
   border-radius: 8px;
-  box-shadow: var(--el-box-shadow-light);
-  position: relative;
+  padding: 16px;
+  gap: 16px;
   
   .tree-header {
-    padding: 16px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding-bottom: 12px;
     border-bottom: 1px solid var(--el-border-color-light);
     
     .tree-title {
@@ -481,98 +487,135 @@ onBeforeUnmount(() => {
   }
   
   .tree-search {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--el-border-color-light);
+    padding: 0 0 8px;
+    
+    :deep(.el-input) {
+      .el-input__wrapper {
+        box-shadow: 0 0 0 1px var(--el-border-color) inset;
+        
+        &:hover {
+          box-shadow: 0 0 0 1px var(--el-border-color-darker) inset;
+        }
+        
+        &.is-focus {
+          box-shadow: 0 0 0 1px var(--el-color-primary) inset;
+        }
+      }
+    }
   }
   
   .tree-content {
     flex: 1;
-    padding: 12px;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    min-height: 0;
     
     .current-selection {
-      margin-bottom: 12px;
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 0 4px;
+      padding: 8px 12px;
+      background-color: var(--el-fill-color-light);
+      border-radius: 4px;
       
       .selection-label {
         color: var(--el-text-color-secondary);
-        font-size: 14px;
+        font-size: 13px;
       }
       
-      .el-tag {
-        cursor: default;
+      .selection-tag {
+        margin: 0;
+      }
+    }
+    
+    :deep(.el-scrollbar) {
+      flex: 1;
+      min-height: 0;
+      
+      .el-scrollbar__wrap {
+        padding-right: 8px;
+      }
+    }
+    
+    .custom-tree {
+      background: transparent;
+      
+      :deep(.el-tree-node) {
+        &.is-current > .el-tree-node__content {
+          background-color: var(--el-color-primary-light-9);
+          color: var(--el-color-primary);
+        }
         
-        :deep(.el-tag__close) {
-          color: var(--el-text-color-secondary);
+        .el-tree-node__content {
+          height: 40px;
+          border-radius: 4px;
+          margin: 2px 0;
           
           &:hover {
-            color: var(--el-text-color-primary);
-            background-color: var(--el-fill-color-dark);
+            background-color: var(--el-fill-color-light);
           }
         }
       }
-    }
-    
-    :deep(.el-tree) {
-      background: none;
       
-      .el-tree-node__content {
-        height: 40px;
-        border-radius: 4px;
+      .custom-tree-node {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        padding-right: 8px;
         
-        &:hover {
-          background-color: var(--el-fill-color-light);
+        .node-content {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          
+          .node-icon {
+            font-size: 18px;
+            color: var(--el-color-info);
+            transition: transform 0.3s;
+            
+            &.is-expanded {
+              transform: rotate(0deg);
+              color: var(--el-color-primary);
+            }
+          }
+          
+          .node-labels {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            
+            .node-code {
+              color: var(--el-text-color-secondary);
+              font-size: 12px;
+              background-color: var(--el-fill-color);
+              padding: 2px 6px;
+              border-radius: 3px;
+            }
+            
+            .node-name {
+              color: var(--el-text-color-regular);
+              font-size: 14px;
+            }
+          }
         }
-      }
-      
-      .el-tree-node.is-current > .el-tree-node__content {
-        background-color: var(--el-color-primary-light-9);
-        color: var(--el-color-primary);
-      }
-    }
-  }
-}
-
-.custom-tree-node {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 14px;
-  padding-right: 8px;
-  
-  .node-content {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    
-    .node-icon {
-      color: var(--el-color-info);
-      transition: all 0.3s ease;
-      
-      :deep(svg) {
-        transition: all 0.3s ease;
-      }
-      
-      &:deep(.el-icon) {
-        width: 16px;
-        height: 16px;
-      }
-    }
-    
-    .node-label {
-      &.is-code {
-        color: var(--el-color-info);
-        font-size: 13px;
-        margin-right: 4px;
         
-        &::after {
-          content: '|';
-          margin-left: 4px;
-          color: var(--el-border-color);
+        &.is-current {
+          .node-icon {
+            color: var(--el-color-primary);
+          }
+          
+          .node-labels {
+            .node-code {
+              background-color: var(--el-color-primary-light-8);
+              color: var(--el-color-primary);
+            }
+            
+            .node-name {
+              color: var(--el-color-primary);
+              font-weight: 500;
+            }
+          }
         }
       }
     }
@@ -582,77 +625,81 @@ onBeforeUnmount(() => {
 // 右键菜单样式
 .context-menu {
   position: fixed;
-  z-index: 9999;
-  background-color: white;
+  z-index: 2000;
+  background: var(--el-bg-color);
   border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-  padding: 6px 0;
+  box-shadow: var(--el-box-shadow-light);
+  padding: 4px 0;
   min-width: 160px;
   
   .menu-list {
-    list-style: none;
     margin: 0;
     padding: 0;
-  }
-  
-  .menu-item {
-    display: flex;
-    align-items: center;
-    padding: 8px 16px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    color: var(--el-text-color-primary);
+    list-style: none;
     
-    &:hover {
-      background-color: var(--el-fill-color-light);
-    }
-    
-    &.danger {
-      color: var(--el-color-danger);
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      cursor: pointer;
+      color: var(--el-text-color-regular);
+      font-size: 14px;
+      transition: all 0.3s;
       
       .el-icon {
-        color: var(--el-color-danger);
+        font-size: 16px;
       }
-    }
-    
-    .el-icon {
-      margin-right: 8px;
-      font-size: 16px;
+      
+      &:hover {
+        background-color: var(--el-color-primary-light-9);
+        color: var(--el-color-primary);
+      }
+      
+      &.danger {
+        color: var(--el-color-danger);
+        
+        &:hover {
+          background-color: var(--el-color-danger-light-9);
+        }
+      }
     }
   }
 }
 
+// 对话框中的父节点信息样式
 .parent-node-info {
   margin-bottom: 20px;
-  padding: 12px 16px;
+  padding: 12px;
   background-color: var(--el-fill-color-light);
   border-radius: 4px;
-  border-left: 3px solid var(--el-color-primary);
   
   .info-title {
     font-size: 14px;
-    font-weight: 600;
-    color: var(--el-text-color-primary);
+    color: var(--el-text-color-secondary);
     margin-bottom: 8px;
   }
   
   .info-content {
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
     
     .info-item {
       display: flex;
       align-items: center;
+      gap: 8px;
       
       .label {
         color: var(--el-text-color-secondary);
+        font-size: 13px;
         width: 70px;
       }
       
       .value {
-        font-weight: 500;
         color: var(--el-text-color-primary);
+        font-size: 14px;
+        font-weight: 500;
       }
     }
   }
