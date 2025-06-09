@@ -88,7 +88,7 @@ export interface TableColumn {
 // 列表组件属性
 export interface BaseListProps {
   // 过滤条件配置
-  filterConfig?: FilterFormItem[] | FilterConfig
+  filterConfig?: FilterConfig | FilterFormItem[]
   // 是否启用高级搜索
   enableAdvancedFilter?: boolean
   // 是否启用视图切换
@@ -100,11 +100,11 @@ export interface BaseListProps {
   // 分页配置
   paginationConfig?: PaginationConfig
   // 请求API函数
-  requestApi?: (...args: any[]) => Promise<any>
+  requestApi?: (params: any) => Promise<any>
   // 请求参数
   requestParams?: Record<string, any>
   // 响应数据处理函数
-  responseHandler?: (response: any) => { list: any[], total?: number }
+  responseHandler?: (response: any) => { list: any[], total: number }
   // 表格属性
   tableProps?: Record<string, any>
   // 卡片容器属性
@@ -113,6 +113,8 @@ export interface BaseListProps {
   columns?: TableColumn[]
   // 列表标题
   title?: string
+  // 卡片布局
+  cardLayout?: 'vertical' | 'horizontal'
 }
 
 // 过滤条件变更事件

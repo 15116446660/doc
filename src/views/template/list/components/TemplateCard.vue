@@ -1,46 +1,21 @@
 <template>
   <el-card 
     ref="cardRef"
-    class="template-card" 
+    class="template-card"
+    :class="{ 'horizontal-layout': layout === 'horizontal' }"
     :body-style="{ padding: '0', height: '100%', display: 'flex', flexDirection: 'column' }" 
     @click="handleCardClick"
     @mouseenter="handleMouseEnter"
     @mouseleave="handleMouseLeave"
   >
-    <!-- 文档封面区域 -->
-    <div class="document-cover">
-      <!-- 文档图标 -->
-      <div class="document-icon-container">
-        <div class="document-icon">
-          <el-icon :size="24"><Document /></el-icon>
-        </div>
-      </div>
-      
-      <!-- 中心图标 -->
-      <div class="center-icon">
-        <div class="starburst">
-          <div v-for="n in 8" :key="n" class="ray"></div>
-        </div>
-        <el-icon :size="16"><Picture /></el-icon>
-      </div>
-      
-      <!-- 下载量和收藏 -->
-      <div class="header-actions">
-        <div class="download-count">
-          <el-icon :size="14"><Download /></el-icon>
-          {{ template.downloads || 156 }}
-        </div>
-        <div class="favorite">
-          <el-icon :size="20" :color="template.favorite ? '#F7BA2A' : '#909399'"><Star /></el-icon>
-        </div>
-      </div>
-      
+    <div class="card-inner">
       <!-- 更多操作按钮和下拉菜单 -->
       <el-dropdown 
         class="more-dropdown" 
         placement="bottom-end"
         :hide-on-click="false"
         @click.stop
+        v-if="layout !== 'horizontal'"
       >
         <div class="more-actions" v-show="isHovered" @click.stop>
           <el-icon :size="16"><MoreFilled /></el-icon>
@@ -70,64 +45,145 @@
           </el-dropdown-menu>
         </template>
       </el-dropdown>
-    </div>
 
-    <!-- 文档信息区域 -->
-    <div class="card-content">
-      <!-- 模板编号 -->
-      <div class="template-code">
-        <span class="label">编号:</span>
-        <span class="value">{{ template.templateCode || 'TMP-001' }}</span>
-      </div>
-      
-      <!-- 标题 -->
-      <h3 class="title">{{ template.title || '产品需求文档模版' }}</h3>
-      
-      <!-- 状态标签 -->
-      <div class="status-tags">
-        <el-tag size="small" :type="template.enableStatus ? 'success' : 'info'">
-          {{ template.enableStatus ? '已启用' : '未启用' }}
-        </el-tag>
-        <el-tag size="small" :type="getStatusType(template.status)">
-          {{ template.status || '草稿' }}
-        </el-tag>
-      </div>
-      
-      <!-- 信息列表 -->
-      <div class="info-list">
-        <div class="info-item">
-          <span class="info-label">适用范围:</span>
-          <span class="info-value">{{ template.applicableScope || '全部' }}</span>
+      <!-- 文档封面区域 -->
+      <div class="document-cover">
+        <!-- 文档图标 -->
+        <div class="document-icon-container">
+          <div class="document-icon">
+            <el-icon :size="24"><Document /></el-icon>
+          </div>
         </div>
-        <div class="info-item">
-          <span class="info-label">文件类型:</span>
-          <span class="info-value">{{ template.categoryName || '文档模板' }}</span>
+        
+        <!-- 中心图标 -->
+        <div class="center-icon">
+          <div class="starburst">
+            <div v-for="n in 8" :key="n" class="ray"></div>
+          </div>
+          <el-icon :size="16"><Picture /></el-icon>
         </div>
-        <div class="info-item">
-          <span class="info-label">尾缀编码:</span>
-          <span class="info-value">{{ template.suffixCode || 'DOC' }}</span>
-        </div>
-        <div class="info-item">
-          <span class="info-label">标准类型:</span>
-          <span class="info-value">{{ template.standardType || '行业标准' }}</span>
+        
+        <!-- 下载量和收藏 -->
+        <div class="header-actions" v-if="layout !== 'horizontal'">
+          <div class="download-count">
+            <el-icon :size="14"><Download /></el-icon>
+            {{ template.downloads || 156 }}
+          </div>
+          <div class="favorite">
+            <el-icon :size="20" :color="template.favorite ? '#F7BA2A' : '#909399'"><Star /></el-icon>
+          </div>
         </div>
       </div>
 
-      <!-- 作者和版本 -->
-      <div class="author-info">
-        <div class="author">
-          <el-avatar :size="24" class="avatar">
-            {{ template?.owner?.charAt(0) || '张' }}
-          </el-avatar>
-          <span class="author-name">{{ template.owner || '张小明' }}</span>
+      <!-- 文档信息区域 -->
+      <div class="card-content">
+        <div class="content-header" v-if="layout === 'horizontal'">
+          <div class="header-left">
+            <!-- 模板编号 -->
+            <div class="template-code">
+              <span class="label">编号:</span>
+              <span class="value">{{ template.templateCode || 'TMP-001' }}</span>
+            </div>
+            
+            <!-- 标题 -->
+            <h3 class="title">{{ template.title || '产品需求文档模版' }}</h3>
+          </div>
+          
+          <div class="header-right">
+            <el-dropdown 
+              trigger="click" 
+              placement="bottom-end"
+              :hide-on-click="false"
+              @click.stop
+            >
+              <div class="more-actions" @click.stop>
+                <el-icon :size="14"><MoreFilled /></el-icon>
+              </div>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click.stop="handlePreview">
+                    <el-icon><View /></el-icon>
+                    <span>预览</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item @click.stop="handleDownload">
+                    <el-icon><Download /></el-icon>
+                    <span>下载</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item @click.stop="handleEdit">
+                    <el-icon><EditPen /></el-icon>
+                    <span>编辑</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item @click.stop="handleVersionHistory">
+                    <el-icon><Timer /></el-icon>
+                    <span>版本历史</span>
+                  </el-dropdown-item>
+                  <el-dropdown-item divided @click.stop="handleDelete" class="danger-item">
+                    <el-icon><Delete /></el-icon>
+                    <span>删除</span>
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
-        <div class="version">v{{ template.version || '2.1' }}</div>
-      </div>
+        
+        <template v-else>
+          <!-- 模板编号 -->
+          <div class="template-code">
+            <span class="label">编号:</span>
+            <span class="value">{{ template.templateCode || 'TMP-001' }}</span>
+          </div>
+          
+          <!-- 标题 -->
+          <h3 class="title">{{ template.title || '产品需求文档模版' }}</h3>
+        </template>
+        
+        <!-- 状态标签 -->
+        <div class="status-tags">
+          <el-tag size="small" :type="template.enableStatus ? 'success' : 'info'">
+            {{ template.enableStatus ? '已启用' : '未启用' }}
+          </el-tag>
+          <el-tag size="small" :type="getStatusType(template.status)">
+            {{ template.status || '草稿' }}
+          </el-tag>
+        </div>
+        
+        <!-- 信息列表 -->
+        <div class="info-list">
+          <div class="info-item">
+            <span class="info-label">适用范围:</span>
+            <span class="info-value">{{ template.applicableScope || '全部' }}</span>
+          </div>
+          <div class="info-item" v-if="layout === 'vertical' || !layout">
+            <span class="info-label">文件类型:</span>
+            <span class="info-value">{{ template.categoryName || '文档模板' }}</span>
+          </div>
+          <div class="info-item" v-if="layout === 'vertical' || !layout">
+            <span class="info-label">尾缀编码:</span>
+            <span class="info-value">{{ template.suffixCode || 'DOC' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">标准类型:</span>
+            <span class="info-value">{{ template.standardType || '行业标准' }}</span>
+          </div>
+        </div>
 
-      <!-- 更新时间 -->
-      <div class="update-time">
-        <el-icon :size="14"><Clock /></el-icon>
-        {{ formatDate(template.updateTime) || '2024-01-20' }}
+        <!-- 作者和版本 -->
+        <div class="author-info">
+          <div class="author">
+            <el-avatar :size="layout === 'horizontal' ? 20 : 24" class="avatar">
+              {{ template?.owner?.charAt(0) || '张' }}
+            </el-avatar>
+            <span class="author-name">{{ template.owner || '张小明' }}</span>
+          </div>
+          <div class="version">v{{ template.version || '2.1' }}</div>
+        </div>
+
+        <!-- 更新时间 -->
+        <div class="update-time" v-if="layout !== 'horizontal'">
+          <el-icon :size="14"><Clock /></el-icon>
+          {{ formatDate(template.updateTime) || '2024-01-20' }}
+        </div>
       </div>
     </div>
   </el-card>
@@ -143,6 +199,7 @@ import type { Template } from '@/api/template'
 
 const props = defineProps<{
   template: Template
+  layout?: 'vertical' | 'horizontal'
 }>()
 
 const emit = defineEmits<{
@@ -223,8 +280,8 @@ const handleMouseLeave = () => {
 <style lang="scss" scoped>
 .template-card {
   height: 100%;
-  min-height: 420px;
-  max-width: 280px;
+  min-height: v-bind('layout === "horizontal" ? "210px" : "420px"');
+  max-width: v-bind('layout === "horizontal" ? "360px" : "280px"');
   width: 100%;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -257,6 +314,58 @@ const handleMouseLeave = () => {
       }
     }
   }
+
+  &.horizontal-layout {
+    :deep(.el-card__body) {
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .card-inner {
+      display: flex;
+      flex-direction: row;
+      height: 100%;
+    }
+
+    .document-cover {
+      width: 160px;
+      height: 100%;
+      flex-shrink: 0;
+      border-right: 1px solid var(--el-border-color-lighter);
+    }
+
+    .card-content {
+      flex: 1;
+      padding: 12px;
+      gap: 8px;
+      
+      .title {
+        font-size: 14px;
+        margin-top: 0;
+        -webkit-line-clamp: 1;
+      }
+      
+      .info-item {
+        font-size: 12px;
+        
+        .info-label {
+          min-width: 60px;
+        }
+      }
+      
+      .status-tags {
+        margin-top: 0;
+      }
+    }
+  }
+}
+
+.card-inner {
+  height: 100%;
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  position: relative;
 }
 
 .document-cover {
@@ -384,7 +493,7 @@ const handleMouseLeave = () => {
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 10;
+  z-index: 20;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: all 0.2s ease;
   
@@ -402,7 +511,7 @@ const handleMouseLeave = () => {
   position: absolute;
   top: 16px;
   right: 16px;
-  z-index: 9;
+  z-index: 20;
   
   .more-dropdown-link {
     display: block;
@@ -541,5 +650,39 @@ const handleMouseLeave = () => {
   gap: 6px;
   font-size: 13px;
   color: var(--el-text-color-secondary);
+}
+
+.content-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  
+  .header-left {
+    flex: 1;
+    min-width: 0;
+  }
+  
+  .header-right {
+    flex-shrink: 0;
+    margin-left: 8px;
+    
+    .more-actions {
+      width: 28px;
+      height: 28px;
+      position: static;
+      box-shadow: none;
+      background-color: rgba(0, 0, 0, 0.1);
+      
+      &:hover {
+        background-color: rgba(0, 0, 0, 0.15);
+        box-shadow: none;
+      }
+      
+      .el-icon {
+        font-size: 14px;
+        color: var(--el-text-color-regular);
+      }
+    }
+  }
 }
 </style> 

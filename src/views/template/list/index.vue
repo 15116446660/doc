@@ -10,6 +10,7 @@
       :request-api="getTemplateList"
       :table-props="tableProps"
       :pagination-config="paginationConfig"
+      :card-layout="cardLayout"
       @filter-change="handleFilterChange"
       @view-change="handleViewChange"
       @selection-change="handleSelectionChange"
@@ -66,6 +67,7 @@
       <template #card="{ item }">
         <template-card
           :template="item"
+          :layout="cardLayout"
           @edit="handleEdit"
           @copy="handleCopy"
           @delete="handleDelete"
@@ -277,6 +279,9 @@ const currentViewType = ref('table')
 const paginationConfig = computed(() => {
   return currentViewType.value === 'cards' ? cardPaginationConfig : tablePaginationConfig
 })
+
+// 卡片布局方式
+const cardLayout = ref<'vertical' | 'horizontal'>('horizontal')
 
 // 获取状态类型
 const getStatusType = (status: string) => {

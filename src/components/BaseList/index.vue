@@ -98,6 +98,7 @@
             v-for="item in list"
             :key="getItemKey(item)"
             :item="item"
+            :layout="props.cardLayout"
           />
         </template>
         <template v-else>
@@ -148,6 +149,7 @@ const props = withDefaults(defineProps<BaseListProps>(), {
   enableViewSwitch: true,
   defaultViewType: 'table',
   enablePagination: true,
+  cardLayout: 'horizontal',
   paginationConfig: () => ({
     pageSize: 10,
     pageSizes: [10, 20, 50, 100],
@@ -514,7 +516,7 @@ defineExpose({
   flex: 1;
   overflow: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, 280px);
+  grid-template-columns: v-bind('viewType === "cards" && cardLayout === "horizontal" ? "repeat(auto-fill, minmax(360px, 1fr))" : "repeat(auto-fill, minmax(280px, 1fr))"');
   gap: 24px;
   padding: 1px;
   justify-content: space-between;
@@ -533,8 +535,7 @@ defineExpose({
   }
   
   > * {
-    height: auto;
-    min-height: 380px;
+    height: v-bind('cardLayout === "horizontal" ? "210px" : "420px"');
     width: 100%;
   }
 }

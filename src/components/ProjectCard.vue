@@ -18,10 +18,24 @@
           </span>
         </div>
       </div>
-      <div class="project-card__priority" v-if="project.priority">
-        <el-tag :type="getPriorityType(project.priority)" size="small" effect="dark">
-          {{ project.priority }}
-        </el-tag>
+      <div class="project-card__actions">
+        <div class="project-card__priority" v-if="project.priority">
+          <el-tag :type="getPriorityType(project.priority)" size="small" effect="dark">
+            {{ project.priority }}
+          </el-tag>
+        </div>
+        <el-dropdown trigger="click" @command="handleCommand">
+          <el-button class="more-button" link>
+            <el-icon><more /></el-icon>
+          </el-button>
+          <template #dropdown>
+            <el-dropdown-menu>
+              <el-dropdown-item command="view">查看详情</el-dropdown-item>
+              <el-dropdown-item command="edit">编辑项目</el-dropdown-item>
+              <el-dropdown-item command="delete" divided>删除项目</el-dropdown-item>
+            </el-dropdown-menu>
+          </template>
+        </el-dropdown>
       </div>
     </div>
     
@@ -133,7 +147,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { 
-  Document, Calendar, CircleCheck, Timer, Folder 
+  Document, Calendar, CircleCheck, Timer, Folder, More
 } from '@element-plus/icons-vue'
 import type { Project } from '@/api/project'
 
@@ -246,6 +260,21 @@ function truncateText(text: string, maxLength: number): string {
   if (text.length <= maxLength) return text
   return text.substring(0, maxLength) + '...'
 }
+
+// 处理下拉菜单命令
+const handleCommand = (command: string) => {
+  switch (command) {
+    case 'view':
+      emit('view', props.project)
+      break
+    case 'edit':
+      emit('edit', props.project)
+      break
+    case 'delete':
+      emit('delete', props.project)
+      break
+  }
+}
 </script>
 
 <style lang="scss" scoped>
@@ -275,10 +304,9 @@ function truncateText(text: string, maxLength: number): string {
   &__header {
     padding: 16px;
     display: flex;
+    justify-content: space-between;
     align-items: flex-start;
-    border-bottom: 1px solid var(--el-border-color-lighter);
     position: relative;
-    flex-shrink: 0;
   }
   
   &__title {
@@ -313,6 +341,15 @@ function truncateText(text: string, maxLength: number): string {
     .status {
       font-weight: 500;
     }
+  }
+  
+  &__actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: absolute;
+    top: 12px;
+    right: 12px;
   }
   
   &__priority {
@@ -461,5 +498,15 @@ function truncateText(text: string, maxLength: number): string {
       gap: 8px;
     }
   }
+}
+
+.more-button {
+  padding: 4px;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.more-button:hover {
+  background-color: rgba(0, 0, 0, 0.04);
 }
 </style> 
