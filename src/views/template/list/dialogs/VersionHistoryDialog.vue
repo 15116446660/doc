@@ -10,6 +10,7 @@
         :columns="columns"
         :request-api="loadVersionHistory"
         :enable-view-switch="false"
+        :show-filter-bar="false"
         :table-props="{
           border: true,
           stripe: true,

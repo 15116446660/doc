@@ -115,6 +115,8 @@ export interface BaseListProps {
   title?: string
   // 卡片布局
   cardLayout?: 'vertical' | 'horizontal'
+  // 是否显示过滤栏
+  showFilterBar?: boolean
 }
 
 // 过滤条件变更事件

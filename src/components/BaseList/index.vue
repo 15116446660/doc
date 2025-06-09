@@ -13,6 +13,18 @@
           <slot name="toolbar"></slot>
         </div>
         <slot name="header-right">
+          <!-- 过滤按钮 -->
+          <div v-if="!props.showFilterBar && filterItems.length > 0" class="filter-toggle">
+            <el-tooltip content="显示/隐藏过滤条件" placement="bottom">
+              <button 
+                class="view-btn" 
+                :class="{ 'active': showFilter }"
+                @click="toggleFilter"
+              >
+                <el-icon><Filter /></el-icon>
+              </button>
+            </el-tooltip>
+          </div>
           <div v-if="enableViewSwitch" class="view-toggle">
             <div class="view-toggle-buttons">
               <button 
@@ -36,14 +48,17 @@
     </div>
 
     <!-- 过滤条件 -->
-    <list-filter
-      v-if="filterItems.length > 0"
-      :filter-config="filterItems"
-      :enable-advanced-filter="enableAdvancedFilter"
-      :label-width="filterLabelWidth"
-      :item-width="filterItemWidth"
-      @filter-change="handleFilterChange"
-    />
+    <transition name="filter-fade">
+      <list-filter
+        v-if="filterItems.length > 0 && ((props.showFilterBar) || (!props.showFilterBar && showFilter))"
+        :filter-config="filterItems"
+        :enable-advanced-filter="enableAdvancedFilter"
+        :label-width="filterLabelWidth"
+        :item-width="filterItemWidth"
+        @filter-change="handleFilterChange"
+        class="filter-section"
+      />
+    </transition>
 
     <!-- 列表内容 -->
     <div class="list-content" v-loading="loading">
@@ -129,7 +144,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, useSlots } from 'vue'
-import { List, Grid } from '@element-plus/icons-vue'
+import { List, Grid, Filter } from '@element-plus/icons-vue'
 import type { TableInstance } from 'element-plus'
 import ListFilter from './components/ListFilter.vue'
 import type { 
@@ -150,6 +165,7 @@ const props = withDefaults(defineProps<BaseListProps>(), {
   defaultViewType: 'table',
   enablePagination: true,
   cardLayout: 'horizontal',
+  showFilterBar: false,
   paginationConfig: () => ({
     pageSize: 10,
     pageSizes: [10, 20, 50, 100],
@@ -165,6 +181,14 @@ const props = withDefaults(defineProps<BaseListProps>(), {
   columns: () => [],
   title: undefined
 })
+
+// 控制过滤器显示
+const showFilter = ref(!props.showFilterBar)
+
+// 切换过滤器显示状态
+const toggleFilter = () => {
+  showFilter.value = !showFilter.value
+}
 
 // 提取过滤条件配置
 const filterItems = computed<FilterFormItem[]>(() => {
@@ -205,7 +229,7 @@ const filterItemWidth = computed(() => {
 
 // 判断是否有头部内容
 const hasHeaderContent = computed(() => {
-  return props.title || props.enableViewSwitch || !!slots['header-left'] || !!slots['header-right']
+  return props.title || props.enableViewSwitch || !!slots['header-left'] || !!slots['header-right'] || (!props.showFilterBar && filterItems.value.length > 0)
 })
 
 const emit = defineEmits<BaseListEmits>()
@@ -459,7 +483,9 @@ defineExpose({
   getPageSize: () => currentPageSize.value,
   getFilterValues: () => filterValues.value,
   getSortInfo: () => sortInfo.value,
-  getTableRef: () => tableRef.value
+  getTableRef: () => tableRef.value,
+  toggleFilter,
+  getShowFilter: () => showFilter.value
 })
 </script>
 
@@ -558,7 +584,7 @@ defineExpose({
   background-color: var(--el-mask-color);
 }
 
-.view-toggle {
+.view-toggle, .filter-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -597,5 +623,28 @@ defineExpose({
 .view-btn:hover:not(.active) {
   background-color: var(--el-fill-color);
   color: var(--el-text-color-primary);
+}
+
+.filter-toggle {
+  margin-right: 8px;
+}
+
+.filter-section {
+  transition: all 0.3s ease-in-out;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.filter-fade-enter-active,
+.filter-fade-leave-active {
+  transition: opacity 0.3s, transform 0.3s;
+  max-height: 300px;
+}
+
+.filter-fade-enter-from,
+.filter-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+  max-height: 0;
 }
 </style> 

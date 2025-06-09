@@ -27,6 +27,7 @@
           :table-props="tableProps"
           :pagination-config="paginationConfig"
           :card-layout="cardLayout"
+          :show-filter-bar="false"
           @filter-change="handleFilterChange"
           @view-change="handleViewChange"
           @selection-change="handleSelectionChange"
