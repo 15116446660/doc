@@ -4,12 +4,12 @@
       <!-- 左侧分类树 -->
       <div class="template-type-sidebar">
         <template-type-tree ref="treeRef" @select="handleTypeSelect" />
-        <div class="clear-selection">
+        <!-- <div class="clear-selection">
           <el-button link type="info" @click="handleClearSelection">
             <el-icon><close /></el-icon>
             清除分类选择
           </el-button>
-        </div>
+        </div> -->
       </div>
 
       <!-- 右侧列表 -->
