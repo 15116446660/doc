@@ -100,9 +100,9 @@
         label-width="80px"
         @keyup.enter="handleSubmit"
       >
-        <!-- 挂载节点信息 -->
+        <!-- 父节点 -->
         <div v-if="dialogType === 'add' && parentNode" class="parent-node-info">
-          <div class="info-title">挂载节点信息</div>
+          <div class="info-title">父节点</div>
           <div class="info-content">
             <div class="info-item">
               <span class="label">节点编码:</span>

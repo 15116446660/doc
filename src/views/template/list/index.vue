@@ -91,7 +91,7 @@
           <!-- 操作自定义插槽 -->
           <template #actions="{ row }">
             <el-button type="primary" text @click="handleEdit(row)">编辑</el-button>
-            <el-button type="success" text @click="handleCopy(row)">复制</el-button>
+            <el-button type="success" text @click="handleDownload(row)">下载</el-button>
             <el-button type="danger" text @click="handleDelete(row)">删除</el-button>
           </template>
 
@@ -267,6 +267,7 @@ const columns = ref<TableColumn[]>([
   {
     label: '操作',
     width: 200,
+    align: 'center',
     fixed: 'right',
     slot: 'actions'
   }
@@ -414,6 +415,26 @@ const handleCopy = async (row: Template) => {
     console.log('Copy:', row)
   } catch {
     // 用户取消复制
+  }
+}
+
+// 处理下载
+const handleDownload = async (row: Template) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要下载模板"${row.title || row.name}"吗？`,
+      '下载确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    )
+    console.log('Download:', row)
+    // 这里实现下载逻辑
+    handleDownloadTemplate(row)
+  } catch {
+    // 用户取消下载
   }
 }
 
