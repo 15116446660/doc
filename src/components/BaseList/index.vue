@@ -506,10 +506,10 @@ defineExpose({
 
 .list-content {
   flex: 1;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
   padding: 8px;
+  overflow: hidden;
 }
 
 .card-view {
@@ -518,7 +518,7 @@ defineExpose({
   display: grid;
   grid-template-columns: v-bind('viewType === "cards" && cardLayout === "horizontal" ? "repeat(auto-fill, minmax(360px, 1fr))" : "repeat(auto-fill, minmax(280px, 1fr))"');
   gap: 24px;
-  padding: 1px;
+  padding: 8px;
   justify-content: space-between;
   
   @media screen and (max-width: 1600px) {

@@ -4,12 +4,6 @@
       <!-- 左侧分类树 -->
       <div class="template-type-sidebar">
         <template-type-tree ref="treeRef" @select="handleTypeSelect" />
-        <!-- <div class="clear-selection">
-          <el-button link type="info" @click="handleClearSelection">
-            <el-icon><close /></el-icon>
-            清除分类选择
-          </el-button>
-        </div> -->
       </div>
 
       <!-- 右侧列表 -->
@@ -76,6 +70,16 @@
             </div>
           </template>
 
+          <!-- 版本号自定义插槽 -->
+          <template #version="{ row }">
+            <span 
+              class="version-link"
+              @click="handleVersionHistory(row)"
+            >
+              {{ row.version || '1.0.0' }}
+            </span>
+          </template>
+
           <!-- 操作自定义插槽 -->
           <template #actions="{ row }">
             <el-button type="primary" text @click="handleEdit(row)">编辑</el-button>
@@ -108,17 +112,24 @@
       @submit="handleDialogSubmit"
       @error="handleDialogError"
     />
+
+    <!-- 版本历史对话框 -->
+    <version-history-dialog
+      v-model="versionHistoryVisible"
+      :template="currentTemplate"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { Plus, Close } from '@element-plus/icons-vue'
+import { Plus } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import TemplateCard from './components/TemplateCard.vue'
 import TemplateCreateDialog from './dialogs/TemplateCreateDialog.vue'
 import TemplateTypeTree from '@/components/TemplateTypeTree.vue'
+import VersionHistoryDialog from './dialogs/VersionHistoryDialog.vue'
 import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
 import { getTemplateList, getTemplateStatusOptions, getTemplateCategoryOptions } from '@/api/template'
 import type { Template, TemplateType } from '@/api/template'
@@ -132,6 +143,8 @@ const router = useRouter()
 // 对话框控制
 const createDialogVisible = ref(false)
 const createDialogData = ref<Partial<Template>>()
+const versionHistoryVisible = ref(false)
+const currentTemplate = ref<Template>()
 
 // 表格列配置
 const columns = ref<TableColumn[]>([
@@ -231,7 +244,9 @@ const columns = ref<TableColumn[]>([
     prop: 'version',
     label: '版本',
     width: 80,
-    align: 'center'
+    align: 'center',
+    fixed: 'right',
+    slot: 'version'
   },
   {
     label: '操作',
@@ -423,8 +438,8 @@ const handleDownloadTemplate = (template: Template) => {
 
 // 处理版本历史
 const handleVersionHistory = (template: Template) => {
-  console.log('查看版本历史:', template)
-  // 这里可以实现版本历史功能，例如打开一个版本历史对话框
+  currentTemplate.value = template
+  versionHistoryVisible.value = true
 }
 
 // 处理对话框提交
@@ -455,11 +470,6 @@ const handleTypeSelect = (type: TemplateType | null) => {
     listRef.value?.refresh({ categoryId: undefined })
   }
 }
-
-// 清除分类选择
-const handleClearSelection = () => {
-  treeRef.value?.clearSelection()
-}
 </script>
 
 <style lang="scss" scoped>
@@ -479,14 +489,6 @@ const handleClearSelection = () => {
 .template-type-sidebar {
   width: 280px;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  
-  .clear-selection {
-    padding: 8px 16px;
-    border-top: 1px solid var(--el-border-color-light);
-    text-align: center;
-  }
 }
 
 .template-list-main {
@@ -513,5 +515,20 @@ const handleClearSelection = () => {
   &:hover {
     text-decoration: underline;
   }
+}
+
+.version-link {
+  color: var(--el-color-primary);
+  cursor: pointer;
+  transition: color 0.2s;
+  
+  &:hover {
+    color: var(--el-color-primary-light-3);
+    text-decoration: underline;
+  }
+}
+
+.el-button+.el-button {
+    margin-left: 0px;
 }
 </style> 

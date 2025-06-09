@@ -292,6 +292,7 @@ const handleMouseLeave = () => {
   overflow: hidden;
   border: none;
   position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
 
   :deep(.el-card__body) {
     padding: 0;
@@ -301,13 +302,13 @@ const handleMouseLeave = () => {
   }
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 
     .document-cover {
       .document-icon {
         transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
+        box-shadow: 0 4px 8px rgba(64, 158, 255, 0.2);
       }
       
       .starburst {
@@ -500,7 +501,7 @@ const handleMouseLeave = () => {
   
   &:hover {
     background-color: #fff;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
   }
   
   .el-icon {

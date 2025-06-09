@@ -262,7 +262,47 @@ function generateTemplateContent() {
   return paragraphs.join('')
 }
 
-const templateList = generateTemplates(50)
+const templates = generateTemplates(50)
+
+// 模板版本历史数据
+const templateVersionHistory = new Map()
+
+// 生成模板版本历史数据
+const generateTemplateVersionHistory = (templateId: number | string) => {
+  if (templateVersionHistory.has(templateId)) {
+    return templateVersionHistory.get(templateId)
+  }
+
+  const template = templates.find(t => t.id.toString() === templateId.toString())
+  if (!template) return []
+
+  const statusOptions = ['通过', '驳回', '审核中', '草稿']
+  const versions = []
+  
+  // 生成1-5个版本记录
+  const versionCount = Math.floor(Math.random() * 5) + 1
+  
+  for (let i = 0; i < versionCount; i++) {
+    const versionNum = i === 0 ? 1 : 2
+    const status = statusOptions[i % statusOptions.length]
+    
+    versions.push({
+      id: `${templateId}-${i + 1}`,
+      name: template.name,
+      version: versionNum,
+      content: i % 2 === 0 ? 
+        '1. 章节中增加、增加报告三字，并将注意文档放在最后面；2. 章节2引用国标9.1中GB 5235与新方法GB 5235A、增加GB/Z 192、GB 10158两份标准。' : 
+        '章节2引用国标GB/Z192、GB 10158两份标准；章节3.13增加GB/Z 192标准、增加GB 9433标准的名称。根据内部审核组件软件VerifyHDL编程安全要求的规范及名称。',
+      status,
+      reviewReason: status === '驳回' ? '格式不符合要求' : '',
+      updater: i % 2 === 0 ? 'Zoco' : 'Tom',
+      updateTime: Random.datetime('yyyy-MM-dd HH:mm:ss')
+    })
+  }
+  
+  templateVersionHistory.set(templateId, versions)
+  return versions
+}
 
 const mockData: MockMethod[] = [
   {
@@ -343,14 +383,14 @@ const mockData: MockMethod[] = [
       const { pageNum = 1, pageSize = 12 } = query
       const startIndex = (pageNum - 1) * pageSize
       const endIndex = startIndex + pageSize
-      const list = templateList.slice(startIndex, endIndex)
+      const list = templates.slice(startIndex, endIndex)
 
       return {
         code: 200,
         message: 'success',
         data: {
           list,
-          total: templateList.length,
+          total: templates.length,
           pageNum: Number(pageNum),
           pageSize: Number(pageSize)
         }
@@ -363,7 +403,7 @@ const mockData: MockMethod[] = [
     response: (req: any) => {
       const templateData = req.body
       // 生成新的模板ID
-      const newId = `template_${templateList.length + 1}`
+      const newId = `template_${templates.length + 1}`
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
       
       const newTemplate = {
@@ -374,7 +414,7 @@ const mockData: MockMethod[] = [
       }
       
       // 将新模板添加到列表中
-      templateList.unshift(newTemplate)
+      templates.unshift(newTemplate)
       
       return {
         code: 200,
@@ -388,7 +428,7 @@ const mockData: MockMethod[] = [
     method: 'get',
     response: (req: any) => {
       const { id } = req.params
-      const template = templateList.find(item => item.id === id)
+      const template = templates.find(item => item.id === id)
       
       if (!template) {
         return {
@@ -409,7 +449,7 @@ const mockData: MockMethod[] = [
     response: (req: any) => {
       const { id } = req.params
       const templateData = req.body
-      const index = templateList.findIndex(item => item.id === id)
+      const index = templates.findIndex(item => item.id === id)
       
       if (index === -1) {
         return {
@@ -420,12 +460,12 @@ const mockData: MockMethod[] = [
       
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
       const updatedTemplate = {
-        ...templateList[index],
+        ...templates[index],
         ...templateData,
         updateTime: now
       }
       
-      templateList[index] = updatedTemplate
+      templates[index] = updatedTemplate
       
       return {
         code: 200,
@@ -439,7 +479,7 @@ const mockData: MockMethod[] = [
     method: 'delete',
     response: (req: any) => {
       const { id } = req.params
-      const index = templateList.findIndex(item => item.id === id)
+      const index = templates.findIndex(item => item.id === id)
       
       if (index === -1) {
         return {
@@ -448,7 +488,7 @@ const mockData: MockMethod[] = [
         }
       }
       
-      templateList.splice(index, 1)
+      templates.splice(index, 1)
       
       return {
         code: 200,
@@ -461,7 +501,7 @@ const mockData: MockMethod[] = [
     method: 'post',
     response: (req: any) => {
       const { id } = req.params
-      const template = templateList.find(item => item.id === id)
+      const template = templates.find(item => item.id === id)
       
       if (!template) {
         return {
@@ -471,7 +511,7 @@ const mockData: MockMethod[] = [
       }
       
       const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
-      const newId = `template_${templateList.length + 1}`
+      const newId = `template_${templates.length + 1}`
       
       const newTemplate = {
         ...template,
@@ -482,7 +522,7 @@ const mockData: MockMethod[] = [
         updateTime: now
       }
       
-      templateList.unshift(newTemplate)
+      templates.unshift(newTemplate)
       
       return {
         code: 200,
@@ -636,6 +676,37 @@ const mockData: MockMethod[] = [
       return {
         code: 404,
         message: '分类不存在'
+      }
+    }
+  },
+  {
+    url: '/api/template/version/history',
+    method: 'get',
+    response: (req: any) => {
+      const { templateId, pageNum = 1, pageSize = 10 } = req.query
+      
+      if (!templateId) {
+        return {
+          code: 400,
+          message: '缺少模板ID参数',
+          data: null
+        }
+      }
+      
+      const versions = generateTemplateVersionHistory(templateId)
+      
+      // 分页处理
+      const start = (pageNum - 1) * pageSize
+      const end = start + pageSize
+      const pagedVersions = versions.slice(start, end)
+      
+      return {
+        code: 200,
+        message: 'success',
+        data: {
+          list: pagedVersions,
+          total: versions.length
+        }
       }
     }
   }

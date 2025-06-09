@@ -70,7 +70,7 @@
 
 /* 表格内容垂直居中 */
 .el-table .cell {
-  display: flex;
+  /* display: flex; */
   align-items: center;
   line-height: 1.5;
 }

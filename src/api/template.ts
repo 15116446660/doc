@@ -152,4 +152,26 @@ export function updateTemplateType(id: number, data: Partial<TemplateType>) {
 // 删除模板分类
 export function deleteTemplateType(id: number) {
   return del<void>(`/api/template/types/${id}`)
+}
+
+// 版本历史记录接口
+export interface VersionHistoryItem {
+  id: string | number
+  name: string
+  version: number | string
+  content: string
+  status: string
+  reviewReason?: string
+  updater: string
+  updateTime: string
+}
+
+export interface VersionHistoryResponse {
+  list: VersionHistoryItem[]
+  total: number
+}
+
+// 获取模板版本历史
+export function getTemplateVersionHistory(templateId: string | number, params: { pageNum: number, pageSize: number }) {
+  return get<VersionHistoryResponse>('/api/template/version/history', { templateId, ...params })
 } 
