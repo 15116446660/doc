@@ -3,7 +3,13 @@
     <div class="template-list-layout">
       <!-- 左侧分类树 -->
       <div class="template-type-sidebar">
-        <template-type-tree @select="handleTypeSelect" />
+        <template-type-tree ref="treeRef" @select="handleTypeSelect" />
+        <div class="clear-selection">
+          <el-button link type="info" @click="handleClearSelection">
+            <el-icon><close /></el-icon>
+            清除分类选择
+          </el-button>
+        </div>
       </div>
 
       <!-- 右侧列表 -->
@@ -108,7 +114,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, Close } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import TemplateCard from './components/TemplateCard.vue'
 import TemplateCreateDialog from './dialogs/TemplateCreateDialog.vue'
@@ -120,6 +126,7 @@ import { useRouter } from 'vue-router'
 
 // 列表实例
 const listRef = ref()
+const treeRef = ref()
 const router = useRouter()
 
 // 对话框控制
@@ -437,10 +444,21 @@ window.addEventListener('template-list-refresh', () => {
 })
 
 // 处理分类选择
-const handleTypeSelect = (type: TemplateType) => {
+const handleTypeSelect = (type: TemplateType | null) => {
   console.log('Selected type:', type)
   // 这里可以根据选中的分类刷新列表
-  listRef.value?.refresh()
+  if (type) {
+    // 使用分类ID作为过滤条件
+    listRef.value?.refresh({ categoryId: type.id })
+  } else {
+    // 清除分类过滤条件
+    listRef.value?.refresh({ categoryId: undefined })
+  }
+}
+
+// 清除分类选择
+const handleClearSelection = () => {
+  treeRef.value?.clearSelection()
 }
 </script>
 
@@ -461,6 +479,14 @@ const handleTypeSelect = (type: TemplateType) => {
 .template-type-sidebar {
   width: 280px;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  
+  .clear-selection {
+    padding: 8px 16px;
+    border-top: 1px solid var(--el-border-color-light);
+    text-align: center;
+  }
 }
 
 .template-list-main {

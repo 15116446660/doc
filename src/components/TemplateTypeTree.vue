@@ -18,6 +18,18 @@
     </div>
     
     <div class="tree-content">
+      <!-- 当前选中分类 -->
+      <div class="current-selection">
+        <span class="selection-label">当前选择：</span>
+        <el-tag 
+          size="small" 
+          :closable="!!currentNode" 
+          @close="clearSelection"
+          :type="currentNode ? '' : 'info'"
+        >
+          {{ currentNode ? currentNode.typeName : '全部' }}
+        </el-tag>
+      </div>
       <el-tree
         ref="treeRef"
         :data="treeData"
@@ -140,7 +152,7 @@ import type { TemplateType } from '@/api/template'
 import { getTemplateTypeTree, createTemplateType, updateTemplateType, deleteTemplateType } from '@/api/template'
 
 const emit = defineEmits<{
-  (e: 'select', type: TemplateType): void
+  (e: 'select', type: TemplateType | null): void
 }>()
 
 // 树实例
@@ -153,7 +165,7 @@ const treeData = ref<TemplateType[]>([])
 const defaultProps = {
   children: 'children',
   label: 'typeName',
-  isLeaf: (data: TemplateType) => !data.hasChildren
+  isLeaf: (data: TemplateType) => !data.children || data.children.length === 0
 }
 
 // 默认展开的节点keys
@@ -191,16 +203,36 @@ const contextMenuVisible = ref(false)
 const contextMenuPosition = ref({ x: 0, y: 0 })
 const currentContextNode = ref<TemplateType | null>(null)
 
+// 当前选中节点
+const currentNode = ref<TemplateType | null>(null)
+
 // 监听搜索关键词变化
 watch(searchKeyword, (val) => {
   if (val) {
     // 搜索时展开所有节点以显示匹配结果
     nextTick(() => {
-      treeRef.value?.expandAll()
+      // 手动展开所有节点
+      const allNodes = getAllTreeNodes()
+      allNodes.forEach(node => {
+        if (!expandedKeys.value.includes(node.id)) {
+          expandedKeys.value.push(node.id)
+        }
+      })
     })
   }
   treeRef.value?.filter(val)
 })
+
+// 获取所有树节点
+const getAllTreeNodes = (nodes = treeData.value, result: TemplateType[] = []): TemplateType[] => {
+  nodes.forEach(node => {
+    result.push(node)
+    if (node.children && node.children.length > 0) {
+      getAllTreeNodes(node.children, result)
+    }
+  })
+  return result
+}
 
 // 节点过滤方法
 const filterNode = (value: string, data: TemplateType) => {
@@ -302,13 +334,24 @@ const handleDelete = async (data: TemplateType) => {
     await deleteTemplateType(data.id)
     ElMessage.success('删除成功')
     // 重新加载数据
-    treeRef.value?.reload()
+    refreshTreeData()
   } catch (error) {
     if (error !== 'cancel') {
       console.error('删除分类失败:', error)
       ElMessage.error('删除分类失败')
     }
   }
+}
+
+// 刷新树数据
+const refreshTreeData = () => {
+  // 重置树数据，触发懒加载重新获取数据
+  treeData.value = []
+  nextTick(() => {
+    loadNode({ level: 0 }, (data) => {
+      treeData.value = data
+    })
+  })
 }
 
 // 提交表单
@@ -329,7 +372,7 @@ const handleSubmit = async () => {
     
     dialogVisible.value = false
     // 重新加载数据
-    treeRef.value?.reload()
+    refreshTreeData()
   } catch (error) {
     console.error('保存分类失败:', error)
     ElMessage.error('保存失败')
@@ -340,8 +383,22 @@ const handleSubmit = async () => {
 
 // 节点点击事件
 const handleNodeClick = (data: TemplateType) => {
+  currentNode.value = data
   emit('select', data)
 }
+
+// 清除选中节点
+const clearSelection = () => {
+  // 使用 undefined 代替 null 来取消当前选择
+  treeRef.value?.setCurrentKey(undefined)
+  currentNode.value = null
+  emit('select', null)
+}
+
+// 暴露方法给父组件
+defineExpose({
+  clearSelection
+})
 
 // 处理右键菜单
 const handleContextMenu = (event: MouseEvent, data: TemplateType) => {
@@ -432,6 +489,32 @@ onBeforeUnmount(() => {
     flex: 1;
     padding: 12px;
     overflow-y: auto;
+    
+    .current-selection {
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 0 4px;
+      
+      .selection-label {
+        color: var(--el-text-color-secondary);
+        font-size: 14px;
+      }
+      
+      .el-tag {
+        cursor: default;
+        
+        :deep(.el-tag__close) {
+          color: var(--el-text-color-secondary);
+          
+          &:hover {
+            color: var(--el-text-color-primary);
+            background-color: var(--el-fill-color-dark);
+          }
+        }
+      }
+    }
     
     :deep(.el-tree) {
       background: none;
