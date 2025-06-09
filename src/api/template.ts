@@ -16,6 +16,14 @@ export interface Template {
   downloads?: number
   favorite?: boolean
   rating?: number
+  templateFile?: string
+  templateType?: string
+  templateCode?: string
+  applicableScope?: string
+  suffixCode?: string
+  standardType?: string
+  revisionContent?: string
+  alias?: string
 }
 
 export interface TemplateQueryParams {
@@ -75,4 +83,14 @@ export function copyTemplate(id: string) {
 // 获取模板详情
 export function getTemplate(id: string) {
   return get<Template>(`/api/templates/${id}`)
+}
+
+// 获取模板类型选项
+export function getTemplateTypeOptions() {
+  return get<OptionItem[]>('/api/templates/types')
+}
+
+// 获取负责人选项
+export function getOwnerOptions() {
+  return get<OptionItem[]>('/api/templates/owners')
 } 

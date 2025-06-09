@@ -195,6 +195,40 @@ const mockData: MockMethod[] = [
     }
   },
   {
+    url: '/api/templates/types',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: [
+          { label: '招标文件', value: '招标文件' },
+          { label: '投标文件', value: '投标文件' },
+          { label: '合同文本', value: '合同文本' },
+          { label: '技术方案', value: '技术方案' },
+          { label: '商务方案', value: '商务方案' },
+          { label: '项目管理', value: '项目管理' }
+        ]
+      }
+    }
+  },
+  {
+    url: '/api/templates/owners',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: [
+          { label: '张三', value: '张三' },
+          { label: '李四', value: '李四' },
+          { label: '王五', value: '王五' },
+          { label: '赵六', value: '赵六' },
+          { label: '钱七', value: '钱七' },
+          { label: '孙八', value: '孙八' }
+        ]
+      }
+    }
+  },
+  {
     url: '/api/template/list',
     method: 'get',
     response: ({ query }: { query: Record<string, any> }) => {

@@ -68,7 +68,12 @@
     </base-list>
     
     <!-- 模板创建对话框 -->
-    <template-create-dialog ref="templateCreateDialogRef" />
+    <template-create-dialog
+      v-model="createDialogVisible"
+      :initial-data="createDialogData"
+      @submit="handleDialogSubmit"
+      @error="handleDialogError"
+    />
   </div>
 </template>
 
@@ -79,7 +84,6 @@ import { Plus } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import TemplateCard from './components/TemplateCard.vue'
 import TemplateCreateDialog from './dialogs/TemplateCreateDialog.vue'
-import dialogInstance from '@/hooks/useDialog'
 import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
 import { getTemplateList, getTemplateStatusOptions, getTemplateCategoryOptions } from '@/api/template'
 import type { Template } from '@/api/template'
@@ -87,8 +91,11 @@ import { useRouter } from 'vue-router'
 
 // 列表实例
 const listRef = ref()
-const templateCreateDialogRef = ref()
 const router = useRouter()
+
+// 对话框控制
+const createDialogVisible = ref(false)
+const createDialogData = ref<Partial<Template>>()
 
 // 表格列配置
 const columns = ref<TableColumn[]>([
@@ -259,41 +266,18 @@ const handleSelectionChange = (selection: Template[]) => {
 
 // 处理创建模板
 const handleCreateTemplate = () => {
-  dialogInstance.open('templateCreate', 
-    { 
-      initialData: {
-        status: '草稿',
-        version: '1.0.0'
-      }
-    }, 
-    {
-      submit: (formData: Template) => {
-        console.log('模板创建成功，表单数据:', formData)
-        listRef.value?.refresh()
-      },
-      error: (error: Error) => {
-        console.error('创建模板失败:', error)
-      }
-    }
-  )
+  createDialogData.value = {
+    status: '草稿',
+    version: '1.0.0',
+    standardType: '行业标准模板'
+  }
+  createDialogVisible.value = true
 }
 
 // 处理编辑
 const handleEdit = (row: Template) => {
-  dialogInstance.open('templateCreate', 
-    { 
-      initialData: row
-    }, 
-    {
-      submit: (formData: Template) => {
-        console.log('模板更新成功，表单数据:', formData)
-        listRef.value?.refresh()
-      },
-      error: (error: Error) => {
-        console.error('更新模板失败:', error)
-      }
-    }
-  )
+  createDialogData.value = { ...row }
+  createDialogVisible.value = true
 }
 
 // 处理复制
@@ -335,6 +319,17 @@ const handleDelete = async (row: Template) => {
 // 处理查看模板
 const handleViewTemplate = (template: Template) => {
   router.push(`/template/detail/${template.id}`)
+}
+
+// 处理对话框提交
+const handleDialogSubmit = (formData: Template) => {
+  console.log('模板创建/更新成功，表单数据:', formData)
+  listRef.value?.refresh()
+}
+
+// 处理对话框错误
+const handleDialogError = (error: Error) => {
+  console.error('创建/更新模板失败:', error)
 }
 
 // 监听模板列表刷新事件
