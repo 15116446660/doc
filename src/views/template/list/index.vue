@@ -2,8 +2,16 @@
   <div class="template-list-container">
     <div class="template-list-layout">
       <!-- 左侧分类树 -->
-      <div class="template-type-sidebar">
-        <template-type-tree ref="treeRef" @select="handleTypeSelect" />
+      <div class="template-type-sidebar" :class="{ 'collapsed': sidebarCollapsed }">
+        <div v-if="!sidebarCollapsed" class="sidebar-content">
+          <template-type-tree ref="treeRef" @select="handleTypeSelect" />
+        </div>
+        <div class="sidebar-toggle" @click="toggleSidebar">
+          <el-icon :size="20">
+            <arrow-left v-if="!sidebarCollapsed" />
+            <arrow-right v-else />
+          </el-icon>
+        </div>
       </div>
 
       <!-- 右侧列表 -->
@@ -124,7 +132,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import TemplateCard from './components/TemplateCard.vue'
 import TemplateCreateDialog from './dialogs/TemplateCreateDialog.vue'
@@ -139,6 +147,14 @@ import { useRouter } from 'vue-router'
 const listRef = ref()
 const treeRef = ref()
 const router = useRouter()
+
+// 侧边栏折叠状态
+const sidebarCollapsed = ref(false)
+
+// 切换侧边栏折叠状态
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
 
 // 对话框控制
 const createDialogVisible = ref(false)
@@ -484,11 +500,51 @@ const handleTypeSelect = (type: TemplateType | null) => {
   height: 100%;
   display: flex;
   gap: 20px;
+  position: relative;
 }
 
 .template-type-sidebar {
   width: 280px;
   flex-shrink: 0;
+  position: relative;
+  transition: all 0.3s ease;
+  background-color: var(--el-bg-color-overlay);
+  border-radius: 8px;
+  box-shadow: var(--el-box-shadow-light);
+  overflow: hidden;
+
+  &.collapsed {
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-content {
+    height: 100%;
+    overflow: auto;
+  }
+
+  .sidebar-toggle {
+    position: absolute;
+    top: 50%;
+    right: 0;
+    width: 20px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--el-color-primary-light-8);
+    color: var(--el-color-primary);
+    cursor: pointer;
+    border-radius: 4px 0 0 4px;
+    transform: translateY(-50%);
+    transition: all 0.3s;
+    z-index: 10;
+
+    &:hover {
+      background-color: var(--el-color-primary-light-5);
+      color: white;
+    }
+  }
 }
 
 .template-list-main {
