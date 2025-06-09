@@ -13,7 +13,6 @@
       <el-dropdown 
         class="more-dropdown" 
         placement="bottom-end"
-        :hide-on-click="false"
         @click.stop
         v-if="layout !== 'horizontal'"
       >
@@ -93,7 +92,6 @@
             <el-dropdown 
               trigger="click" 
               placement="bottom-end"
-              :hide-on-click="false"
               @click.stop
             >
               <div class="more-actions" @click.stop>
