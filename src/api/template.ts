@@ -118,4 +118,38 @@ export function getTemplateTypeOptions() {
 // 获取负责人选项
 export function getOwnerOptions() {
   return get<OptionItem[]>('/api/templates/owners')
+}
+
+// 模板分类类型定义
+export interface TemplateType {
+  id: number
+  tenantId: number
+  typeCode: string
+  typeName: string
+  children?: TemplateType[]
+  parentId?: number
+  createTime?: string
+  updateTime?: string
+  createUid?: number
+  updateUid?: number
+}
+
+// 获取模板分类树
+export function getTemplateTypeTree() {
+  return get<TemplateType[]>('/api/template/types/tree')
+}
+
+// 新增模板分类
+export function createTemplateType(data: Partial<TemplateType>) {
+  return post<TemplateType>('/api/template/types', data)
+}
+
+// 更新模板分类
+export function updateTemplateType(id: number, data: Partial<TemplateType>) {
+  return put<TemplateType>(`/api/template/types/${id}`, data)
+}
+
+// 删除模板分类
+export function deleteTemplateType(id: number) {
+  return del<void>(`/api/template/types/${id}`)
 } 

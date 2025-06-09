@@ -77,6 +77,79 @@ const templateCategories = [
   }
 ]
 
+// 模板分类数据
+const templateTypes = [
+  {
+    id: 1,
+    tenantId: 0,
+    typeCode: "GYWD",
+    typeName: "概要文档",
+    children: [
+      {
+        id: 11,
+        tenantId: 0,
+        typeCode: "GYWD1",
+        typeName: "概要文档1",
+        parentId: 1,
+        createTime: "2024-01-20 10:00:00",
+        updateTime: "2024-01-20 10:00:00",
+        createUid: 1,
+        updateUid: 1
+      }
+    ],
+    createTime: "2024-01-20 10:00:00",
+    updateTime: "2024-01-20 10:00:00",
+    createUid: 1,
+    updateUid: 1
+  },
+  {
+    id: 2,
+    tenantId: 0,
+    typeCode: "CPWD",
+    typeName: "产品文档",
+    children: [
+      {
+        id: 21,
+        tenantId: 0,
+        typeCode: "CPWD1",
+        typeName: "产品文档1",
+        parentId: 2,
+        createTime: "2024-01-20 10:00:00",
+        updateTime: "2024-01-20 10:00:00",
+        createUid: 1,
+        updateUid: 1
+      }
+    ],
+    createTime: "2024-01-20 10:00:00",
+    updateTime: "2024-01-20 10:00:00",
+    createUid: 1,
+    updateUid: 1
+  },
+  {
+    id: 3,
+    tenantId: 0,
+    typeCode: "YJWD",
+    typeName: "硬件文档",
+    children: [
+      {
+        id: 31,
+        tenantId: 0,
+        typeCode: "YJWD1",
+        typeName: "硬件文档1",
+        parentId: 3,
+        createTime: "2024-01-20 10:00:00",
+        updateTime: "2024-01-20 10:00:00",
+        createUid: 1,
+        updateUid: 1
+      }
+    ],
+    createTime: "2024-01-20 10:00:00",
+    updateTime: "2024-01-20 10:00:00",
+    createUid: 1,
+    updateUid: 1
+  }
+]
+
 // 生成模板数据
 const generateTemplates = (count: number) => {
   const statusOptions = [
@@ -448,6 +521,121 @@ const mockData: MockMethod[] = [
       return {
         code: 200,
         data: filteredUsers
+      }
+    }
+  },
+  {
+    url: '/api/template/types/tree',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        data: templateTypes
+      }
+    }
+  },
+  {
+    url: '/api/template/types',
+    method: 'post',
+    response: (req: any) => {
+      const data = req.body
+      const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
+      const newId = Math.max(...templateTypes.flat().map(t => t.id)) + 1
+      
+      const newType = {
+        id: newId,
+        tenantId: 0,
+        ...data,
+        createTime: now,
+        updateTime: now,
+        createUid: 1,
+        updateUid: 1
+      }
+      
+      if (data.parentId) {
+        const parent = templateTypes.find(t => t.id === data.parentId)
+        if (parent) {
+          parent.children = parent.children || []
+          parent.children.push(newType)
+        }
+      } else {
+        templateTypes.push(newType)
+      }
+      
+      return {
+        code: 200,
+        data: newType,
+        message: '新增成功'
+      }
+    }
+  },
+  {
+    url: '/api/template/types/:id',
+    method: 'put',
+    response: (req: any) => {
+      const { id } = req.params
+      const data = req.body
+      const now = new Date().toISOString().replace('T', ' ').substring(0, 19)
+      
+      const updateNode = (nodes: any[]) => {
+        for (const node of nodes) {
+          if (node.id === parseInt(id)) {
+            Object.assign(node, data, {
+              updateTime: now,
+              updateUid: 1
+            })
+            return true
+          }
+          if (node.children && updateNode(node.children)) {
+            return true
+          }
+        }
+        return false
+      }
+      
+      if (updateNode(templateTypes)) {
+        return {
+          code: 200,
+          message: '更新成功'
+        }
+      }
+      
+      return {
+        code: 404,
+        message: '分类不存在'
+      }
+    }
+  },
+  {
+    url: '/api/template/types/:id',
+    method: 'delete',
+    response: (req: any) => {
+      const { id } = req.params
+      
+      const deleteNode = (nodes: any[]) => {
+        const index = nodes.findIndex(node => node.id === parseInt(id))
+        if (index > -1) {
+          nodes.splice(index, 1)
+          return true
+        }
+        for (const node of nodes) {
+          if (node.children && deleteNode(node.children)) {
+            return true
+          }
+        }
+        return false
+      }
+      
+      if (deleteNode(templateTypes)) {
+        return {
+          code: 200,
+          message: '删除成功'
+        }
+      }
+      
+      return {
+        code: 404,
+        message: '分类不存在'
       }
     }
   }

@@ -1,89 +1,99 @@
 <template>
   <div class="template-list-container">
-    <base-list
-      ref="listRef"
-      title="模板列表"
-      :filter-config="filterConfig"
-      :columns="columns"
-      :enable-advanced-filter="true"
-      :enable-view-switch="true"
-      :request-api="getTemplateList"
-      :table-props="tableProps"
-      :pagination-config="paginationConfig"
-      :card-layout="cardLayout"
-      @filter-change="handleFilterChange"
-      @view-change="handleViewChange"
-      @selection-change="handleSelectionChange"
-    >
-      <!-- 顶部工具栏插槽 -->
-      <template #toolbar>
-        <el-button type="primary" @click="handleCreateTemplate">
-          <el-icon><plus /></el-icon>新建模板
-        </el-button>
-      </template>
-      
-      <!-- 模板名称自定义插槽 -->
-      <template #template-name="{ row }">
-        <div class="template-name" @click="handleViewTemplate(row)">
-          <span class="template-title">{{ row.name || row.title || '未命名模板' }}</span>
-        </div>
-      </template>
+    <div class="template-list-layout">
+      <!-- 左侧分类树 -->
+      <div class="template-type-sidebar">
+        <template-type-tree @select="handleTypeSelect" />
+      </div>
 
-      <!-- 状态自定义插槽 -->
-      <template #status="{ row }">
-        <el-tag :type="getStatusType(row.status)">{{ row.status || '未设置' }}</el-tag>
-      </template>
-      
-      <!-- 审核状态自定义插槽 -->
-      <template #review-status="{ row }">
-        <el-tag v-if="row.reviewStatus" type="warning">{{ row.reviewName || row.reviewStatus }}</el-tag>
-        <span v-else>-</span>
-      </template>
+      <!-- 右侧列表 -->
+      <div class="template-list-main">
+        <base-list
+          ref="listRef"
+          title="模板列表"
+          :filter-config="filterConfig"
+          :columns="columns"
+          :enable-advanced-filter="true"
+          :enable-view-switch="true"
+          :request-api="getTemplateList"
+          :table-props="tableProps"
+          :pagination-config="paginationConfig"
+          :card-layout="cardLayout"
+          @filter-change="handleFilterChange"
+          @view-change="handleViewChange"
+          @selection-change="handleSelectionChange"
+        >
+          <!-- 顶部工具栏插槽 -->
+          <template #toolbar>
+            <el-button type="primary" @click="handleCreateTemplate">
+              <el-icon><plus /></el-icon>新建模板
+            </el-button>
+          </template>
+          
+          <!-- 模板名称自定义插槽 -->
+          <template #template-name="{ row }">
+            <div class="template-name" @click="handleViewTemplate(row)">
+              <span class="template-title">{{ row.name || row.title || '未命名模板' }}</span>
+            </div>
+          </template>
 
-      <!-- 启用状态自定义插槽 -->
-      <template #enable-status="{ row }">
-        <el-tag :type="row.enableStatus ? 'success' : 'info'">
-          {{ row.enableStatus ? '已启用' : '未启用' }}
-        </el-tag>
-      </template>
+          <!-- 状态自定义插槽 -->
+          <template #status="{ row }">
+            <el-tag :type="getStatusType(row.status)">{{ row.status || '未设置' }}</el-tag>
+          </template>
+          
+          <!-- 审核状态自定义插槽 -->
+          <template #review-status="{ row }">
+            <el-tag v-if="row.reviewStatus" type="warning">{{ row.reviewName || row.reviewStatus }}</el-tag>
+            <span v-else>-</span>
+          </template>
 
-      <!-- 分类自定义插槽 -->
-      <template #category="{ row }">
-        <el-tag>{{ row.categoryName || '未分类' }}</el-tag>
-      </template>
+          <!-- 启用状态自定义插槽 -->
+          <template #enable-status="{ row }">
+            <el-tag :type="row.enableStatus ? 'success' : 'info'">
+              {{ row.enableStatus ? '已启用' : '未启用' }}
+            </el-tag>
+          </template>
 
-      <!-- 创建人自定义插槽 -->
-      <template #creator="{ row }">
-        <div class="user-info">
-          <el-avatar :size="24" :src="row.ownerAvatar">
-            {{ (row?.creator || row?.owner || 'U')?.charAt(0) }}
-          </el-avatar>
-          <span>{{ row.creator || row.owner || '未分配' }}</span>
-        </div>
-      </template>
+          <!-- 分类自定义插槽 -->
+          <template #category="{ row }">
+            <el-tag>{{ row.categoryName || '未分类' }}</el-tag>
+          </template>
 
-      <!-- 操作自定义插槽 -->
-      <template #actions="{ row }">
-        <el-button type="primary" text @click="handleEdit(row)">编辑</el-button>
-        <el-button type="success" text @click="handleCopy(row)">复制</el-button>
-        <el-button type="danger" text @click="handleDelete(row)">删除</el-button>
-      </template>
+          <!-- 创建人自定义插槽 -->
+          <template #creator="{ row }">
+            <div class="user-info">
+              <el-avatar :size="24" :src="row.ownerAvatar">
+                {{ (row?.creator || row?.owner || 'U')?.charAt(0) }}
+              </el-avatar>
+              <span>{{ row.creator || row.owner || '未分配' }}</span>
+            </div>
+          </template>
 
-      <!-- 卡片视图插槽 -->
-      <template #card="{ item }">
-        <template-card
-          :template="item"
-          :layout="cardLayout"
-          @edit="handleEdit"
-          @copy="handleCopy"
-          @delete="handleDelete"
-          @view="handleViewTemplate"
-          @preview="handlePreviewTemplate"
-          @download="handleDownloadTemplate"
-          @version-history="handleVersionHistory"
-        />
-      </template>
-    </base-list>
+          <!-- 操作自定义插槽 -->
+          <template #actions="{ row }">
+            <el-button type="primary" text @click="handleEdit(row)">编辑</el-button>
+            <el-button type="success" text @click="handleCopy(row)">复制</el-button>
+            <el-button type="danger" text @click="handleDelete(row)">删除</el-button>
+          </template>
+
+          <!-- 卡片视图插槽 -->
+          <template #card="{ item }">
+            <template-card
+              :template="item"
+              :layout="cardLayout"
+              @edit="handleEdit"
+              @copy="handleCopy"
+              @delete="handleDelete"
+              @view="handleViewTemplate"
+              @preview="handlePreviewTemplate"
+              @download="handleDownloadTemplate"
+              @version-history="handleVersionHistory"
+            />
+          </template>
+        </base-list>
+      </div>
+    </div>
     
     <!-- 模板创建对话框 -->
     <template-create-dialog
@@ -102,9 +112,10 @@ import { Plus } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import TemplateCard from './components/TemplateCard.vue'
 import TemplateCreateDialog from './dialogs/TemplateCreateDialog.vue'
+import TemplateTypeTree from '@/components/TemplateTypeTree.vue'
 import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
 import { getTemplateList, getTemplateStatusOptions, getTemplateCategoryOptions } from '@/api/template'
-import type { Template } from '@/api/template'
+import type { Template, TemplateType } from '@/api/template'
 import { useRouter } from 'vue-router'
 
 // 列表实例
@@ -424,6 +435,13 @@ const handleDialogError = (error: Error) => {
 window.addEventListener('template-list-refresh', () => {
   listRef.value?.refresh()
 })
+
+// 处理分类选择
+const handleTypeSelect = (type: TemplateType) => {
+  console.log('Selected type:', type)
+  // 这里可以根据选中的分类刷新列表
+  listRef.value?.refresh()
+}
 </script>
 
 <style lang="scss" scoped>
@@ -432,6 +450,22 @@ window.addEventListener('template-list-refresh', () => {
   padding: 20px;
   background-color: var(--el-bg-color);
   border-radius: 8px;
+}
+
+.template-list-layout {
+  height: 100%;
+  display: flex;
+  gap: 20px;
+}
+
+.template-type-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+}
+
+.template-list-main {
+  flex: 1;
+  min-width: 0;
 }
 
 .template-name {
