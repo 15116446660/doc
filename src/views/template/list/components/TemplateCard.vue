@@ -144,9 +144,9 @@
           <el-tag size="small" :type="getStatusType(template.status)">
             {{ template.status || '草稿' }}
           </el-tag>
-          <el-tag v-if="template.reviewStatus" size="small" type="warning">
+          <!-- <el-tag v-if="template.reviewStatus" size="small" type="warning">
             {{ template.reviewName || template.reviewStatus }}
-          </el-tag>
+          </el-tag> -->
         </div>
         
         <!-- 信息列表 -->

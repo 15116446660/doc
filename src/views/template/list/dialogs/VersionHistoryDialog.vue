@@ -2,7 +2,7 @@
   <el-dialog
     v-model="visible"
     :title="`版本历史 [${template?.name || ''}]`"
-    width="900px"
+    width="75%"
     destroy-on-close
   >
     <div class="version-history">
@@ -43,11 +43,11 @@
       </base-list>
     </div>
     
-    <template #footer>
+    <!-- <template #footer>
       <span class="dialog-footer">
         <el-button @click="handleClose">关闭</el-button>
       </span>
-    </template>
+    </template> -->
   </el-dialog>
 </template>
 
@@ -100,7 +100,7 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'content',
     label: '制作内容',
-    minWidth: 200,
+    minWidth: 300,
     showOverflowTooltip: true,
     headerAlign: 'center'
   },
@@ -130,7 +130,7 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'updateTime',
     label: '修改时间',
-    width: 160,
+    width: 220,
     align: 'center',
     headerAlign: 'center'
   },
@@ -190,16 +190,17 @@ const handleView = (version: VersionHistoryItem) => {
 }
 
 // 处理关闭
-const handleClose = () => {
-  visible.value = false
-}
+// const handleClose = () => {
+//   visible.value = false
+// }
 </script>
 
 <style lang="scss" scoped>
 .version-history {
+  margin: -20px;
+  
   :deep(.el-table) {
-    margin: -20px;
-    width: calc(100% + 40px);
+    width: 100%;
   }
 }
 </style> 

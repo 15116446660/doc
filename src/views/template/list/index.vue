@@ -194,15 +194,9 @@ const columns = ref<TableColumn[]>([
   },
   {
     prop: 'status',
-    label: '状态',
-    width: 100,
-    slot: 'status'
-  },
-  {
-    prop: 'reviewStatus',
     label: '审核状态',
     width: 100,
-    slot: 'review-status'
+    slot: 'status'
   },
   {
     prop: 'scope',
