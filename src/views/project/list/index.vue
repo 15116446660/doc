@@ -50,7 +50,7 @@
             {{ row?.team?.charAt(0) || 'U' }}
           </el-avatar>
           <span>{{ row.team || '未分配' }}</span>
-        </div>
+    </div>
       </template>
 
       <!-- 操作自定义插槽 -->

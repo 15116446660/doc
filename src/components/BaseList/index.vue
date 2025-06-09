@@ -220,8 +220,12 @@ const list = ref<any[]>([])
 const total = ref(0)
 // 当前页码
 const currentPage = ref(1)
-// 每页条数
-const currentPageSize = ref(props.paginationConfig?.pageSize || 10)
+// 根据视图类型获取页面大小
+const getPageSizeByViewType = (type: ViewType) => {
+  return type === 'cards' ? 12 : 10
+}
+// 初始化当前页大小
+const currentPageSize = ref(props.paginationConfig?.pageSize || getPageSizeByViewType(props.defaultViewType))
 // 过滤条件
 const filterValues = ref<Record<string, any>>({})
 // 排序条件
@@ -230,8 +234,8 @@ const sortInfo = ref<{ prop?: string, order?: string }>({})
 // 合并请求参数
 const requestParams = computed(() => {
   return {
-    page: currentPage.value,
-    limit: currentPageSize.value,
+    pageNum: currentPage.value,
+    pageSize: currentPageSize.value,
     ...filterValues.value,
     ...sortInfo.value,
     ...props.requestParams
@@ -393,7 +397,10 @@ const getItemKey = (item: any) => {
 // 处理视图切换
 const handleViewChange = (type: ViewType) => {
   viewType.value = type
+  // 切换视图时调整页面大小
+  currentPageSize.value = getPageSizeByViewType(type)
   emit('view-change', type)
+  fetchData()
 }
 
 // 处理过滤条件变化
@@ -507,9 +514,29 @@ defineExpose({
   flex: 1;
   overflow: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, 280px);
+  gap: 24px;
   padding: 1px;
+  justify-content: space-between;
+  
+  @media screen and (max-width: 1600px) {
+    justify-content: space-around;
+  }
+  
+  @media screen and (max-width: 640px) {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    
+    > * {
+      max-width: 100%;
+    }
+  }
+  
+  > * {
+    height: auto;
+    min-height: 380px;
+    width: 100%;
+  }
 }
 
 .card-item {

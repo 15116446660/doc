@@ -1,0 +1,373 @@
+<template>
+  <div class="template-list-container">
+    <base-list
+      ref="listRef"
+      title="模板列表"
+      :filter-config="filterConfig"
+      :columns="columns"
+      :enable-advanced-filter="true"
+      :enable-view-switch="true"
+      :request-api="getTemplateList"
+      :table-props="tableProps"
+      :pagination-config="paginationConfig"
+      @filter-change="handleFilterChange"
+      @view-change="handleViewChange"
+      @selection-change="handleSelectionChange"
+    >
+      <!-- 顶部工具栏插槽 -->
+      <template #toolbar>
+        <el-button type="primary" @click="handleCreateTemplate">
+          <el-icon><plus /></el-icon>新建模板
+        </el-button>
+      </template>
+      
+      <!-- 模板名称自定义插槽 -->
+      <template #template-name="{ row }">
+        <div class="template-name" @click="handleViewTemplate(row)">
+          <span class="template-title">{{ row.title || '未命名模板' }}</span>
+        </div>
+      </template>
+
+      <!-- 状态自定义插槽 -->
+      <template #status="{ row }">
+        <el-tag :type="getStatusType(row.status)">{{ row.status || '未设置' }}</el-tag>
+      </template>
+
+      <!-- 分类自定义插槽 -->
+      <template #category="{ row }">
+        <el-tag>{{ row.categoryName || '未分类' }}</el-tag>
+      </template>
+
+      <!-- 负责人自定义插槽 -->
+      <template #owner="{ row }">
+        <div class="user-info">
+          <el-avatar :size="24" :src="row.ownerAvatar">
+            {{ row?.owner?.charAt(0) || 'U' }}
+          </el-avatar>
+          <span>{{ row.owner || '未分配' }}</span>
+        </div>
+      </template>
+
+      <!-- 操作自定义插槽 -->
+      <template #actions="{ row }">
+        <el-button type="primary" text @click="handleEdit(row)">编辑</el-button>
+        <el-button type="success" text @click="handleCopy(row)">复制</el-button>
+        <el-button type="danger" text @click="handleDelete(row)">删除</el-button>
+      </template>
+
+      <!-- 卡片视图插槽 -->
+      <template #card="{ item }">
+        <template-card
+          :template="item"
+          @edit="handleEdit"
+          @copy="handleCopy"
+          @delete="handleDelete"
+          @view="handleViewTemplate"
+        />
+      </template>
+    </base-list>
+    
+    <!-- 模板创建对话框 -->
+    <template-create-dialog ref="templateCreateDialogRef" />
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { ElMessageBox } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import BaseList from '@/components/BaseList/index.vue'
+import TemplateCard from './components/TemplateCard.vue'
+import TemplateCreateDialog from './dialogs/TemplateCreateDialog.vue'
+import dialogInstance from '@/hooks/useDialog'
+import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
+import { getTemplateList, getTemplateStatusOptions, getTemplateCategoryOptions } from '@/api/template'
+import type { Template } from '@/api/template'
+import { useRouter } from 'vue-router'
+
+// 列表实例
+const listRef = ref()
+const templateCreateDialogRef = ref()
+const router = useRouter()
+
+// 表格列配置
+const columns = ref<TableColumn[]>([
+  {
+    type: 'index',
+    label: '序号',
+    width: 55,
+    fixed: 'left',
+    align: 'center'
+  },
+  {
+    prop: 'title',
+    label: '模板名称',
+    minWidth: 200,
+    fixed: 'left',
+    align: 'center',
+    slot: 'template-name'
+  },
+  {
+    prop: 'categoryName',
+    label: '分类',
+    minWidth: 180,
+    slot: 'category',
+    showOverflowTooltip: true
+  },
+  {
+    prop: 'status',
+    label: '状态',
+    width: 100,
+    slot: 'status'
+  },
+  {
+    prop: 'owner',
+    label: '负责人',
+    width: 120,
+    slot: 'owner'
+  },
+  {
+    prop: 'version',
+    label: '版本',
+    width: 100
+  },
+  {
+    prop: 'updateTime',
+    label: '更新时间',
+    width: 180
+  },
+  {
+    prop: 'createTime',
+    label: '创建时间',
+    width: 180
+  },
+  {
+    label: '操作',
+    width: 200,
+    fixed: 'right',
+    slot: 'actions'
+  }
+])
+
+// 过滤条件配置
+const filterConfig = ref<FilterFormItem[]>([
+  {
+    type: 'input',
+    field: 'keyword',
+    label: '关键词',
+    placeholder: '模板名称/负责人'
+  },
+  {
+    type: 'select',
+    field: 'category',
+    label: '分类',
+    placeholder: '请选择分类',
+    props: {
+      remote: false,
+      loading: false
+    },
+    options: async () => {
+      const res = await getTemplateCategoryOptions()
+      return res as unknown as OptionItem[]
+    }
+  },
+  {
+    type: 'select',
+    field: 'status',
+    label: '状态',
+    placeholder: '请选择状态',
+    props: {
+      filterable: true,
+      remote: true,
+      reserveKeyword: true,
+      loading: false
+    },
+    options: async () => {
+      const res = await getTemplateStatusOptions()
+      return res as unknown as OptionItem[]
+    }
+  },
+  {
+    type: 'daterange',
+    field: 'dateRange',
+    label: '创建时间',
+    advanced: true
+  }
+])
+
+// 表格属性
+const tableProps = {
+  border: true,
+  stripe: true,
+  'row-key': 'id',
+  'header-cell-style': {
+    background: 'var(--el-fill-color-light)',
+    color: 'var(--el-text-color-primary)'
+  }
+}
+
+// 表格视图分页配置
+const tablePaginationConfig = {
+  pageSize: 10,
+  pageSizes: [10, 20, 50, 100],
+  layout: 'total, sizes, prev, pager, next, jumper',
+  background: true
+}
+
+// 卡片视图分页配置
+const cardPaginationConfig = {
+  pageSize: 12,
+  pageSizes: [12, 24, 36, 48],
+  layout: 'total, sizes, prev, pager, next, jumper',
+  background: true
+}
+
+// 当前视图类型
+const currentViewType = ref('table')
+
+// 根据视图类型获取分页配置
+const paginationConfig = computed(() => {
+  return currentViewType.value === 'cards' ? cardPaginationConfig : tablePaginationConfig
+})
+
+// 获取状态类型
+const getStatusType = (status: string) => {
+  const typeMap: Record<string, string> = {
+    '已发布': 'success',
+    '草稿': 'info',
+    '审核中': 'warning',
+    '已废弃': 'danger'
+  }
+  return typeMap[status] || 'info'
+}
+
+// 处理过滤条件变化
+const handleFilterChange = (filters: Record<string, any>) => {
+  console.log('Filter changed:', filters)
+}
+
+// 处理视图切换
+const handleViewChange = (type: string) => {
+  console.log('View changed:', type)
+  currentViewType.value = type
+}
+
+// 处理选择变化
+const handleSelectionChange = (selection: Template[]) => {
+  console.log('Selection changed:', selection)
+}
+
+// 处理创建模板
+const handleCreateTemplate = () => {
+  dialogInstance.open('templateCreate', 
+    { 
+      initialData: {
+        status: '草稿',
+        version: '1.0.0'
+      }
+    }, 
+    {
+      submit: (formData: Template) => {
+        console.log('模板创建成功，表单数据:', formData)
+        listRef.value?.refresh()
+      },
+      error: (error: Error) => {
+        console.error('创建模板失败:', error)
+      }
+    }
+  )
+}
+
+// 处理编辑
+const handleEdit = (row: Template) => {
+  dialogInstance.open('templateCreate', 
+    { 
+      initialData: row
+    }, 
+    {
+      submit: (formData: Template) => {
+        console.log('模板更新成功，表单数据:', formData)
+        listRef.value?.refresh()
+      },
+      error: (error: Error) => {
+        console.error('更新模板失败:', error)
+      }
+    }
+  )
+}
+
+// 处理复制
+const handleCopy = async (row: Template) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要复制模板"${row.title}"吗？`,
+      '复制确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'info'
+      }
+    )
+    console.log('Copy:', row)
+  } catch {
+    // 用户取消复制
+  }
+}
+
+// 处理删除
+const handleDelete = async (row: Template) => {
+  try {
+    await ElMessageBox.confirm(
+      `确定要删除模板"${row.title}"吗？`,
+      '删除确认',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
+    console.log('Delete:', row)
+  } catch {
+    // 用户取消删除
+  }
+}
+
+// 处理查看模板
+const handleViewTemplate = (template: Template) => {
+  router.push(`/template/detail/${template.id}`)
+}
+
+// 监听模板列表刷新事件
+window.addEventListener('template-list-refresh', () => {
+  listRef.value?.refresh()
+})
+</script>
+
+<style lang="scss" scoped>
+.template-list-container {
+  height: 100%;
+  padding: 20px;
+  background-color: var(--el-bg-color);
+}
+
+.template-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.template-title {
+  cursor: pointer;
+  color: var(--el-color-primary);
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+</style> 

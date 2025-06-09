@@ -1,9 +1,6 @@
 <template>
   <div class="container">
-    <h1>模板中心</h1>
-    <div class="content">
-      <!-- 内容区域 -->
-    </div>
+    <router-view />
   </div>
 </template>
 
@@ -13,10 +10,6 @@
 
 <style scoped>
 .container {
-  padding: 20px;
-}
-
-.content {
-  margin-top: 20px;
+  height: 100%;
 }
 </style>

@@ -93,7 +93,22 @@ const routes: Array<RouteRecordRaw> = [
         path: 'template',
         name: 'DocumentTemplate',
         component: () => import('../views/document/template/index.vue'),
-        meta: { title: '模板中心' }
+        meta: { title: '模板中心' },
+        redirect: '/document/template/list',
+        children: [
+          {
+            path: 'list',
+            name: 'TemplateList',
+            component: () => import('../views/template/list/index.vue'),
+            meta: { title: '模板列表' }
+          },
+          {
+            path: 'detail/:id',
+            name: 'TemplateDetail',
+            component: () => import('../views/template/detail/index.vue'),
+            meta: { title: '模板详情', hidden: true }
+          }
+        ]
       },
       {
         path: 'content',

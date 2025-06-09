@@ -1,3 +1,4 @@
-import projectMock from './project.ts'
-
-export default projectMock 
+import projectMock from './project'
+import templateMock from './template'
+ 
+export default [...projectMock, ...templateMock] 
