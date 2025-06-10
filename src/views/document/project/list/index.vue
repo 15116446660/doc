@@ -36,6 +36,12 @@
               <el-button type="primary" @click="handleCreateProject">
                 <el-icon><Plus /></el-icon>创建项目
               </el-button>
+              <div class="view-toggle">
+                <el-radio-group v-model="viewType" @change="handleViewChange" size="small">
+                  <el-radio-button label="table">表格</el-radio-button>
+                  <el-radio-button label="cards">卡片</el-radio-button>
+                </el-radio-group>
+              </div>
             </div>
           </template>
 
@@ -72,6 +78,11 @@
               查看文档
             </el-button>
           </template>
+
+          <!-- 卡片视图插槽 -->
+          <template #card="{ item }">
+            <project-card :project="item" />
+          </template>
         </base-list>
       </div>
     </div>
@@ -93,6 +104,7 @@ import { Plus, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
 import ProjectTypeTree from './components/ProjectTypeTree.vue'
+import ProjectCard from './components/ProjectCard.vue'
 import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
 import { getProjectList, getProjectStatusOptions } from '@/api/document'
 import type { Project, ProjectType } from '@/types/document'
@@ -102,6 +114,9 @@ const router = useRouter()
 // 列表实例
 const listRef = ref()
 const treeRef = ref()
+
+// 视图模式
+const viewType = ref('table')
 
 // 对话框控制
 const createDialogVisible = ref(false)
@@ -251,14 +266,25 @@ const tableProps = {
   }
 }
 
-// 分页配置
+// 表格视图分页配置
+const tablePaginationConfig = {
+  pageSize: 10,
+  pageSizes: [10, 20, 50, 100],
+  layout: 'total, sizes, prev, pager, next, jumper',
+  background: true
+}
+
+// 卡片视图分页配置
+const cardPaginationConfig = {
+  pageSize: 12,
+  pageSizes: [12, 24, 36, 48],
+  layout: 'total, sizes, prev, pager, next, jumper',
+  background: true
+}
+
+// 根据视图类型获取分页配置
 const paginationConfig = computed(() => {
-  return {
-    pageSize: 10,
-    pageSizes: [10, 20, 50, 100],
-    layout: 'total, sizes, prev, pager, next, jumper',
-    background: true
-  }
+  return viewType.value === 'cards' ? cardPaginationConfig : tablePaginationConfig
 })
 
 // 获取状态类型
@@ -350,6 +376,11 @@ const handleTypeSelect = (type: ProjectType | null) => {
 // 切换侧边栏折叠状态
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value
+}
+
+// 处理视图切换
+const handleViewChange = (type: string) => {
+  viewType.value = type
 }
 </script>
 
@@ -452,5 +483,12 @@ const toggleSidebar = () => {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.project-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 20px;
 }
 </style>
