@@ -80,9 +80,27 @@ const routes: Array<RouteRecordRaw> = [
     path: '/document',
     name: 'Document',
     component: () => import('../layout/index.vue'),
-    redirect: '/document/edit',
     meta: { title: '标书管理', icon: 'Document' },
     children: [
+      {
+        path: 'library',
+        name: 'DocumentLibrary',
+        component: () => import('@/views/document/project/list/index.vue'),
+        meta: {
+          title: '文档库',
+          icon: 'Folder'
+        }
+      },
+      {
+        path: 'library/:projectId/documents',
+        name: 'DocumentList',
+        component: () => import('@/views/document/project/document/list/index.vue'),
+        meta: {
+          title: '文档列表',
+          icon: 'Document',
+          hidden: true
+        }
+      },
       {
         path: 'edit',
         name: 'DocumentEdit',
