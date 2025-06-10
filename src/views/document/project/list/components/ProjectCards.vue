@@ -20,7 +20,7 @@
               <div class="project-title" :title="project.name">
                 {{ project.name }}
               </div>
-              <div class="project-code">{{ project.projectCode }}</div>
+              <div class="project-code">{{ project.projectNum }}</div>
             </div>
             <div class="project-status">
               <el-tag :type="getStatusType(project.status)">
@@ -31,35 +31,41 @@
 
           <div class="card-content">
             <div class="info-item">
-              <span class="label">项目类型：</span>
-              <span class="value">{{ project.type }}</span>
-            </div>
-            <div class="info-item">
-              <span class="label">所属部门：</span>
-              <span class="value">{{ project.department }}</span>
+              <span class="label">优先级：</span>
+              <el-tag size="small" :type="getPriorityType(project.priority)">
+                {{ project.priority }}
+              </el-tag>
             </div>
             <div class="info-item">
               <span class="label">负责人：</span>
               <div class="user-info">
-                <el-avatar :size="24" :src="project.ownerAvatar">
-                  {{ project.owner?.charAt(0) }}
+                <el-avatar :size="24" :src="project.directorHeadImg">
+                  {{ project.directorName?.charAt(0) }}
                 </el-avatar>
-                <span>{{ project.owner }}</span>
+                <span>{{ project.directorName }}</span>
               </div>
             </div>
             <div class="info-item">
+              <span class="label">文档数：</span>
+              <span class="value badge">{{ project.documentCount }}</span>
+            </div>
+            <div class="info-item">
+              <span class="label">成员数：</span>
+              <span class="value badge">{{ project.userCount }}</span>
+            </div>
+            <div class="info-item">
               <span class="label">开始时间：</span>
-              <span class="value">{{ project.startDate }}</span>
+              <span class="value">{{ project.startTime }}</span>
             </div>
             <div class="info-item">
               <span class="label">结束时间：</span>
-              <span class="value">{{ project.endDate }}</span>
+              <span class="value">{{ project.endTime }}</span>
             </div>
           </div>
 
           <div class="card-footer">
             <div class="footer-info">
-              <span class="create-time">创建时间：{{ project.createTime }}</span>
+              <span class="create-time">创建：{{ project.creator || '无' }} | {{ project.createTime }}</span>
             </div>
             <div class="footer-actions">
               <el-button
@@ -90,12 +96,24 @@ const router = useRouter()
 // 获取状态类型
 const getStatusType = (status: string) => {
   const typeMap: Record<string, string> = {
-    '未开始': 'info',
-    '进行中': 'success',
-    '已完成': '',
-    '已终止': 'danger'
+    'SURVEY': 'info',     // 调研中
+    'ONGOING': 'success', // 进行中
+    'COMPLETED': '',      // 已完成
+    'PAUSED': 'warning',  // 已暂停
+    'CANCELLED': 'danger' // 已取消
   }
   return typeMap[status] || 'info'
+}
+
+// 获取优先级类型
+const getPriorityType = (priority: string) => {
+  const typeMap: Record<string, string> = {
+    'P0': 'danger',  // 最高
+    'P1': 'warning', // 高
+    'P2': 'success', // 中
+    'P3': 'info'     // 低
+  }
+  return typeMap[priority] || 'info'
 }
 
 // 处理卡片点击
@@ -106,7 +124,7 @@ const handleCardClick = (project: Project) => {
 // 处理查看文档
 const handleViewDocuments = (project: Project) => {
   router.push({
-    name: 'document-list',
+    name: 'DocumentList',
     params: {
       projectId: project.id
     },
@@ -180,6 +198,16 @@ const handleViewDocuments = (project: Project) => {
         .value {
           color: var(--el-text-color-primary);
           @include text-overflow;
+          
+          &.badge {
+            background-color: var(--el-color-primary-light-8);
+            color: var(--el-color-primary);
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            display: inline-block;
+            font-weight: 500;
+          }
         }
 
         .user-info {

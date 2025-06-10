@@ -17,14 +17,23 @@
         <el-input v-model="formData.name" placeholder="请输入项目名称" />
       </el-form-item>
 
-      <el-form-item label="项目编号" prop="projectCode">
-        <el-input v-model="formData.projectCode" placeholder="请输入项目编号" />
+      <el-form-item label="项目编号" prop="projectNum">
+        <el-input v-model="formData.projectNum" placeholder="请输入项目编号" />
       </el-form-item>
 
-      <el-form-item label="项目类型" prop="type">
-        <el-select v-model="formData.type" placeholder="请选择项目类型" class="w-full">
+      <el-form-item label="优先级" prop="priority">
+        <el-select v-model="formData.priority" placeholder="请选择优先级" class="w-full">
+          <el-option label="P0 - 最高" value="P0" />
+          <el-option label="P1 - 高" value="P1" />
+          <el-option label="P2 - 中" value="P2" />
+          <el-option label="P3 - 低" value="P3" />
+        </el-select>
+      </el-form-item>
+
+      <el-form-item label="项目状态" prop="status">
+        <el-select v-model="formData.status" placeholder="请选择项目状态" class="w-full">
           <el-option
-            v-for="item in projectTypeOptions"
+            v-for="item in statusOptions"
             :key="item.value"
             :label="item.label"
             :value="item.value"
@@ -32,20 +41,9 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item label="所属部门" prop="department">
-        <el-select v-model="formData.department" placeholder="请选择所属部门" class="w-full">
-          <el-option
-            v-for="item in departmentOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
-          />
-        </el-select>
-      </el-form-item>
-
-      <el-form-item label="负责人" prop="owner">
+      <el-form-item label="负责人" prop="directorName">
         <el-select
-          v-model="formData.owner"
+          v-model="selectedDirector"
           placeholder="请选择负责人"
           filterable
           remote
@@ -69,11 +67,12 @@
 
       <el-form-item label="项目时间" required>
         <el-col :span="11">
-          <el-form-item prop="startDate">
+          <el-form-item prop="startTime">
             <el-date-picker
-              v-model="formData.startDate"
+              v-model="formData.startTime"
               type="date"
               placeholder="开始日期"
+              value-format="YYYY-MM-DD"
               class="w-full"
             />
           </el-form-item>
@@ -82,11 +81,12 @@
           <span class="text-gray-400">至</span>
         </el-col>
         <el-col :span="11">
-          <el-form-item prop="endDate">
+          <el-form-item prop="endTime">
             <el-date-picker
-              v-model="formData.endDate"
+              v-model="formData.endTime"
               type="date"
               placeholder="结束日期"
+              value-format="YYYY-MM-DD"
               class="w-full"
             />
           </el-form-item>
@@ -115,12 +115,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
+import { ref, reactive, watch, computed } from 'vue'
 import type { FormInstance } from 'element-plus'
 import type { Project } from '@/types/document'
-import { ElMessage } from 'element-plus'
 import { searchUsers } from '@/api/user'
-import { getProjectTypeOptions, getDepartmentOptions } from '@/api/document'
+import { getProjectStatusOptions } from '@/api/document'
 
 const props = defineProps<{
   modelValue: boolean
@@ -152,14 +151,30 @@ watch(() => dialogVisible.value, (val) => {
 // 表单数据
 const formData = reactive<Partial<Project>>({
   name: '',
-  projectCode: '',
-  type: '',
-  department: '',
-  owner: '',
-  startDate: '',
-  endDate: '',
+  projectNum: '',
+  priority: 'P2',
+  status: 'SURVEY',
+  startTime: '',
+  endTime: '',
   description: '',
-  status: '未开始'
+  directorName: '',
+  director: '',
+  directorHeadImg: '',
+  documentCount: 0,
+  userCount: 0
+})
+
+// 已选择的负责人
+const selectedDirector = computed({
+  get: () => formData.director || '',
+  set: (val) => {
+    formData.director = val
+    // 根据选择的负责人ID设置名字
+    const selected = userOptions.value.find(item => item.value === val)
+    if (selected) {
+      formData.directorName = selected.label
+    }
+  }
 })
 
 // 表单校验规则
@@ -168,30 +183,28 @@ const formRules = {
     { required: true, message: '请输入项目名称', trigger: 'blur' },
     { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
   ],
-  projectCode: [
+  projectNum: [
     { required: true, message: '请输入项目编号', trigger: 'blur' }
   ],
-  type: [
-    { required: true, message: '请选择项目类型', trigger: 'change' }
+  priority: [
+    { required: true, message: '请选择优先级', trigger: 'change' }
   ],
-  department: [
-    { required: true, message: '请选择所属部门', trigger: 'change' }
+  status: [
+    { required: true, message: '请选择项目状态', trigger: 'change' }
   ],
-  owner: [
+  director: [
     { required: true, message: '请选择负责人', trigger: 'change' }
   ],
-  startDate: [
+  startTime: [
     { required: true, message: '请选择开始日期', trigger: 'change' }
   ],
-  endDate: [
+  endTime: [
     { required: true, message: '请选择结束日期', trigger: 'change' }
   ]
 }
 
-// 项目类型选项
-const projectTypeOptions = ref<{ label: string; value: string }[]>([])
-// 部门选项
-const departmentOptions = ref<{ label: string; value: string }[]>([])
+// 状态选项
+const statusOptions = ref<{ label: string; value: string }[]>([])
 // 用户选项
 const userOptions = ref<{ label: string; value: string }[]>([])
 // 用户搜索加载状态
@@ -200,12 +213,8 @@ const userSearchLoading = ref(false)
 // 初始化选项数据
 const initOptions = async () => {
   try {
-    const [types, departments] = await Promise.all([
-      getProjectTypeOptions(),
-      getDepartmentOptions()
-    ])
-    projectTypeOptions.value = types
-    departmentOptions.value = departments
+    const status = await getProjectStatusOptions()
+    statusOptions.value = status
   } catch (error) {
     console.error('Failed to load options:', error)
   }
@@ -242,6 +251,20 @@ const handleSubmit = async () => {
     await formRef.value.validate()
     submitting.value = true
     
+    // 生成创建时间
+    if (!formData.createTime) {
+      formData.createTime = new Date().toISOString().replace('T', ' ').substring(0, 19)
+    }
+    
+    // 设置默认值
+    if (formData.documentCount === undefined) {
+      formData.documentCount = 0
+    }
+    
+    if (formData.userCount === undefined) {
+      formData.userCount = 1
+    }
+    
     // 发射提交事件
     emit('submit', formData as Project)
     
@@ -259,14 +282,17 @@ const handleClose = () => {
   formRef.value?.resetFields()
   Object.assign(formData, {
     name: '',
-    projectCode: '',
-    type: '',
-    department: '',
-    owner: '',
-    startDate: '',
-    endDate: '',
+    projectNum: '',
+    priority: 'P2',
+    status: 'SURVEY',
+    startTime: '',
+    endTime: '',
     description: '',
-    status: '未开始'
+    directorName: '',
+    director: '',
+    directorHeadImg: '',
+    documentCount: 0,
+    userCount: 0
   })
 }
 

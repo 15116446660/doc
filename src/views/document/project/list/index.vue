@@ -28,14 +28,20 @@
           :show-filter-bar="true"
           @filter-change="handleFilterChange"
           @selection-change="handleSelectionChange"
+          @data-loaded="handleDataLoaded"
         >
           <!-- 工具栏插槽 -->
           <template #toolbar>
             <div class="toolbar-left">
-              <el-radio-group v-model="viewMode" size="small">
-                <el-radio-button label="table">表格</el-radio-button>
-                <el-radio-button label="cards">卡片</el-radio-button>
-              </el-radio-group>
+              <el-button type="primary" @click="handleCreateProject">
+                <el-icon><Plus /></el-icon>创建项目
+              </el-button>
+              <div class="view-toggle">
+                <el-radio-group v-model="viewType" @change="handleViewChange" size="small">
+                  <el-radio-button label="table">表格</el-radio-button>
+                  <el-radio-button label="cards">卡片</el-radio-button>
+                </el-radio-group>
+              </div>
             </div>
           </template>
 
@@ -46,17 +52,21 @@
             </div>
           </template>
 
-          <template #owner="{ row }">
+          <template #director="{ row }">
             <div class="user-info">
-              <el-avatar :size="24" :src="row.ownerAvatar">
-                {{ row.owner?.charAt(0) }}
+              <el-avatar :size="24" :src="row.directorHeadImg">
+                {{ row.directorName?.charAt(0) }}
               </el-avatar>
-              <span>{{ row.owner }}</span>
+              <span>{{ row.directorName }}</span>
             </div>
           </template>
 
           <template #status="{ row }">
             <el-tag :type="getStatusType(row.status)">{{ row.status }}</el-tag>
+          </template>
+
+          <template #priority="{ row }">
+            <el-tag :type="getPriorityType(row.priority)">{{ row.priority }}</el-tag>
           </template>
 
           <template #actions="{ row }">
@@ -72,7 +82,7 @@
           <!-- 卡片视图插槽 -->
           <template #card-view>
             <project-cards
-              v-if="viewMode === 'cards'"
+              v-if="viewType === 'cards'"
               :projects="tableData"
             />
           </template>
@@ -93,12 +103,10 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
-import { Plus, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { ArrowLeft, ArrowRight, Plus } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
-import ProjectCard from './components/ProjectCard.vue'
 import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
-import ProjectTypeTree from '@/components/ProjectTypeTree.vue'
+import ProjectTypeTree from './components/ProjectTypeTree.vue'
 import ProjectCards from './components/ProjectCards.vue'
 import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
 import { getProjectList, getProjectStatusOptions, getProjectCategoryOptions } from '@/api/document'
@@ -110,13 +118,14 @@ const router = useRouter()
 const listRef = ref()
 const treeRef = ref()
 
+// 视图模式
+const viewType = ref('table')
+
+// 表格数据
+const tableData = ref<Project[]>([])
+
 // 侧边栏折叠状态
 const sidebarCollapsed = ref(false)
-
-// 切换侧边栏折叠状态
-const toggleSidebar = () => {
-  sidebarCollapsed.value = !sidebarCollapsed.value
-}
 
 // 对话框控制
 const createDialogVisible = ref(false)
@@ -132,7 +141,7 @@ const columns = ref<TableColumn[]>([
     align: 'center'
   },
   {
-    prop: 'projectCode',
+    prop: 'projectNum',
     label: '项目编号',
     width: 120,
     fixed: 'left',
@@ -153,42 +162,48 @@ const columns = ref<TableColumn[]>([
     slot: 'status'
   },
   {
-    prop: 'type',
-    label: '项目类型',
-    width: 120,
-    showOverflowTooltip: true
+    prop: 'priority',
+    label: '优先级',
+    width: 100,
+    slot: 'priority'
   },
   {
-    prop: 'owner',
+    prop: 'directorName',
     label: '负责人',
     width: 120,
-    slot: 'owner'
+    slot: 'director'
   },
   {
-    prop: 'department',
-    label: '所属部门',
-    width: 150,
-    showOverflowTooltip: true
+    prop: 'userCount',
+    label: '成员数',
+    width: 90,
+    align: 'center'
   },
   {
-    prop: 'startDate',
+    prop: 'documentCount',
+    label: '文档数',
+    width: 90,
+    align: 'center'
+  },
+  {
+    prop: 'startTime',
     label: '开始时间',
     width: 150
   },
   {
-    prop: 'endDate',
+    prop: 'endTime',
     label: '结束时间',
     width: 150
   },
   {
     prop: 'createTime',
     label: '创建时间',
-    width: 150
+    width: 180
   },
   {
-    prop: 'updateTime',
-    label: '更新时间',
-    width: 150
+    prop: 'creator',
+    label: '创建人',
+    width: 120
   },
   {
     label: '操作',
@@ -272,26 +287,32 @@ const cardPaginationConfig = {
   background: true
 }
 
-// 当前视图类型
-const currentViewType = ref('table')
-
 // 根据视图类型获取分页配置
 const paginationConfig = computed(() => {
-  return currentViewType.value === 'cards' ? cardPaginationConfig : tablePaginationConfig
+  return viewType.value === 'cards' ? cardPaginationConfig : tablePaginationConfig
 })
-
-// 卡片布局方式
-const cardLayout = ref<'vertical' | 'horizontal'>('horizontal')
 
 // 获取状态类型
 const getStatusType = (status: string) => {
   const typeMap: Record<string, string> = {
-    '进行中': 'success',
-    '未开始': 'info',
-    '已完成': 'primary',
-    '已终止': 'danger'
+    'SURVEY': 'info',     // 调研中
+    'ONGOING': 'success', // 进行中
+    'COMPLETED': '',      // 已完成
+    'PAUSED': 'warning',  // 已暂停
+    'CANCELLED': 'danger' // 已取消
   }
   return typeMap[status] || 'info'
+}
+
+// 获取优先级类型
+const getPriorityType = (priority: string) => {
+  const typeMap: Record<string, string> = {
+    'P0': 'danger',  // 最高
+    'P1': 'warning', // 高
+    'P2': 'success', // 中
+    'P3': 'info'     // 低
+  }
+  return typeMap[priority] || 'info'
 }
 
 // 处理过滤条件变化
@@ -301,8 +322,7 @@ const handleFilterChange = (filters: Record<string, any>) => {
 
 // 处理视图切换
 const handleViewChange = (type: string) => {
-  console.log('View changed:', type)
-  currentViewType.value = type
+  viewType.value = type
 }
 
 // 处理选择变化
@@ -310,35 +330,15 @@ const handleSelectionChange = (selection: Project[]) => {
   console.log('Selection changed:', selection)
 }
 
-// 处理创建项目
-const handleCreateProject = () => {
-  createDialogData.value = {
-    status: '未开始'
-  }
-  createDialogVisible.value = true
-}
-
-// 处理编辑
-const handleEdit = (row: Project) => {
-  createDialogData.value = { ...row }
-  createDialogVisible.value = true
-}
-
-// 处理删除
-const handleDelete = async (row: Project) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除项目"${row.name}"吗？`,
-      '删除确认',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-    console.log('Delete:', row)
-  } catch {
-    // 用户取消删除
+// 处理数据加载完成
+const handleDataLoaded = (data: any) => {
+  // 处理API返回的数据结构，提取真正的记录列表
+  if (data && data.records) {
+    tableData.value = data.records
+  } else if (Array.isArray(data)) {
+    tableData.value = data
+  } else {
+    tableData.value = []
   }
 }
 
@@ -370,6 +370,22 @@ const handleTypeSelect = (type: ProjectType | null) => {
   } else {
     listRef.value?.refresh({ categoryId: undefined })
   }
+}
+
+// 切换侧边栏折叠状态
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
+
+// 处理创建项目
+const handleCreateProject = () => {
+  createDialogData.value = {
+    status: 'SURVEY',
+    priority: 'P2',
+    startTime: new Date().toISOString().split('T')[0],
+    endTime: ''
+  }
+  createDialogVisible.value = true
 }
 </script>
 

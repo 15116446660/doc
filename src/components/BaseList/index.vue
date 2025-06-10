@@ -294,102 +294,44 @@ const getColumnProps = (column: TableColumn) => {
   return rest
 }
 
-// 默认的响应处理函数
+// 默认响应处理函数
 const defaultResponseHandler = (response: any) => {
-  // 移除调试语句
-  // debugger
-  
-  // 处理 AxiosResponse 类型响应
-  if (response && typeof response === 'object' && response.data !== undefined && response.status !== undefined) {
-    // 这是一个 AxiosResponse，提取 data 部分继续处理
-    return defaultResponseHandler(response.data);
-  }
-
-  // 处理标准API响应格式 (ApiResponse)
-  if (response && typeof response === 'object' && response.code !== undefined) {
-    const apiResponse = response as ApiResponse<any>;
-    if (apiResponse.code === 200 && apiResponse.data !== undefined) {
-      const data = apiResponse.data;
-      
-      // 处理分页数据格式 (PaginationResponse)
-      if (data && typeof data === 'object' && 'list' in data && 'total' in data) {
-        return {
-          list: (data as PaginationResponse<any>).list || [],
-          total: (data as PaginationResponse<any>).total || 0
-        };
+  // 处理不同响应格式
+  if (response && response.data) {
+    // 如果是标准API响应格式
+    if (response.data.records && typeof response.data.total !== 'undefined') {
+      return {
+        list: response.data.records,
+        total: response.data.total
       }
-      
-      // 处理数组格式
-      if (Array.isArray(data)) {
-        return {
-          list: data,
-          total: data.length
-        };
+    } else if (Array.isArray(response.data)) {
+      // 如果直接返回数组
+      return {
+        list: response.data,
+        total: response.data.length
       }
-      
-      // 处理对象格式（包含列表数据）
-      if (data && typeof data === 'object') {
-        if (Array.isArray(data.data)) {
-          return {
-            list: data.data,
-            total: data.total || data.data.length
-          };
-        }
-        
-        // 如果data是对象但不包含预期的数据结构，尝试将其作为单个项目
-        return {
-          list: [data],
-          total: 1
-        };
+    } else if (response.data.list && typeof response.data.total !== 'undefined') {
+      // 如果是标准分页响应
+      return {
+        list: response.data.list,
+        total: response.data.total
       }
     }
-    
-    // API 请求失败或数据格式不符合预期
-    console.error('API request failed or invalid data format:', apiResponse.message);
-    return { list: [], total: 0 };
   }
   
-  // 直接处理分页响应格式 (PaginationResponse)
-  if (response && typeof response === 'object' && 'list' in response && 'total' in response) {
-    return {
-      list: response.list || [],
-      total: response.total || 0
-    };
-  }
-
-  // 处理直接返回数组的情况
+  // 兜底处理
   if (Array.isArray(response)) {
     return {
       list: response,
       total: response.length
-    };
-  }
-
-  // 处理包含data属性且data为数组的情况
-  if (response && typeof response === 'object' && Array.isArray(response.data)) {
-    return {
-      list: response.data,
-      total: response.total || response.count || response.data.length
-    };
-  }
-  
-  // 处理单个对象的情况
-  if (response && typeof response === 'object' && !Array.isArray(response)) {
-    // 如果不是null且是一个普通对象，将其作为单个项目
-    if (Object.keys(response).length > 0) {
-      return {
-        list: [response],
-        total: 1
-      };
     }
   }
-
-  // 默认返回空数据
-  console.warn('Response format not recognized:', response);
+  
+  console.warn('Unexpected response format', response)
   return {
     list: [],
     total: 0
-  };
+  }
 }
 
 // 获取列表数据

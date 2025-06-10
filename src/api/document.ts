@@ -5,30 +5,44 @@ const mockProjects: Project[] = [
   {
     id: '1',
     name: '示例项目1',
-    projectCode: 'PRJ001',
-    type: '工程项目',
-    department: '工程部',
-    owner: '张三',
-    startDate: '2024-01-01',
-    endDate: '2024-12-31',
+    projectNum: 'PRJ001',
+    priority: 'P0',
     description: '这是一个示例项目',
-    status: '进行中',
-    createTime: '2024-01-01 10:00:00',
-    updateTime: '2024-01-01 10:00:00'
+    status: 'SURVEY',
+    director: '45',
+    directorName: '李立彪',
+    directorHeadImg: '/image/2025/05/20/9e3a9a325303440fab5be669c6bb9e25a1.png',
+    startTime: '2025-05-30',
+    endTime: '2025-06-27',
+    documentCount: 3,
+    userCount: 4,
+    createTime: '2025-05-30 15:06:56',
+    creator: '超级管理员',
+    createUid: null,
+    tenantId: null,
+    pid: null,
+    pxh: null
   },
   {
     id: '2',
-    name: '示例项目2',
-    projectCode: 'PRJ002',
-    type: '产品项目',
-    department: '研发部',
-    owner: '李四',
-    startDate: '2024-02-01',
-    endDate: '2024-12-31',
-    description: '这是另一个示例项目',
-    status: '未开始',
-    createTime: '2024-02-01 10:00:00',
-    updateTime: '2024-02-01 10:00:00'
+    name: '测试项目',
+    projectNum: 'mz',
+    priority: 'P1',
+    description: '',
+    status: 'ONGOING',
+    director: '46',
+    directorName: '李四',
+    directorHeadImg: '/image/default-avatar.png',
+    startTime: '2025-06-01',
+    endTime: '2025-07-30',
+    documentCount: 5,
+    userCount: 3,
+    createTime: '2025-06-01 09:30:00',
+    creator: '管理员',
+    createUid: null,
+    tenantId: null,
+    pid: null,
+    pxh: null
   }
 ]
 
@@ -90,10 +104,20 @@ const mockVersions: DocumentVersion[] = [
 
 // Project APIs
 export const getProjectList = async (params: any) => {
-  // Mock API response
+  // 模拟API响应，实际项目中应替换为真实API调用
+  console.log('请求参数:', params)
+  
+  // 在实际环境中，这里应该调用后端API
   return {
-    data: mockProjects,
-    total: mockProjects.length
+    code: 200,
+    message: '操作成功',
+    data: {
+      records: mockProjects,
+      total: mockProjects.length,
+      size: 10,
+      current: 1,
+      pages: 1
+    }
   }
 }
 
@@ -109,10 +133,11 @@ export const getProjectTypeOptions = async () => {
 export const getProjectStatusOptions = async () => {
   // Mock API response
   return [
-    { label: '未开始', value: 'not_started' },
-    { label: '进行中', value: 'in_progress' },
-    { label: '已完成', value: 'completed' },
-    { label: '已终止', value: 'terminated' }
+    { label: '调研中', value: 'SURVEY' },
+    { label: '进行中', value: 'ONGOING' },
+    { label: '已完成', value: 'COMPLETED' },
+    { label: '已暂停', value: 'PAUSED' },
+    { label: '已取消', value: 'CANCELLED' }
   ]
 }
 

@@ -1,17 +1,27 @@
 export interface Project {
   id: string
   name: string
-  projectCode: string
-  type: string
-  department: string
-  owner: string
-  ownerAvatar?: string
-  startDate: string
-  endDate: string
+  projectNum: string
+  priority: string
   description?: string
   status: string
+  director?: string | null
+  directorName?: string | null
+  directorHeadImg?: string | null
+  startTime: string
+  endTime: string
+  documentCount?: number
+  userCount?: number
   createTime: string
-  updateTime: string
+  creator?: string | null
+  createUid?: string | null
+  updateTime?: string | null
+  updater?: string | null
+  updateUid?: string | null
+  actualEndTime?: string | null
+  tenantId?: string | null
+  pid?: string | null
+  pxh?: string | null
 }
 
 export interface ProjectType {
