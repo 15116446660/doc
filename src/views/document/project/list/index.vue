@@ -101,7 +101,14 @@
 
           <!-- 卡片视图插槽 -->
           <template #card="{ item }">
-            <project-card :project="item" />
+            <project-card 
+              :project="item"
+              @view-documents="handleViewDocuments"
+              @edit="handleEdit"
+              @delete="handleDelete"
+              @members="handleManageMembers"
+              @constants="handleManageConstants"
+            />
           </template>
         </base-list>
       </div>

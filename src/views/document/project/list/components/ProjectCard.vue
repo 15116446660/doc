@@ -26,6 +26,12 @@
               <el-icon><Document /></el-icon>
               <span>查看文档</span>
             </el-dropdown-item>
+            <el-dropdown-item command="members" @click.stop="handleMembers">
+              <el-icon><User /></el-icon>成员
+            </el-dropdown-item>
+            <el-dropdown-item command="constants" @click.stop="handleConstants">
+              <el-icon><Tickets /></el-icon>项目常量
+            </el-dropdown-item>
             <el-dropdown-item @click.stop="handleEdit">
               <el-icon><EditPen /></el-icon>
               <span>编辑项目</span>
@@ -120,13 +126,15 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { 
-  Document, User, Timer, MoreFilled, EditPen, Delete
+  Document, User, Timer, MoreFilled, EditPen, Delete, Tickets
 } from '@element-plus/icons-vue'
 import type { Project } from '@/types/document'
 
 const props = defineProps<{
   project: Project
 }>()
+
+const emit = defineEmits(['view-documents', 'edit', 'delete', 'members', 'constants'])
 
 const router = useRouter()
 
@@ -241,21 +249,27 @@ const handleCardClick = () => {
 
 // 处理查看文档
 const handleViewDocuments = () => {
-  router.push({
-    name: 'DocumentList',
-    params: { projectId: props.project.id },
-    query: { projectName: props.project.name }
-  })
+  emit('view-documents', props.project)
 }
 
 // 处理编辑
 const handleEdit = () => {
-  // TODO: 处理编辑项目
+  emit('edit', props.project)
 }
 
 // 处理删除
 const handleDelete = () => {
-  // TODO: 处理删除项目
+  emit('delete', props.project)
+}
+
+// 处理成员
+const handleMembers = () => {
+  emit('members', props.project)
+}
+
+// 处理项目常量
+const handleConstants = () => {
+  emit('constants', props.project)
 }
 
 // 鼠标事件处理

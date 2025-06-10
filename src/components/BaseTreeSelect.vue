@@ -9,7 +9,6 @@
         </el-button>
         <el-button v-if="showRefreshButton" type="primary" link @click="refreshTreeData">
           <el-icon><refresh /></el-icon>
-          刷新
         </el-button>
       </div>
     </div>
