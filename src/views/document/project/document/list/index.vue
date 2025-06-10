@@ -1,19 +1,5 @@
 <template>
   <div class="document-list-container">
-    <div class="document-list-header">
-      <div class="header-info">
-        <div class="project-name">{{ route.query.projectName }}</div>
-        <el-tag>{{ projectInfo?.type }}</el-tag>
-      </div>
-      <div class="header-actions">
-        <el-button type="primary" @click="handleCreateDocument">
-          <el-icon><plus /></el-icon>新建文档
-        </el-button>
-        <el-button type="primary" @click="handleImportDocument">
-          <el-icon><upload /></el-icon>导入文档
-        </el-button>
-      </div>
-    </div>
 
     <base-list
       ref="listRef"
@@ -22,12 +8,23 @@
       :columns="columns"
       :enable-advanced-filter="true"
       :request-api="getDocumentList"
+      :request-params="{ projectId }"
       :table-props="tableProps"
       :pagination-config="paginationConfig"
       :show-filter-bar="false"
       @filter-change="handleFilterChange"
       @selection-change="handleSelectionChange"
     >
+      <!-- 顶部工具栏插槽 -->
+      <template #toolbar>
+        <el-button type="primary" @click="handleCreateDocument">
+          <el-icon><plus /></el-icon>新建文档
+        </el-button>
+        <el-button type="primary" @click="handleImportDocument">
+          <el-icon><upload /></el-icon>导入文档
+        </el-button>
+      </template>
+      
       <!-- 文档名称自定义插槽 -->
       <template #document-name="{ row }">
         <div class="document-name" @click="handleViewDocument(row)">
@@ -41,10 +38,11 @@
         <el-tag :type="getStatusType(row.status)">{{ row.status }}</el-tag>
       </template>
 
-      <!-- 审核状态自定义插槽 -->
-      <template #review-status="{ row }">
-        <el-tag v-if="row.reviewStatus" type="warning">{{ row.reviewName }}</el-tag>
-        <span v-else>-</span>
+      <!-- 同步状态自定义插槽 -->
+      <template #sync-status="{ row }">
+        <el-tag :type="getSyncStatusType(row.syncStatus)">
+          {{ getSyncStatusText(row.syncStatus) }}
+        </el-tag>
       </template>
 
       <!-- 创建人自定义插槽 -->
@@ -70,6 +68,7 @@
       <!-- 操作自定义插槽 -->
       <template #actions="{ row }">
         <el-button type="primary" text @click="handleEdit(row)">编辑</el-button>
+        <el-button type="primary" text @click="handleSync(row)">同步</el-button>
         <el-button type="success" text @click="handleDownload(row)">下载</el-button>
         <el-button type="danger" text @click="handleDelete(row)">删除</el-button>
       </template>
@@ -109,7 +108,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
+import { ElMessageBox, ElMessage } from 'element-plus'
 import { Plus, Upload, Document } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import DocumentCreateDialog from './dialogs/DocumentCreateDialog.vue'
@@ -118,7 +117,7 @@ import VersionHistoryDialog from './dialogs/VersionHistoryDialog.vue'
 import DocumentContentViewer from '@/components/DocumentContentViewer.vue'
 import type { FilterFormItem, TableColumn } from '@/components/BaseList/types'
 import { getDocumentList, getDocumentStatusOptions, getDocumentTypeOptions } from '@/api/document'
-import type { Document, Project } from '@/types/document'
+import type { Document as DocumentModel, Project } from '@/types/document'
 
 const route = useRoute()
 const projectId = route.params.projectId as string
@@ -131,11 +130,11 @@ const projectInfo = ref<Project>()
 
 // 对话框控制
 const createDialogVisible = ref(false)
-const createDialogData = ref<Partial<Document>>()
+const createDialogData = ref<Partial<DocumentModel>>()
 const importDialogVisible = ref(false)
 const versionHistoryVisible = ref(false)
 const documentViewerVisible = ref(false)
-const currentDocument = ref<Document>()
+const currentDocument = ref<DocumentModel>()
 
 // 表格列配置
 const columns = ref<TableColumn[]>([
@@ -147,36 +146,46 @@ const columns = ref<TableColumn[]>([
     align: 'center'
   },
   {
-    prop: 'documentCode',
-    label: '文档编号',
-    width: 120,
-    fixed: 'left',
-    align: 'center'
-  },
-  {
     prop: 'name',
     label: '文档名称',
     minWidth: 180,
-    align: 'left',
+    align: 'center',
+    fixed: 'left',
     slot: 'document-name',
+    showOverflowTooltip: true
+  },
+  {
+    prop: 'documentCode',
+    label: '文档编号',
+    width: 120,
+    align: 'center'
+  },
+  {
+    prop: 'templateName',
+    label: '模板',
+    width: 180,
+    align: 'center',
     showOverflowTooltip: true
   },
   {
     prop: 'status',
     label: '状态',
     width: 100,
+    align: 'center',
     slot: 'status'
   },
   {
-    prop: 'reviewStatus',
-    label: '审核状态',
-    width: 100,
-    slot: 'review-status'
+    prop: 'syncStatus',
+    label: '同步状态',
+    width: 120,
+    align: 'center',
+    slot: 'sync-status'
   },
   {
     prop: 'type',
     label: '文档类型',
     width: 120,
+    align: 'center',
     showOverflowTooltip: true
   },
   {
@@ -187,19 +196,22 @@ const columns = ref<TableColumn[]>([
   },
   {
     prop: 'creator',
-    label: '创建人',
+    label: '负责人',
     width: 120,
+    align: 'center',
     slot: 'creator'
   },
   {
     prop: 'createTime',
     label: '创建时间',
-    width: 150
+    width: 180,
+    align: 'center'
   },
   {
     prop: 'updateTime',
-    label: '更新时间',
-    width: 150
+    label: '上次更新时间',
+    width: 180,
+    align: 'center'
   },
   {
     prop: 'version',
@@ -235,10 +247,7 @@ const filterConfig = ref<FilterFormItem[]>([
       remote: false,
       loading: false
     },
-    options: async () => {
-      const res = await getDocumentTypeOptions()
-      return res
-    }
+    options: []
   },
   {
     type: 'select',
@@ -247,14 +256,10 @@ const filterConfig = ref<FilterFormItem[]>([
     placeholder: '请选择状态',
     props: {
       filterable: true,
-      remote: true,
-      reserveKeyword: true,
+      remote: false,
       loading: false
     },
-    options: async () => {
-      const res = await getDocumentStatusOptions()
-      return res
-    }
+    options: []
   },
   {
     type: 'daterange',
@@ -294,13 +299,35 @@ const getStatusType = (status: string) => {
   return typeMap[status] || 'info'
 }
 
+// 获取同步状态类型
+const getSyncStatusType = (status: string) => {
+  const typeMap: Record<string, string> = {
+    synced: 'success',
+    pending: 'warning',
+    failed: 'danger',
+    none: 'info'
+  }
+  return typeMap[status] || 'info'
+}
+
+// 获取同步状态文本
+const getSyncStatusText = (status: string) => {
+  const textMap: Record<string, string> = {
+    synced: '已同步',
+    pending: '待同步',
+    failed: '同步失败',
+    none: '未同步'
+  }
+  return textMap[status] || '未知'
+}
+
 // 处理过滤条件变化
 const handleFilterChange = (filters: Record<string, any>) => {
   console.log('Filter changed:', filters)
 }
 
 // 处理选择变化
-const handleSelectionChange = (selection: Document[]) => {
+const handleSelectionChange = (selection: DocumentModel[]) => {
   console.log('Selection changed:', selection)
 }
 
@@ -319,13 +346,13 @@ const handleImportDocument = () => {
 }
 
 // 处理编辑
-const handleEdit = (row: Document) => {
+const handleEdit = (row: DocumentModel) => {
   createDialogData.value = { ...row }
   createDialogVisible.value = true
 }
 
 // 处理下载
-const handleDownload = async (row: Document) => {
+const handleDownload = async (row: DocumentModel) => {
   try {
     await ElMessageBox.confirm(
       `确定要下载文档"${row.name}"吗？`,
@@ -352,7 +379,7 @@ const handleDownload = async (row: Document) => {
 }
 
 // 处理删除
-const handleDelete = async (row: Document) => {
+const handleDelete = async (row: DocumentModel) => {
   try {
     await ElMessageBox.confirm(
       `确定要删除文档"${row.name}"吗？`,
@@ -370,19 +397,19 @@ const handleDelete = async (row: Document) => {
 }
 
 // 处理查看文档
-const handleViewDocument = (document: Document) => {
+const handleViewDocument = (document: DocumentModel) => {
   currentDocument.value = document
   documentViewerVisible.value = true
 }
 
 // 处理版本历史
-const handleVersionHistory = (document: Document) => {
+const handleVersionHistory = (document: DocumentModel) => {
   currentDocument.value = document
   versionHistoryVisible.value = true
 }
 
 // 处理对话框提交
-const handleDialogSubmit = (formData: Document) => {
+const handleDialogSubmit = (formData: DocumentModel) => {
   console.log('文档创建/更新成功，表单数据:', formData)
   listRef.value?.refresh()
 }
@@ -397,13 +424,47 @@ const handleImportSuccess = () => {
   listRef.value?.refresh()
 }
 
+// 处理同步
+const handleSync = (row: DocumentModel) => {
+  ElMessageBox.confirm(`确定要将文档 "${row.name}" 同步到知识库吗？`, '同步确认', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'info'
+  }).then(() => {
+    console.log('Syncing document:', row.id)
+    ElMessage.success('已加入同步队列')
+  }).catch(() => {})
+}
+
 // 初始化
-onMounted(() => {
+onMounted(async () => {
   // TODO: 加载项目信息
   projectInfo.value = {
     id: projectId,
     name: route.query.projectName as string,
     type: '工程项目'
+  }
+
+  const typeFilter = filterConfig.value.find(item => item.field === 'type')
+  if (typeFilter && typeFilter.props) {
+    typeFilter.props.loading = true
+    try {
+      const options = await getDocumentTypeOptions()
+      if(Array.isArray(options)) typeFilter.options = options
+    } finally {
+      typeFilter.props.loading = false
+    }
+  }
+
+  const statusFilter = filterConfig.value.find(item => item.field === 'status')
+  if (statusFilter && statusFilter.props) {
+    statusFilter.props.loading = true
+    try {
+      const options = await getDocumentStatusOptions()
+      if(Array.isArray(options)) statusFilter.options = options
+    } finally {
+      statusFilter.props.loading = false
+    }
   }
 })
 </script>

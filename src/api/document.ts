@@ -77,6 +77,13 @@ export const getDocumentVersions = (documentId: string) => {
   })
 }
 
+export const getTemplateOptions = () => {
+  return request<OptionItem[]>({
+    url: '/api/template/options',
+    method: 'get'
+  })
+}
+
 /**
  * 获取负责人选项列表
  */

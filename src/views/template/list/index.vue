@@ -570,7 +570,6 @@ const handleTypeSelect = (type: TemplateType | null) => {
   margin-left: 20px;
   background-color: var(--el-bg-color-overlay);
   border-radius: 8px;
-  box-shadow: var(--el-box-shadow-light);
 }
 
 .template-name {

@@ -32,6 +32,32 @@
         </el-select>
       </el-form-item>
 
+      <el-form-item label="模板" prop="templateId">
+        <el-select v-model="formData.templateId" placeholder="请选择模板" class="w-full" clearable>
+          <el-option
+            v-for="item in templateOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+
+      <el-form-item label="自动填充" prop="autoFill">
+        <el-switch v-model="formData.autoFill" />
+      </el-form-item>
+
+      <el-form-item label="负责人" prop="directorId">
+        <el-select v-model="formData.directorId" placeholder="请选择负责人" class="w-full" filterable>
+          <el-option
+            v-for="item in directorOptions"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
+      </el-form-item>
+
       <el-form-item label="文档格式" prop="format">
         <el-select v-model="formData.format" placeholder="请选择文档格式" class="w-full">
           <el-option
@@ -111,8 +137,13 @@ import { ref, reactive, watch } from 'vue'
 import type { FormInstance } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
-import type { Document } from '@/types/document'
-import { getDocumentTypeOptions, getDocumentTagOptions } from '@/api/document'
+import type { Document, OptionItem } from '@/types/document'
+import {
+  getDocumentTypeOptions,
+  getDocumentTagOptions,
+  getTemplateOptions,
+  getDirectorOptions
+} from '@/api/document'
 
 const props = defineProps<{
   modelValue: boolean
@@ -152,7 +183,8 @@ const formData = reactive<Partial<Document>>({
   description: '',
   tags: [],
   status: '草稿',
-  version: '1.0.0'
+  version: '1.0.0',
+  autoFill: false
 })
 
 // 表单校验规则
@@ -163,6 +195,12 @@ const formRules = {
   ],
   documentCode: [
     { required: true, message: '请输入文档编号', trigger: 'blur' }
+  ],
+  templateId: [
+    { required: true, message: '请选择模板', trigger: 'change' }
+  ],
+  directorId: [
+    { required: true, message: '请选择负责人', trigger: 'change' }
   ],
   type: [
     { required: true, message: '请选择文档类型', trigger: 'change' }
@@ -176,7 +214,9 @@ const formRules = {
 }
 
 // 文档类型选项
-const documentTypeOptions = ref<{ label: string; value: string }[]>([])
+const documentTypeOptions = ref<OptionItem[]>([])
+const templateOptions = ref<OptionItem[]>([])
+const directorOptions = ref<OptionItem[]>([])
 // 文档格式选项
 const formatOptions = ref([
   { label: 'Word文档', value: 'docx' },
@@ -185,7 +225,7 @@ const formatOptions = ref([
   { label: '图片', value: 'image' }
 ])
 // 标签选项
-const tagOptions = ref<{ label: string; value: string }[]>([])
+const tagOptions = ref<OptionItem[]>([])
 
 // 上传配置
 const uploadAction = '/api/document/upload'
@@ -255,26 +295,39 @@ const handleClose = () => {
     description: '',
     tags: [],
     status: '草稿',
-    version: '1.0.0'
+    version: '1.0.0',
+    autoFill: false
   })
 }
 
 // 监听初始数据变化
-watch(() => props.initialData, (val) => {
-  if (val) {
-    Object.assign(formData, val)
-  }
-}, { immediate: true })
+watch(
+  () => props.initialData,
+  (val) => {
+    if (val) {
+      Object.assign(formData, val)
+    }
+  },
+  { immediate: true, deep: true }
+)
 
 // 初始化选项数据
 const initOptions = async () => {
   try {
-    const [types, tags] = await Promise.all([
+    const [types, tags, templates, directors] = await Promise.all([
       getDocumentTypeOptions(),
-      getDocumentTagOptions()
+      getDocumentTagOptions(),
+      getTemplateOptions(),
+      getDirectorOptions()
     ])
-    documentTypeOptions.value = types
-    tagOptions.value = tags
+
+    documentTypeOptions.value = (types as any)
+    tagOptions.value = (tags as any)
+    templateOptions.value = (templates as any)
+    directorOptions.value = (directors as any).map((d: any) => ({
+      label: d.name,
+      value: d.id
+    }))
   } catch (error) {
     console.error('Failed to load options:', error)
   }

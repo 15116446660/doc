@@ -77,8 +77,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import type { UploadRawFile } from 'element-plus'
 import { UploadFilled, Document } from '@element-plus/icons-vue'
 
 const props = defineProps<{
@@ -140,7 +141,7 @@ const getStatusText = (status: string) => {
 }
 
 // 上传前检查
-const handleBeforeUpload = (file: File) => {
+const handleBeforeUpload = (file: UploadRawFile) => {
   const isLt10M = file.size / 1024 / 1024 < 10
   if (!isLt10M) {
     ElMessage.error('上传文件大小不能超过 10MB!')
@@ -211,10 +212,10 @@ const handleImport = async () => {
     // TODO: 调用导入API
     console.log('Import documents:', urls)
     
-    ElMessage.success('导入成功')
     emit('success')
     handleClose()
   } catch (error) {
+    // @ts-ignore
     console.error('Failed to import documents:', error)
     ElMessage.error('导入失败')
   } finally {

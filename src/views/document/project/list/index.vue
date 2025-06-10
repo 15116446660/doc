@@ -40,8 +40,8 @@
               </el-button>
               <div class="view-toggle">
                 <el-radio-group v-model="viewType" @change="handleViewChange" size="small">
-                  <el-radio-button label="table">表格</el-radio-button>
-                  <el-radio-button label="cards">卡片</el-radio-button>
+                  <el-radio-button value="table">表格</el-radio-button>
+                  <el-radio-button value="cards">卡片</el-radio-button>
                 </el-radio-group>
               </div>
             </div>
@@ -100,7 +100,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { Plus, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
@@ -240,14 +240,11 @@ const filterConfig = ref<FilterFormItem[]>([
     placeholder: '请选择状态',
     props: {
       filterable: true,
-      remote: true,
+      remote: false,
       reserveKeyword: true,
       loading: false
     },
-    options: async () => {
-      const res = await getProjectStatusOptions()
-      return res as unknown as OptionItem[]
-    }
+    options: []
   },
   {
     type: 'daterange',
@@ -394,6 +391,29 @@ const toggleSidebar = () => {
 const handleViewChange = (type: string) => {
   viewType.value = type
 }
+
+onMounted(async () => {
+  // Find the status filter item in the config
+  const statusFilter = filterConfig.value.find(item => item.field === 'status')
+  if (statusFilter && statusFilter.props) {
+    statusFilter.props.loading = true
+    try {
+      const options = await getProjectStatusOptions()
+      // Make sure options is an array before assigning
+      if (Array.isArray(options)) {
+        statusFilter.options = options
+      } else {
+        console.error("getProjectStatusOptions did not return an array:", options)
+        statusFilter.options = []
+      }
+    } catch (error) {
+      console.error('Failed to load project status options:', error)
+      statusFilter.options = [] // Ensure it's an array on error
+    } finally {
+      statusFilter.props.loading = false
+    }
+  }
+})
 </script>
 
 <style lang="scss" scoped>

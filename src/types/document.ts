@@ -1,27 +1,24 @@
 export interface Project {
   id: string
   name: string
-  projectNum: string
-  priority: string
+  projectNum?: string
+  priority?: string
   description?: string
-  status: string
-  director?: string | null
-  directorName?: string | null
-  directorHeadImg?: string | null
-  startTime: string
-  endTime: string
+  status?: string
+  director?: string
+  directorName?: string
+  directorHeadImg?: string
+  startTime?: string
+  endTime?: string
   documentCount?: number
   userCount?: number
-  createTime: string
-  creator?: string | null
+  createTime?: string
+  creator?: string
   createUid?: string | null
-  updateTime?: string | null
-  updater?: string | null
-  updateUid?: string | null
-  actualEndTime?: string | null
   tenantId?: string | null
   pid?: string | null
-  pxh?: string | null
+  pxh?: number | null
+  type?: string
 }
 
 export interface ProjectType {
@@ -40,17 +37,23 @@ export interface Document {
   type: string
   format: string
   content: string
-  description?: string
-  tags?: string[]
+  description: string
+  tags: string[]
   status: string
-  reviewStatus?: string
-  reviewName?: string
   version: string
   creator: string
   creatorAvatar?: string
   createTime: string
   updateTime: string
   url?: string
+  templateId?: string
+  templateName?: string
+  directorId?: string
+  directorName?: string
+  syncStatus?: 'synced' | 'pending' | 'failed' | 'none'
+  reviewStatus?: string
+  reviewName?: string
+  autoFill?: boolean
 }
 
 export interface DocumentVersion {

@@ -59,8 +59,17 @@ const mockDocuments = [
     status: '已发布',
     version: '1.0.0',
     creator: '张三',
+    creatorAvatar: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png',
     createTime: '2024-01-01 10:00:00',
-    updateTime: '2024-01-01 10:00:00'
+    updateTime: '2024-01-01 10:00:00',
+    url: '/fake/path/to/document1.docx',
+    templateId: 't1',
+    templateName: '标准招标文件模板',
+    directorId: '2',
+    directorName: '李四',
+    syncStatus: 'synced',
+    reviewStatus: '已审核',
+    reviewName: '李四'
   },
   {
     id: '2',
@@ -75,8 +84,17 @@ const mockDocuments = [
     status: '草稿',
     version: '1.0.0',
     creator: '李四',
+    creatorAvatar: 'https://cube.elemecdn.com/0/88/03b0d39583f48206768a7534e55bcpng.png',
     createTime: '2024-02-01 10:00:00',
-    updateTime: '2024-02-01 10:00:00'
+    updateTime: '2024-02-01 10:00:00',
+    url: '/fake/path/to/document2.pdf',
+    templateId: 't3',
+    templateName: '技术方案模板',
+    directorId: '1',
+    directorName: '张三',
+    syncStatus: 'pending',
+    reviewStatus: null,
+    reviewName: null
   }
 ]
 
@@ -99,6 +117,12 @@ const mockVersions = [
     creator: '李四',
     createTime: '2024-01-02 10:00:00'
   }
+]
+
+const mockTemplates = [
+  { id: 't1', name: '标准招标文件模板' },
+  { id: 't2', name: '施工组织设计模板' },
+  { id: 't3', name: '技术方案模板' }
 ]
 
 const documentMocks: MockMethod[] = [
@@ -267,6 +291,15 @@ const documentMocks: MockMethod[] = [
             message: '成功',
             data: versions
         }
+    }
+  },
+  {
+    url: '/api/template/options',
+    method: 'get',
+    response: {
+      code: 200,
+      message: '成功',
+      data: mockTemplates.map((t) => ({ label: t.name, value: t.id }))
     }
   }
 ]
