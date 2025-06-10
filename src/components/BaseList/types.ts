@@ -85,6 +85,24 @@ export interface TableColumn {
   [key: string]: any
 }
 
+// 卡片容器属性
+export interface CardContainerConfig {
+  // 卡片最小宽度
+  minWidth?: string | number
+  // 卡片最大宽度
+  maxWidth?: string | number
+  // 卡片最小高度
+  minHeight?: string | number
+  // 卡片最大高度
+  maxHeight?: string | number
+  // 卡片间距
+  gap?: string | number
+  // 网格列数 (auto-fill 或 auto-fit)
+  gridFillMode?: 'auto-fill' | 'auto-fit'
+  // 自定义网格模板列
+  gridTemplateColumns?: string
+}
+
 // 列表组件属性
 export interface BaseListProps {
   // 过滤条件配置
@@ -109,6 +127,8 @@ export interface BaseListProps {
   tableProps?: Record<string, any>
   // 卡片容器属性
   cardContainerProps?: Record<string, any>
+  // 卡片尺寸配置
+  cardConfig?: CardContainerConfig
   // 表格列配置
   columns?: TableColumn[]
   // 列表标题

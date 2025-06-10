@@ -153,8 +153,6 @@ import type {
   ViewType,
   FilterChangeEvent,
   TableColumn,
-  ApiResponse,
-  PaginationResponse,
   FilterFormItem
 } from './types'
 
@@ -429,6 +427,50 @@ defineExpose({
   toggleFilter,
   getShowFilter: () => showFilter.value
 })
+
+// 获取卡片网格列配置
+const getCardGridColumns = () => {
+  if (viewType.value === 'cards') {
+    // 如果提供了自定义的网格模板列，直接使用
+    if (props.cardConfig?.gridTemplateColumns) {
+      return props.cardConfig.gridTemplateColumns
+    }
+    
+    // 使用配置的填充模式或默认值
+    const fillMode = props.cardConfig?.gridFillMode || 'auto-fill'
+    
+    if (props.cardLayout === 'horizontal') {
+      // 使用配置的最小宽度或默认值
+      const minWidth = props.cardConfig?.minWidth || '320px'
+      return `repeat(${fillMode}, minmax(${minWidth}, 1fr))`
+    } else {
+      // 垂直布局使用更小的宽度
+      const minWidth = props.cardConfig?.minWidth || '220px'
+      return `repeat(${fillMode}, minmax(${minWidth}, 1fr))`
+    }
+  }
+  return 'repeat(auto-fill, minmax(280px, 1fr))'
+}
+
+// 获取卡片间距
+const getCardGap = () => {
+  if (props.cardConfig?.gap !== undefined) {
+    return props.cardConfig.gap
+  }
+  return viewType.value === 'cards' && props.cardLayout === 'horizontal' ? '16px' : '12px'
+}
+
+// 获取卡片高度样式
+const getCardHeight = () => {
+  const minHeight = props.cardConfig?.minHeight || (props.cardLayout === 'horizontal' ? '180px' : '220px')
+  const maxHeight = props.cardConfig?.maxHeight || 'auto'
+  
+  return {
+    height: 'auto',
+    minHeight,
+    maxHeight
+  }
+}
 </script>
 
 <style scoped>
@@ -484,13 +526,13 @@ defineExpose({
   flex: 1;
   overflow: auto;
   display: grid;
-  grid-template-columns: v-bind('viewType === "cards" && cardLayout === "horizontal" ? "repeat(auto-fill, minmax(360px, 1fr))" : "repeat(auto-fill, minmax(280px, 1fr))"');
-  gap: 24px;
+  grid-template-columns: v-bind('getCardGridColumns()');
+  gap: v-bind('getCardGap()');
   padding: 8px;
-  justify-content: space-between;
+  justify-content: start;
   
   @media screen and (max-width: 1600px) {
-    justify-content: space-around;
+    justify-content: start;
   }
   
   @media screen and (max-width: 640px) {
@@ -503,7 +545,8 @@ defineExpose({
   }
   
   > * {
-    height: v-bind('cardLayout === "horizontal" ? "210px" : "420px"');
+    height: v-bind('getCardHeight().height');
+    min-height: v-bind('getCardHeight().minHeight');
     width: 100%;
   }
 }

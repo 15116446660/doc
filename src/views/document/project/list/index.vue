@@ -19,6 +19,7 @@
         <base-list
           ref="listRef"
           title="项目列表"
+          card-layout="vertical"
           :filter-config="filterConfig"
           :columns="columns"
           :enable-advanced-filter="true"
@@ -26,6 +27,7 @@
           :table-props="tableProps"
           :pagination-config="paginationConfig"
           :show-filter-bar="true"
+          :card-config="cardConfig"
           @filter-change="handleFilterChange"
           @selection-change="handleSelectionChange"
           @data-loaded="handleDataLoaded"
@@ -105,7 +107,7 @@ import BaseList from '@/components/BaseList/index.vue'
 import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
 import ProjectTypeTree from './components/ProjectTypeTree.vue'
 import ProjectCard from './components/ProjectCard.vue'
-import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
+import type { FilterFormItem, OptionItem, TableColumn, CardContainerConfig } from '@/components/BaseList/types'
 import { getProjectList, getProjectStatusOptions } from '@/api/document'
 import type { Project, ProjectType } from '@/types/document'
 
@@ -286,6 +288,16 @@ const cardPaginationConfig = {
 const paginationConfig = computed(() => {
   return viewType.value === 'cards' ? cardPaginationConfig : tablePaginationConfig
 })
+
+// 卡片配置
+const cardConfig: CardContainerConfig = {
+  minWidth: '200px',
+  gridFillMode: 'auto-fill',
+  gap: '10px',
+  minHeight: '120px',
+  maxHeight: '120px',
+  maxWidth: '220px'
+}
 
 // 获取状态类型
 const getStatusType = (status: string) => {
@@ -483,12 +495,5 @@ const handleViewChange = (type: string) => {
   display: flex;
   align-items: center;
   gap: 16px;
-}
-
-.project-cards-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 20px;
-  padding: 20px;
 }
 </style>
