@@ -3,6 +3,8 @@
 
     <base-list
       ref="listRef"
+      :view-type="viewType"
+      :card-config="cardConfig"
       title="文档列表"
       :filter-config="filterConfig"
       :columns="columns"
@@ -14,17 +16,17 @@
       :show-filter-bar="false"
       @filter-change="handleFilterChange"
       @selection-change="handleSelectionChange"
+      @view-change="handleViewChange"
     >
       <!-- 顶部工具栏插槽 -->
       <template #toolbar>
-        <el-button type="primary" @click="handleCreateDocument">
-          <el-icon><plus /></el-icon>新建文档
-        </el-button>
-        <el-button type="primary" @click="handleImportDocument">
-          <el-icon><upload /></el-icon>导入文档
-        </el-button>
+        <div class="toolbar-left">
+          <el-button type="primary" @click="handleCreateDocument">
+            <el-icon><plus /></el-icon>新建文档
+          </el-button>
+        </div>
       </template>
-      
+
       <!-- 文档名称自定义插槽 -->
       <template #document-name="{ row }">
         <div class="document-name" @click="handleViewDocument(row)">
@@ -72,6 +74,18 @@
         <el-button type="success" text @click="handleDownload(row)">下载</el-button>
         <el-button type="danger" text @click="handleDelete(row)">删除</el-button>
       </template>
+
+      <!-- 卡片视图插槽 -->
+      <template #card="{ item }">
+        <document-card
+          :document="item"
+          @view="handleViewDocument"
+          @edit="handleEdit"
+          @sync="handleSync"
+          @download="handleDownload"
+          @delete="handleDelete"
+        />
+      </template>
     </base-list>
 
     <!-- 文档创建对话框 -->
@@ -84,11 +98,13 @@
     />
 
     <!-- 文档导入对话框 -->
+    <!-- 
     <document-import-dialog
       v-model="importDialogVisible"
       :project-id="projectId"
       @success="handleImportSuccess"
     />
+    -->
 
     <!-- 版本历史对话框 -->
     <version-history-dialog
@@ -109,13 +125,13 @@
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { Plus, Upload, Document } from '@element-plus/icons-vue'
+import { Plus, Document } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
+import DocumentCard from './components/DocumentCard.vue'
 import DocumentCreateDialog from './dialogs/DocumentCreateDialog.vue'
-import DocumentImportDialog from './dialogs/DocumentImportDialog.vue'
 import VersionHistoryDialog from './dialogs/VersionHistoryDialog.vue'
 import DocumentContentViewer from '@/components/DocumentContentViewer.vue'
-import type { FilterFormItem, TableColumn } from '@/components/BaseList/types'
+import type { CardConfig, FilterFormItem, TableColumn, ViewType } from '@/components/BaseList/types'
 import { getDocumentList, getDocumentStatusOptions, getDocumentTypeOptions } from '@/api/document'
 import type { Document as DocumentModel, Project } from '@/types/document'
 
@@ -124,6 +140,7 @@ const projectId = route.params.projectId as string
 
 // 列表实例
 const listRef = ref()
+const viewType = ref<ViewType>('table')
 
 // 项目信息
 const projectInfo = ref<Project>()
@@ -131,7 +148,6 @@ const projectInfo = ref<Project>()
 // 对话框控制
 const createDialogVisible = ref(false)
 const createDialogData = ref<Partial<DocumentModel>>()
-const importDialogVisible = ref(false)
 const versionHistoryVisible = ref(false)
 const documentViewerVisible = ref(false)
 const currentDocument = ref<DocumentModel>()
@@ -288,6 +304,16 @@ const paginationConfig = {
   background: true
 }
 
+
+const cardConfig: CardConfig = {
+  minWidth: '200px',
+  gridFillMode: 'auto-fill',
+  gap: '10px',
+  minHeight: '120px',
+  maxHeight: '120px',
+  maxWidth: '220px'
+}
+
 // 获取状态类型
 const getStatusType = (status: string) => {
   const typeMap: Record<string, string> = {
@@ -331,6 +357,12 @@ const handleSelectionChange = (selection: DocumentModel[]) => {
   console.log('Selection changed:', selection)
 }
 
+// 处理视图切换
+const handleViewChange = (type: ViewType) => {
+  console.log('View changed:', type)
+  viewType.value = type
+}
+
 // 处理创建文档
 const handleCreateDocument = () => {
   createDialogData.value = {
@@ -340,10 +372,12 @@ const handleCreateDocument = () => {
   createDialogVisible.value = true
 }
 
-// 处理导入文档
+// 处理导入文档 - This function is no longer used
+/*
 const handleImportDocument = () => {
   importDialogVisible.value = true
 }
+*/
 
 // 处理编辑
 const handleEdit = (row: DocumentModel) => {
@@ -417,11 +451,6 @@ const handleDialogSubmit = (formData: DocumentModel) => {
 // 处理对话框错误
 const handleDialogError = (error: Error) => {
   console.error('创建/更新文档失败:', error)
-}
-
-// 处理导入成功
-const handleImportSuccess = () => {
-  listRef.value?.refresh()
 }
 
 // 处理同步
@@ -538,5 +567,15 @@ onMounted(async () => {
 
 .el-button+.el-button {
   margin-left: 0px;
+}
+
+.toolbar-left {
+  display: flex;
+  gap: 12px;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
 }
 </style> 

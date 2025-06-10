@@ -25,12 +25,14 @@
           :enable-advanced-filter="true"
           :request-api="getProjectList"
           :table-props="tableProps"
+          :card-config="cardConfig"
+          :view-type="viewType"
           :pagination-config="paginationConfig"
           :show-filter-bar="true"
-          :card-config="cardConfig"
           @filter-change="handleFilterChange"
           @selection-change="handleSelectionChange"
           @data-loaded="handleDataLoaded"
+          @view-change="handleViewChange"
         >
           <!-- 工具栏插槽 -->
           <template #toolbar>
@@ -38,12 +40,6 @@
               <el-button type="primary" @click="handleCreateProject">
                 <el-icon><Plus /></el-icon>创建项目
               </el-button>
-              <div class="view-toggle">
-                <el-radio-group v-model="viewType" @change="handleViewChange" size="small">
-                  <el-radio-button value="table">表格</el-radio-button>
-                  <el-radio-button value="cards">卡片</el-radio-button>
-                </el-radio-group>
-              </div>
             </div>
           </template>
 
@@ -107,7 +103,7 @@ import BaseList from '@/components/BaseList/index.vue'
 import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
 import ProjectTypeTree from './components/ProjectTypeTree.vue'
 import ProjectCard from './components/ProjectCard.vue'
-import type { FilterFormItem, OptionItem, TableColumn, CardContainerConfig } from '@/components/BaseList/types'
+import type { FilterFormItem, TableColumn, CardConfig, ViewType } from '@/components/BaseList/types'
 import { getProjectList, getProjectStatusOptions } from '@/api/document'
 import type { Project, ProjectType } from '@/types/document'
 
@@ -118,7 +114,7 @@ const listRef = ref()
 const treeRef = ref()
 
 // 视图模式
-const viewType = ref('table')
+const viewType = ref<ViewType>('table')
 
 // 对话框控制
 const createDialogVisible = ref(false)
@@ -254,6 +250,18 @@ const filterConfig = ref<FilterFormItem[]>([
   }
 ])
 
+// 卡片容器属性
+const cardContainerProps = {
+  gutter: 16,
+  column: {
+    xs: 1,
+    sm: 2,
+    md: 3,
+    lg: 4,
+    xl: 5
+  }
+}
+
 // 表格属性
 const tableProps = {
   border: true,
@@ -287,7 +295,7 @@ const paginationConfig = computed(() => {
 })
 
 // 卡片配置
-const cardConfig: CardContainerConfig = {
+const cardConfig: CardConfig = {
   minWidth: '200px',
   gridFillMode: 'auto-fill',
   gap: '10px',
@@ -388,7 +396,7 @@ const toggleSidebar = () => {
 }
 
 // 处理视图切换
-const handleViewChange = (type: string) => {
+const handleViewChange = (type: ViewType) => {
   viewType.value = type
 }
 

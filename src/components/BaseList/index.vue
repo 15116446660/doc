@@ -1,5 +1,6 @@
 <template>
   <div class="base-list">
+    「『viewType]] {{ viewType }}
     <!-- 视图切换和操作按钮 -->
     <div v-if="hasHeaderContent" class="list-header">
       <div class="left-section">
@@ -64,7 +65,7 @@
     <div class="list-content" v-loading="loading">
       <!-- 表格视图 -->
       <el-table
-        v-if="viewType === 'table'"
+        v-if="props.viewType === 'table'"
         ref="tableRef"
         v-bind="tableProps"
         :data="list"
@@ -102,29 +103,14 @@
       </el-table>
 
       <!-- 卡片视图 -->
-      <div
-        v-else
-        class="card-view"
-        v-bind="cardContainerProps"
-      >
-        <template v-if="$slots.card">
-          <slot
-            name="card"
-            v-for="item in list"
-            :key="getItemKey(item)"
-            :item="item"
-            :layout="props.cardLayout"
-          />
-        </template>
-        <template v-else>
-          <el-card
-            v-for="item in list"
-            :key="getItemKey(item)"
-            class="card-item"
-          >
-            {{ item }}
-          </el-card>
-        </template>
+      <div v-else class="card-view">
+        <div
+          v-for="item in list"
+          :key="getItemKey(item)"
+          class="card-item"
+        >
+          <slot name="card" :item="item" />
+        </div>
       </div>
 
       <!-- 分页 -->
@@ -153,16 +139,17 @@ import type {
   ViewType,
   FilterChangeEvent,
   TableColumn,
-  FilterFormItem
+  FilterFormItem,
 } from './types'
 
 const props = withDefaults(defineProps<BaseListProps>(), {
+  viewType: 'table',
   filterConfig: undefined,
   enableAdvancedFilter: false,
   enableViewSwitch: true,
-  defaultViewType: 'table',
   enablePagination: true,
   cardLayout: 'horizontal',
+  cardConfig: () => ({ gutter: 16, column: { xs: 24, sm: 12, md: 8, lg: 6, xl: 4 } }),
   showFilterBar: false,
   paginationConfig: () => ({
     pageSize: 10,
@@ -177,7 +164,8 @@ const props = withDefaults(defineProps<BaseListProps>(), {
   tableProps: () => ({}),
   cardContainerProps: () => ({}),
   columns: () => [],
-  title: undefined
+  title: undefined,
+  defaultViewType: 'table'
 })
 
 // 控制过滤器显示
@@ -233,7 +221,16 @@ const hasHeaderContent = computed(() => {
 const emit = defineEmits<BaseListEmits>()
 
 // 视图类型
-const viewType = ref<ViewType>(props.defaultViewType)
+const viewType = ref<ViewType>(props.viewType || props.defaultViewType)
+watch(
+  () => props.viewType,
+  (newType) => {
+    if (newType) {
+      viewType.value = newType
+    }
+  }
+)
+
 // 表格实例
 const tableRef = ref<TableInstance>()
 // 加载状态
@@ -246,10 +243,13 @@ const total = ref(0)
 const currentPage = ref(1)
 // 根据视图类型获取页面大小
 const getPageSizeByViewType = (type: ViewType) => {
-  return type === 'cards' ? 12 : 10
+  if (props.paginationConfig?.pageSize) {
+    return props.paginationConfig.pageSize
+  }
+  return type === 'card' ? 12 : 10
 }
-// 初始化当前页大小
-const currentPageSize = ref(props.paginationConfig?.pageSize || getPageSizeByViewType(props.defaultViewType))
+// 当前页面大小
+const currentPageSize = ref(getPageSizeByViewType(viewType.value))
 // 过滤条件
 const filterValues = ref<Record<string, any>>({})
 // 排序条件
@@ -354,7 +354,6 @@ const getItemKey = (item: any) => {
 
 // 处理视图切换
 const handleViewChange = (type: ViewType) => {
-  viewType.value = type
   // 切换视图时调整页面大小
   currentPageSize.value = getPageSizeByViewType(type)
   emit('view-change', type)
@@ -422,7 +421,7 @@ defineExpose({
 
 // 获取卡片网格列配置
 const getCardGridColumns = () => {
-  if (viewType.value === 'cards') {
+  if (props.viewType === 'cards') {
     // 如果提供了自定义的网格模板列，直接使用
     if (props.cardConfig?.gridTemplateColumns) {
       return props.cardConfig.gridTemplateColumns
@@ -449,7 +448,7 @@ const getCardGap = () => {
   if (props.cardConfig?.gap !== undefined) {
     return props.cardConfig.gap
   }
-  return viewType.value === 'cards' && props.cardLayout === 'horizontal' ? '16px' : '12px'
+  return props.viewType === 'cards' && props.cardLayout === 'horizontal' ? '16px' : '12px'
 }
 
 // 获取卡片高度样式
@@ -463,6 +462,10 @@ const getCardHeight = () => {
     maxHeight
   }
 }
+
+watch(viewType, (newType) => {
+  currentPageSize.value = getPageSizeByViewType(newType)
+})
 </script>
 
 <style scoped>

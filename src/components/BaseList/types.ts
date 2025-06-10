@@ -63,7 +63,7 @@ export interface PaginationConfig {
 }
 
 // 视图类型
-export type ViewType = 'table' | 'cards'
+export type ViewType = 'table' | 'cards' | 'card'
 
 // 表格列类型
 export type ColumnType = 'selection' | 'index' | 'expand' | 'default'
@@ -85,7 +85,8 @@ export interface TableColumn {
   [key: string]: any
 }
 
-// 卡片容器属性
+// 卡片容器属性 - This will be merged into CardConfig
+/*
 export interface CardContainerConfig {
   // 卡片最小宽度
   minWidth?: string | number
@@ -102,41 +103,73 @@ export interface CardContainerConfig {
   // 自定义网格模板列
   gridTemplateColumns?: string
 }
+*/
 
 // 列表组件属性
 export interface BaseListProps {
-  // 过滤条件配置
-  filterConfig?: FilterConfig | FilterFormItem[]
-  // 是否启用高级搜索
-  enableAdvancedFilter?: boolean
-  // 是否启用视图切换
-  enableViewSwitch?: boolean
+  // 标题
+  title?: string
+  // 视图类型
+  viewType?: ViewType
   // 默认视图类型
   defaultViewType?: ViewType
+  // 是否启用视图切换
+  enableViewSwitch?: boolean
+  // 是否显示过滤栏
+  showFilterBar?: boolean
+  // 过滤条件配置
+  filterConfig?: FilterConfig | FilterFormItem[]
+  // 是否启用高级过滤
+  enableAdvancedFilter?: boolean
+  // 过滤表单标签宽度
+  filterLabelWidth?: string
+  // 过滤表单项宽度
+  filterItemWidth?: string
+  // 表格列配置
+  columns?: TableColumn[]
+  // 表格原生属性
+  tableProps?: Record<string, any>
+  // 卡片布局方向
+  cardLayout?: 'horizontal' | 'vertical'
+  // 卡片容器属性
+  cardContainerProps?: Record<string, any>
+  // 卡片配置
+  cardConfig?: CardConfig
   // 是否启用分页
   enablePagination?: boolean
   // 分页配置
   paginationConfig?: PaginationConfig
-  // 请求API函数
+  // 请求API
   requestApi?: (params: any) => Promise<any>
   // 请求参数
   requestParams?: Record<string, any>
-  // 响应数据处理函数
-  responseHandler?: (response: any) => { list: any[], total: number }
-  // 表格属性
-  tableProps?: Record<string, any>
-  // 卡片容器属性
-  cardContainerProps?: Record<string, any>
-  // 卡片尺寸配置
-  cardConfig?: CardContainerConfig
-  // 表格列配置
-  columns?: TableColumn[]
-  // 列表标题
-  title?: string
-  // 卡片布局
-  cardLayout?: 'vertical' | 'horizontal'
-  // 是否显示过滤栏
-  showFilterBar?: boolean
+  // 响应处理器
+  responseHandler?: (response: any) => { list: any[]; total: number }
+}
+
+export interface CardConfig {
+  gutter?: number
+  column?: {
+    xs?: number
+    sm?: number
+    md?: number
+    lg?: number
+    xl?: number
+  }
+  // 卡片最小宽度
+  minWidth?: string | number
+  // 卡片最大宽度
+  maxWidth?: string | number
+  // 卡片最小高度
+  minHeight?: string | number
+  // 卡片最大高度
+  maxHeight?: string | number
+  // 卡片间距
+  gap?: string | number
+  // 网格列数 (auto-fill 或 auto-fit)
+  gridFillMode?: 'auto-fill' | 'auto-fit'
+  // 自定义网格模板列
+  gridTemplateColumns?: string
 }
 
 // 过滤条件变更事件
