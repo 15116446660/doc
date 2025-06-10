@@ -17,8 +17,8 @@
         <el-input v-model="formData.name" placeholder="请输入项目名称" />
       </el-form-item>
 
-      <el-form-item label="项目编号" prop="projectNum">
-        <el-input v-model="formData.projectNum" placeholder="请输入项目编号" />
+      <el-form-item label="项目图号" prop="projectNum">
+        <el-input v-model="formData.projectNum" placeholder="请输入项目图号" />
       </el-form-item>
 
       <el-form-item label="优先级" prop="priority">
@@ -41,25 +41,24 @@
         </el-select>
       </el-form-item>
 
-      <el-form-item label="负责人" prop="directorName">
+      <el-form-item label="负责人" prop="director">
         <el-select
-          v-model="selectedDirector"
+          v-model="formData.director"
           placeholder="请选择负责人"
-          filterable
-          remote
-          :remote-method="handleSearchUser"
-          :loading="userSearchLoading"
           class="w-full"
+          @change="handleDirectorChange"
         >
           <el-option
-            v-for="item in userOptions"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+            v-for="item in directorOptions"
+            :key="item.id"
+            :label="item.name"
+            :value="item.id"
           >
             <div class="user-option">
-              <el-avatar :size="24">{{ item.label.charAt(0) }}</el-avatar>
-              <span>{{ item.label }}</span>
+              <el-avatar :size="24" :src="item.headImg">
+                {{ item.name?.charAt(0) }}
+              </el-avatar>
+              <span>{{ item.name }}</span>
             </div>
           </el-option>
         </el-select>
@@ -115,11 +114,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import type { FormInstance } from 'element-plus'
 import type { Project } from '@/types/document'
-import { searchUsers } from '@/api/user'
-import { getProjectStatusOptions } from '@/api/document'
+import { getProjectStatusOptions, getDirectorOptions } from '@/api/document'
 
 const props = defineProps<{
   modelValue: boolean
@@ -157,24 +155,11 @@ const formData = reactive<Partial<Project>>({
   startTime: '',
   endTime: '',
   description: '',
-  directorName: '',
   director: '',
+  directorName: '',
   directorHeadImg: '',
   documentCount: 0,
   userCount: 0
-})
-
-// 已选择的负责人
-const selectedDirector = computed({
-  get: () => formData.director || '',
-  set: (val) => {
-    formData.director = val
-    // 根据选择的负责人ID设置名字
-    const selected = userOptions.value.find(item => item.value === val)
-    if (selected) {
-      formData.directorName = selected.label
-    }
-  }
 })
 
 // 表单校验规则
@@ -184,7 +169,7 @@ const formRules = {
     { min: 2, max: 50, message: '长度在 2 到 50 个字符', trigger: 'blur' }
   ],
   projectNum: [
-    { required: true, message: '请输入项目编号', trigger: 'blur' }
+    { required: true, message: '请输入项目图号', trigger: 'blur' }
   ],
   priority: [
     { required: true, message: '请选择优先级', trigger: 'change' }
@@ -205,43 +190,34 @@ const formRules = {
 
 // 状态选项
 const statusOptions = ref<{ label: string; value: string }[]>([])
-// 用户选项
-const userOptions = ref<{ label: string; value: string }[]>([])
-// 用户搜索加载状态
-const userSearchLoading = ref(false)
+// 负责人选项
+const directorOptions = ref<{ id: string; name: string; headImg?: string }[]>([])
+
+// 提交状态
+const submitting = ref(false)
 
 // 初始化选项数据
 const initOptions = async () => {
   try {
-    const status = await getProjectStatusOptions()
+    const [status, directors] = await Promise.all([
+      getProjectStatusOptions(),
+      getDirectorOptions()
+    ])
     statusOptions.value = status
+    directorOptions.value = directors
   } catch (error) {
     console.error('Failed to load options:', error)
   }
 }
 
-// 搜索用户
-const handleSearchUser = async (query: string) => {
-  if (query) {
-    userSearchLoading.value = true
-    try {
-      const users = await searchUsers(query)
-      userOptions.value = users.map(user => ({
-        label: user.name,
-        value: user.id
-      }))
-    } catch (error) {
-      console.error('Failed to search users:', error)
-    } finally {
-      userSearchLoading.value = false
-    }
-  } else {
-    userOptions.value = []
+// 处理负责人选择变化
+const handleDirectorChange = (value: string) => {
+  const selected = directorOptions.value.find(item => item.id === value)
+  if (selected) {
+    formData.directorName = selected.name
+    formData.directorHeadImg = selected.headImg
   }
 }
-
-// 提交状态
-const submitting = ref(false)
 
 // 处理提交
 const handleSubmit = async () => {

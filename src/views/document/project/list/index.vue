@@ -36,12 +36,6 @@
               <el-button type="primary" @click="handleCreateProject">
                 <el-icon><Plus /></el-icon>创建项目
               </el-button>
-              <div class="view-toggle">
-                <el-radio-group v-model="viewType" @change="handleViewChange" size="small">
-                  <el-radio-button label="table">表格</el-radio-button>
-                  <el-radio-button label="cards">卡片</el-radio-button>
-                </el-radio-group>
-              </div>
             </div>
           </template>
 
@@ -78,14 +72,6 @@
               查看文档
             </el-button>
           </template>
-
-          <!-- 卡片视图插槽 -->
-          <template #card-view>
-            <project-cards
-              v-if="viewType === 'cards'"
-              :projects="tableData"
-            />
-          </template>
         </base-list>
       </div>
     </div>
@@ -103,13 +89,12 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import { ArrowLeft, ArrowRight, Plus } from '@element-plus/icons-vue'
+import { Plus, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
 import ProjectTypeTree from './components/ProjectTypeTree.vue'
-import ProjectCards from './components/ProjectCards.vue'
 import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
-import { getProjectList, getProjectStatusOptions, getProjectCategoryOptions } from '@/api/document'
+import { getProjectList, getProjectStatusOptions } from '@/api/document'
 import type { Project, ProjectType } from '@/types/document'
 
 const router = useRouter()
@@ -118,18 +103,15 @@ const router = useRouter()
 const listRef = ref()
 const treeRef = ref()
 
-// 视图模式
-const viewType = ref('table')
-
-// 表格数据
-const tableData = ref<Project[]>([])
+// 对话框控制
+const createDialogVisible = ref(false)
+const createDialogData = ref<Partial<Project>>()
 
 // 侧边栏折叠状态
 const sidebarCollapsed = ref(false)
 
-// 对话框控制
-const createDialogVisible = ref(false)
-const createDialogData = ref<Partial<Project>>()
+// 表格数据
+const tableData = ref<Project[]>([])
 
 // 表格列配置
 const columns = ref<TableColumn[]>([
@@ -142,7 +124,7 @@ const columns = ref<TableColumn[]>([
   },
   {
     prop: 'projectNum',
-    label: '项目编号',
+    label: '项目图号',
     width: 120,
     fixed: 'left',
     align: 'center'
@@ -224,17 +206,15 @@ const filterConfig = ref<FilterFormItem[]>([
   },
   {
     type: 'select',
-    field: 'category',
-    label: '分类',
-    placeholder: '请选择分类',
-    props: {
-      remote: false,
-      loading: false
-    },
-    options: async () => {
-      const res = await getProjectCategoryOptions()
-      return res as unknown as OptionItem[]
-    }
+    field: 'priority',
+    label: '优先级',
+    placeholder: '请选择优先级',
+    options: [
+      { label: 'P0 - 最高', value: 'P0' },
+      { label: 'P1 - 高', value: 'P1' },
+      { label: 'P2 - 中', value: 'P2' },
+      { label: 'P3 - 低', value: 'P3' }
+    ]
   },
   {
     type: 'select',
@@ -271,25 +251,14 @@ const tableProps = {
   }
 }
 
-// 表格视图分页配置
-const tablePaginationConfig = {
-  pageSize: 10,
-  pageSizes: [10, 20, 50, 100],
-  layout: 'total, sizes, prev, pager, next, jumper',
-  background: true
-}
-
-// 卡片视图分页配置
-const cardPaginationConfig = {
-  pageSize: 12,
-  pageSizes: [12, 24, 36, 48],
-  layout: 'total, sizes, prev, pager, next, jumper',
-  background: true
-}
-
-// 根据视图类型获取分页配置
+// 分页配置
 const paginationConfig = computed(() => {
-  return viewType.value === 'cards' ? cardPaginationConfig : tablePaginationConfig
+  return {
+    pageSize: 10,
+    pageSizes: [10, 20, 50, 100],
+    layout: 'total, sizes, prev, pager, next, jumper',
+    background: true
+  }
 })
 
 // 获取状态类型
@@ -320,11 +289,6 @@ const handleFilterChange = (filters: Record<string, any>) => {
   console.log('Filter changed:', filters)
 }
 
-// 处理视图切换
-const handleViewChange = (type: string) => {
-  viewType.value = type
-}
-
 // 处理选择变化
 const handleSelectionChange = (selection: Project[]) => {
   console.log('Selection changed:', selection)
@@ -351,6 +315,17 @@ const handleViewDocuments = (project: Project) => {
   })
 }
 
+// 处理创建项目
+const handleCreateProject = () => {
+  createDialogData.value = {
+    status: 'SURVEY',
+    priority: 'P2',
+    startTime: new Date().toISOString().split('T')[0],
+    endTime: ''
+  }
+  createDialogVisible.value = true
+}
+
 // 处理对话框提交
 const handleDialogSubmit = (formData: Project) => {
   console.log('项目创建/更新成功，表单数据:', formData)
@@ -375,17 +350,6 @@ const handleTypeSelect = (type: ProjectType | null) => {
 // 切换侧边栏折叠状态
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value
-}
-
-// 处理创建项目
-const handleCreateProject = () => {
-  createDialogData.value = {
-    status: 'SURVEY',
-    priority: 'P2',
-    startTime: new Date().toISOString().split('T')[0],
-    endTime: ''
-  }
-  createDialogVisible.value = true
 }
 </script>
 

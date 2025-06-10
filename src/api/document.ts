@@ -203,4 +203,27 @@ export const getDocumentTagOptions = async () => {
 export const getDocumentVersions = async (documentId: string) => {
   // Mock API response
   return mockVersions.filter(version => version.documentId === documentId)
+}
+
+/**
+ * 获取负责人选项列表
+ */
+export const getDirectorOptions = () => {
+  return [
+    {
+      id: '1',
+      name: '张三',
+      headImg: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+    },
+    {
+      id: '2',
+      name: '李四',
+      headImg: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+    },
+    {
+      id: '3',
+      name: '王五',
+      headImg: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'
+    }
+  ]
 } 
