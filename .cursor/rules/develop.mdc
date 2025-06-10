@@ -6,3 +6,12 @@ alwaysApply: true
 1、所有table界面都基于 “BaseList” 实现
 2、所有分类树控件都要基于 BaseTreeSelect 实现
 3、所有mock数据，都要实现API请求，并需要配套的 viteMockServe （'src/mock'路径下）
+4、分页响应数据结构：{
+    "code": 200,
+    "data": {
+        "current": 1,
+        "records": [],
+        "size": 10,
+        "total": 66
+    }
+}

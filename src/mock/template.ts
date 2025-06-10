@@ -383,13 +383,13 @@ const mockData: MockMethod[] = [
       const { pageNum = 1, pageSize = 12 } = query
       const startIndex = (pageNum - 1) * pageSize
       const endIndex = startIndex + pageSize
-      const list = templates.slice(startIndex, endIndex)
+      const records = templates.slice(startIndex, endIndex)
 
       return {
         code: 200,
         message: 'success',
         data: {
-          list,
+          records,
           total: templates.length,
           pageNum: Number(pageNum),
           pageSize: Number(pageSize)

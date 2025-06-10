@@ -295,33 +295,25 @@ const getColumnProps = (column: TableColumn) => {
 // 默认响应处理函数
 const defaultResponseHandler = (response: any) => {
   // 处理不同响应格式
-  if (response && response.data) {
+  if (response) {
     // 如果是标准API响应格式
-    if (response.data.records && typeof response.data.total !== 'undefined') {
+    if (response.records && typeof response.total !== 'undefined') {
       return {
-        list: response.data.records,
-        total: response.data.total
+        list: response.records,
+        total: response.total
       }
-    } else if (Array.isArray(response.data)) {
-      // 如果直接返回数组
-      return {
-        list: response.data,
-        total: response.data.length
-      }
-    } else if (response.data.list && typeof response.data.total !== 'undefined') {
+    } else if (response.list && typeof response.total !== 'undefined') {
       // 如果是标准分页响应
       return {
-        list: response.data.list,
-        total: response.data.total
+        list: response.list,
+        total: response.total
       }
-    }
-  }
-  
-  // 兜底处理
-  if (Array.isArray(response)) {
-    return {
-      list: response,
-      total: response.length
+    } else if (Array.isArray(response)) {
+      // 如果直接返回数组
+      return {
+        list: response,
+        total: response.length
+      }
     }
   }
   

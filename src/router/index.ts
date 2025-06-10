@@ -110,7 +110,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'template',
         name: 'DocumentTemplate',
-        component: () => import('../views/document/template/index.vue'),
+        component: () => import('../views/template/list/index.vue'),
         meta: { title: '模板中心' },
         redirect: '/document/template/list',
         children: [

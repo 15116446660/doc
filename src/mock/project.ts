@@ -266,12 +266,11 @@ const mockData: MockMethod[] = [
       // 分页
       const start = (page - 1) * limit
       const end = start + limit
-      const pageList = filteredList.slice(start, end)
-      
+      const records = filteredList.slice(start, end)
       return {
         code: 200,
         data: {
-          list: pageList,
+          records: records,
           total: filteredList.length,
           page: Number(page),
           limit: Number(limit)
