@@ -16,6 +16,7 @@
       @filter-change="handleFilterChange"
       @selection-change="handleSelectionChange"
       @view-change="handleViewChange"
+      @action-command="handleActionCommand"
     >
       <template #header-left>
         <div class="list-title-container">
@@ -135,14 +136,21 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { Plus, ArrowLeft } from '@element-plus/icons-vue'
+import { 
+  Plus, 
+  ArrowLeft,
+  EditPen,
+  Refresh,
+  Download,
+  Delete 
+} from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import DocumentCard from './components/DocumentCard.vue'
 import DocumentCreateDialog from './dialogs/DocumentCreateDialog.vue'
 import VersionHistoryDialog from './dialogs/VersionHistoryDialog.vue'
 import DocumentContentViewer from '@/components/DocumentContentViewer.vue'
 import FileIcon from '@/components/FileIcon/index.vue'
-import type { CardConfig, FilterFormItem, TableColumn, ViewType } from '@/components/BaseList/types'
+import type { ActionItem, CardConfig, FilterFormItem, TableColumn, ViewType } from '@/components/BaseList/types'
 import { getDocumentList, getDocumentStatusOptions, getDocumentTypeOptions } from '@/api/document'
 import type { Document as DocumentModel, Project } from '@/types/document'
 
@@ -163,6 +171,14 @@ const createDialogData = ref<Partial<DocumentModel>>()
 const versionHistoryVisible = ref(false)
 const documentViewerVisible = ref(false)
 const currentDocument = ref<DocumentModel>()
+
+// 表格操作配置
+const documentActions: ActionItem[] = [
+  { label: '编辑', command: 'edit', icon: EditPen },
+  { label: '同步', command: 'sync', icon: Refresh },
+  { label: '下载', command: 'download', icon: Download },
+  { label: '删除', command: 'delete', icon: Delete, divided: true }
+]
 
 // 表格列配置
 const columns = ref<TableColumn[]>([
@@ -254,7 +270,8 @@ const columns = ref<TableColumn[]>([
     width: 200,
     align: 'center',
     fixed: 'right',
-    slot: 'actions'
+    actions: documentActions,
+    maxVisibleActions: 1
   }
 ])
 
@@ -479,6 +496,24 @@ const handleSync = (row: DocumentModel) => {
     console.log('Syncing document:', row.id)
     ElMessage.success('已加入同步队列')
   }).catch(() => {})
+}
+
+// 统一处理操作指令
+const handleActionCommand = (event: { command: string, row: DocumentModel }) => {
+  switch (event.command) {
+    case 'edit':
+      handleEdit(event.row)
+      break
+    case 'sync':
+      handleSync(event.row)
+      break
+    case 'download':
+      handleDownload(event.row)
+      break
+    case 'delete':
+      handleDelete(event.row)
+      break
+  }
 }
 
 // 初始化

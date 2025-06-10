@@ -85,8 +85,47 @@
               <slot :name="column.headerSlot" />
             </template>
             
+            <!-- 自动渲染操作列 -->
+            <template v-if="column.actions" #default="scope">
+              <div class="action-buttons">
+                <template v-for="action in getVisibleActions(column, scope.row)" :key="action.command">
+                  <el-button
+                    type="primary"
+                    link
+                    :icon="action.icon"
+                    @click="handleActionCommand(action, scope.row)"
+                  >
+                    {{ action.label }}
+                  </el-button>
+                </template>
+                <el-dropdown
+                  v-if="getDropdownActions(column, scope.row).length > 0"
+                  trigger="click"
+                  @command="cmd => handleDropdownCommand(cmd, scope.row)"
+                >
+                  <el-button type="primary" link>
+                    更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+                  </el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <template v-for="action in getDropdownActions(column, scope.row)" :key="action.command">
+                        <el-dropdown-item
+                          :command="action"
+                          :icon="action.icon"
+                          :divided="action.divided"
+                          :class="{ 'danger-item': action.type === 'danger' }"
+                        >
+                          {{ action.label }}
+                        </el-dropdown-item>
+                      </template>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
+            </template>
+
             <!-- 自定义单元格 -->
-            <template v-if="column.slot && $slots[column.slot]" #default="scope">
+            <template v-else-if="column.slot && $slots[column.slot]" #default="scope">
               <slot :name="column.slot" v-bind="scope" />
             </template>
             
@@ -129,7 +168,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch, useSlots } from 'vue'
-import { List, Grid, Filter } from '@element-plus/icons-vue'
+import { List, Grid, Filter, ArrowDown } from '@element-plus/icons-vue'
 import type { TableInstance } from 'element-plus'
 import ListFilter from './components/ListFilter.vue'
 import type { 
@@ -139,6 +178,7 @@ import type {
   FilterChangeEvent,
   TableColumn,
   FilterFormItem,
+  ActionItem
 } from './types'
 
 const props = withDefaults(defineProps<BaseListProps>(), {
@@ -287,8 +327,31 @@ const totalItems = computed(() => {
 
 // 获取列属性
 const getColumnProps = (column: TableColumn) => {
-  const { slot, headerSlot, formatter, ...rest } = column
+  const { slot, headerSlot, formatter, actions, maxVisibleActions, ...rest } = column
   return rest
+}
+
+// 统一处理操作指令
+const handleActionCommand = (action: ActionItem, row: any) => {
+  emit('action-command', { command: action.command, row })
+}
+
+const handleDropdownCommand = (action: ActionItem, row: any) => {
+  handleActionCommand(action, row)
+}
+
+// 计算可见操作
+const getVisibleActions = (column: TableColumn, row: any) => {
+  const { actions = [], maxVisibleActions = 1 } = column
+  const filteredActions = actions.filter(a => !a.show || a.show(row))
+  return filteredActions.slice(0, maxVisibleActions)
+}
+
+// 计算下拉菜单操作
+const getDropdownActions = (column: TableColumn, row: any) => {
+  const { actions = [], maxVisibleActions = 1 } = column
+  const filteredActions = actions.filter(a => !a.show || a.show(row))
+  return filteredActions.slice(maxVisibleActions)
 }
 
 // 默认响应处理函数
@@ -624,5 +687,24 @@ watch(viewType, (newType) => {
   opacity: 0;
   transform: translateY(-10px);
   max-height: 0;
+}
+
+.action-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .el-button + .el-dropdown {
+    margin-left: 8px;
+  }
+}
+
+.danger-item {
+  color: var(--el-color-danger);
+}
+
+.danger-item:hover {
+  background-color: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
 }
 </style> 

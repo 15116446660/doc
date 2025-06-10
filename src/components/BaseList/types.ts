@@ -68,6 +68,16 @@ export type ViewType = 'table' | 'cards' | 'card'
 // 表格列类型
 export type ColumnType = 'selection' | 'index' | 'expand' | 'default'
 
+// 表格操作项配置
+export interface ActionItem {
+  label: string
+  command: string
+  icon?: any
+  type?: 'primary' | 'success' | 'warning' | 'danger' | 'info'
+  divided?: boolean
+  show?: (row: any) => boolean
+}
+
 // 表格列配置
 export interface TableColumn {
   type?: ColumnType
@@ -82,6 +92,8 @@ export interface TableColumn {
   formatter?: (row: any, column: any, cellValue: any, index: number) => any
   align?: 'left' | 'center' | 'right'
   showOverflowTooltip?: boolean
+  actions?: ActionItem[]
+  maxVisibleActions?: number
   [key: string]: any
 }
 
@@ -186,6 +198,7 @@ export interface BaseListEmits {
   (e: 'size-change', size: number): void
   (e: 'selection-change', selection: any[]): void
   (e: 'sort-change', sort: { prop: string, order: string }): void
+  (e: 'action-command', event: { command: string, row: any }): void
 }
 
 // 通用API响应接口
