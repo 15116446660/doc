@@ -12,7 +12,7 @@
       :pagination-config="paginationConfig"
       @filter-change="handleFilterChange"
       @view-change="handleViewChange"
-      @selection-change="handleSelectionChange"
+      @action-command="handleActionCommand"
     >
       <!-- 顶部工具栏插槽 -->
       <template #toolbar>
@@ -53,12 +53,6 @@
     </div>
       </template>
 
-      <!-- 操作自定义插槽 -->
-      <template #actions="{ row }">
-        <el-button type="primary" text @click="handleEdit(row)">编辑</el-button>
-        <el-button type="danger" text @click="handleDelete(row)">删除</el-button>
-      </template>
-
       <!-- 卡片视图插槽 -->
       <template #card="{ item }">
         <project-card
@@ -78,12 +72,21 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { 
+  Plus, 
+  ArrowLeft, 
+  ArrowRight,
+  User,
+  Tickets,
+  EditPen,
+  Delete,
+  View,
+} from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import ProjectCard from '@/components/ProjectCard.vue'
 import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
 import dialogInstance from '@/hooks/useDialog'
-import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
+import type { FilterFormItem, OptionItem, TableColumn, CardConfig, ViewType, ActionItem } from '@/components/BaseList/types'
 import { getProjectList, getProjectStatusOptions, getProjectRiskOptions, getTeamMemberOptions } from '@/api/project'
 import type { Project } from '@/api/project'
 import { useRouter } from 'vue-router'
@@ -156,9 +159,11 @@ const columns = ref<TableColumn[]>([
   },
   {
     label: '操作',
-    width: 150,
+    width: 200,
+    align: 'center',
     fixed: 'right',
-    slot: 'actions'
+    actions: projectActions,
+    maxVisibleActions: 1
   }
 ])
 
@@ -353,6 +358,51 @@ const handleViewProject = (project: Project) => {
 window.addEventListener('project-list-refresh', () => {
   listRef.value?.refresh()
 })
+
+// 表格操作配置
+const projectActions: ActionItem[] = [
+  { label: '查看文档', command: 'view-documents', icon: View },
+  { label: '成员', command: 'members', icon: User },
+  { label: '项目常量', command: 'constants', icon: Tickets },
+  { label: '编辑', command: 'edit', icon: EditPen },
+  { label: '删除', command: 'delete', icon: Delete, divided: true }
+]
+
+// 处理查看文档
+const handleViewDocuments = (project: Project) => {
+  console.log('View documents for:', project.id)
+}
+
+// 处理管理成员
+const handleManageMembers = (project: Project) => {
+  console.log('Manage members for:', project.id)
+}
+
+// 处理管理常量
+const handleManageConstants = (project: Project) => {
+  console.log('Manage constants for:', project.id)
+}
+
+// 统一处理指令
+const handleActionCommand = (event: { command: string, row: Project }) => {
+  switch (event.command) {
+    case 'view-documents':
+      handleViewDocuments(event.row)
+      break
+    case 'members':
+      handleManageMembers(event.row)
+      break
+    case 'constants':
+      handleManageConstants(event.row)
+      break
+    case 'edit':
+      handleEdit(event.row)
+      break
+    case 'delete':
+      handleDelete(event.row)
+      break
+  }
+}
 </script>
 
 <style lang="scss" scoped>

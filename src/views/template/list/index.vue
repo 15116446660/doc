@@ -31,6 +31,7 @@
           @filter-change="handleFilterChange"
           @view-change="handleViewChange"
           @selection-change="handleSelectionChange"
+          @action-command="handleActionCommand"
         >
           <!-- 顶部工具栏插槽 -->
           <template #toolbar>
@@ -140,14 +141,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { Plus, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { Plus, ArrowLeft, ArrowRight, EditPen, Download, Delete } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import TemplateCard from './components/TemplateCard.vue'
 import TemplateCreateDialog from './dialogs/TemplateCreateDialog.vue'
 import TemplateTypeTree from './components/TemplateTypeTree.vue'
 import VersionHistoryDialog from './dialogs/VersionHistoryDialog.vue'
 import TemplateContentViewer from '@/components/TemplateContentViewer.vue'
-import type { FilterFormItem, OptionItem, TableColumn } from '@/components/BaseList/types'
+import type { FilterFormItem, OptionItem, TableColumn, ActionItem } from '@/components/BaseList/types'
 import { getTemplateList, getTemplateStatusOptions, getTemplateCategoryOptions } from '@/api/template'
 import type { Template, TemplateType } from '@/api/template'
 
@@ -171,6 +172,13 @@ const currentTemplate = ref<Template>()
 
 // 模板内容查看控制
 const templateViewerVisible = ref(false)
+
+// 表格操作配置
+const templateActions: ActionItem[] = [
+  { label: '编辑', command: 'edit', icon: EditPen },
+  { label: '下载', command: 'download', icon: Download },
+  { label: '删除', command: 'delete', icon: Delete, divided: true }
+]
 
 // 表格列配置
 const columns = ref<TableColumn[]>([
@@ -270,10 +278,11 @@ const columns = ref<TableColumn[]>([
   },
   {
     label: '操作',
-    width: 200,
+    width: 160,
     align: 'center',
     fixed: 'right',
-    slot: 'actions'
+    actions: templateActions,
+    maxVisibleActions: 1
   }
 ])
 
@@ -471,6 +480,21 @@ const handlePreviewTemplate = (template: Template) => {
 const handleVersionHistory = (template: Template) => {
   currentTemplate.value = template
   versionHistoryVisible.value = true
+}
+
+// 统一处理操作指令
+const handleActionCommand = (event: { command: string, row: Template }) => {
+  switch (event.command) {
+    case 'edit':
+      handleEdit(event.row)
+      break
+    case 'download':
+      handleDownload(event.row)
+      break
+    case 'delete':
+      handleDelete(event.row)
+      break
+  }
 }
 
 // 处理对话框提交
