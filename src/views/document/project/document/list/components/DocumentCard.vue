@@ -6,7 +6,10 @@
           <div class="title-icon">
             <file-icon :format="document.format" />
           </div>
-          <span class="title-text">{{ document.name }}</span>
+          <div class="title-container">
+            <span class="title-text" :title="document.name">{{ document.name }}</span>
+            <span v-if="document.documentCode" class="document-code">#{{ document.documentCode }}</span>
+          </div>
         </div>
         <el-dropdown trigger="click" @command="handleCommand">
           <el-icon class="more-icon"><MoreFilled /></el-icon>
@@ -23,6 +26,16 @@
     </template>
 
     <div class="card-body">
+      <div class="status-tags">
+        <el-tag :type="getStatusType(document.status || '')" size="small" effect="light" round>{{ document.status || '未知' }}</el-tag>
+        <el-tag :type="getSyncStatusType(document.syncStatus || '')" size="small" effect="light" round>
+          <el-icon v-if="document.syncStatus === 'pending'" class="is-loading"><Refresh /></el-icon>
+          {{ getSyncStatusText(document.syncStatus || '') }}
+        </el-tag>
+        <div class="version">
+            V{{ document.version }}
+        </div>
+      </div>
       <div class="info-grid">
         <div class="info-item">
           <el-icon><User /></el-icon>
@@ -37,14 +50,6 @@
           <span :title="document.templateName">{{ document.templateName || '无模板' }}</span>
         </div>
       </div>
-      
-      <div class="status-tags">
-        <el-tag :type="getStatusType(document.status || '')" size="small" effect="light" round>{{ document.status || '未知' }}</el-tag>
-        <el-tag :type="getSyncStatusType(document.syncStatus || '')" size="small" effect="light" round>
-          <el-icon v-if="document.syncStatus === 'pending'" class="is-loading"><Refresh /></el-icon>
-          {{ getSyncStatusText(document.syncStatus || '') }}
-        </el-tag>
-      </div>
     </div>
 
     <div class="card-footer">
@@ -52,16 +57,12 @@
         <el-icon><Clock /></el-icon>
         <span>{{ document.updateTime }}</span>
       </div>
-      <div class="version">
-        V{{ document.version }}
-      </div>
     </div>
   </el-card>
 </template>
 
 <script setup lang="ts">
 import { 
-  Document, 
   MoreFilled, 
   Clock,
   User,
@@ -170,6 +171,7 @@ const getSyncStatusText = (status: string) => {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 
   .card-title {
     display: flex;
@@ -180,6 +182,8 @@ const getSyncStatusText = (status: string) => {
     color: var(--el-text-color-primary);
     cursor: pointer;
     margin-bottom: 12px;
+    flex-grow: 1;
+    overflow: hidden;
 
     .title-icon {
       width: 32px;
@@ -187,8 +191,24 @@ const getSyncStatusText = (status: string) => {
       flex-shrink: 0;
     }
 
+    .title-container {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
     .title-text {
-      line-height: 1.3;
+      line-height: 1.4;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .document-code {
+      font-size: 12px;
+      font-weight: 400;
+      color: var(--el-text-color-secondary);
+      margin-top: 2px;
     }
 
     &:hover {
@@ -257,6 +277,14 @@ const getSyncStatusText = (status: string) => {
       animation: rotating 2s linear infinite;
     }
   }
+
+  .version {
+    font-weight: 600;
+    padding: 2px 6px;
+    background-color: var(--el-fill-color-light);
+    border-radius: 4px;
+    color: var(--el-text-color-regular)
+  }
 }
 
 .card-footer {
@@ -268,20 +296,6 @@ const getSyncStatusText = (status: string) => {
   border-top: 1px solid var(--el-border-color-lighter);
   font-size: 12px;
   color: var(--el-text-color-secondary);
-
-  .update-time, .version {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .version {
-    font-weight: 600;
-    padding: 2px 6px;
-    background-color: var(--el-fill-color-light);
-    border-radius: 4px;
-    color: var(--el-text-color-regular)
-  }
 }
 
 .el-dropdown-menu__item {
