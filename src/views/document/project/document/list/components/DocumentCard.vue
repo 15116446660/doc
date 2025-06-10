@@ -144,13 +144,13 @@ const getSyncStatusText = (status: string) => {
   transition: all 0.2s ease-in-out;
   display: flex;
   flex-direction: column;
-  height: 220px;
-  box-shadow: var(--el-box-shadow-light);
+  height: 260px;
+  box-shadow: var(--el-box-shadow);
 
   &:hover {
     transform: translateY(-2px);
     scale: 1.01;
-    box-shadow: var(--el-box-shadow);
+    box-shadow: var(--el-box-shadow-dark);
   }
 
   :deep(.el-card__header) {
