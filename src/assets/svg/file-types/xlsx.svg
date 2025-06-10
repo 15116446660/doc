@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad_xlsx" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#5CB85C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#4CAE4C;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path fill="#5CB85C" d="M15,5 H85 V95 H15 V5" />
+  <path fill="#FFFFFF" d="M10,0 H80 L90,10 V100 H10 V0" />
+  <path fill="#EDF7ED" d="M80,0 L90,10 H80 V0" />
+  <rect x="25" y="40" width="15" height="15" fill="#5CB85C"/>
+  <rect x="45" y="40" width="15" height="15" fill="#5CB85C"/>
+  <rect x="65" y="40" width="15" height="15" fill="#5CB85C"/>
+  <rect x="25" y="60" width="15" height="15" fill="#5CB85C"/>
+  <rect x="45" y="60" width="15" height="15" fill="#5CB85C"/>
+  <rect x="65" y="60" width="15" height="15" fill="#5CB85C"/>
+  <text x="50" y="30" font-family="Arial, sans-serif" font-size="14" fill="#4CAE4C" text-anchor="middle" font-weight="bold">XLSX</text>
+</svg> 

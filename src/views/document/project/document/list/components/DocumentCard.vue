@@ -3,7 +3,9 @@
     <template #header>
       <div class="card-header">
         <div class="card-title" @click="handleViewDocument">
-          <el-icon class="title-icon"><Document /></el-icon>
+          <div class="title-icon">
+            <file-icon :format="document.format" />
+          </div>
           <span class="title-text">{{ document.name }}</span>
         </div>
         <el-dropdown trigger="click" @command="handleCommand">
@@ -71,6 +73,7 @@ import {
   Delete
 } from '@element-plus/icons-vue'
 import type { Document as DocumentModel } from '@/types/document'
+import FileIcon from '@/components/FileIcon/index.vue'
 
 const props = defineProps<{
   document: DocumentModel
@@ -179,8 +182,8 @@ const getSyncStatusText = (status: string) => {
     margin-bottom: 12px;
 
     .title-icon {
-      color: var(--el-color-primary);
-      font-size: 20px;
+      width: 32px;
+      height: 32px;
       flex-shrink: 0;
     }
 

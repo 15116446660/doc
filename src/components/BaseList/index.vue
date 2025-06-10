@@ -1,6 +1,5 @@
 <template>
   <div class="base-list">
-    「『viewType]] {{ viewType }}
     <!-- 视图切换和操作按钮 -->
     <div v-if="hasHeaderContent" class="list-header">
       <div class="left-section">
@@ -568,7 +567,7 @@ watch(viewType, (newType) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 4px;
+  padding: 2px;
   background-color: var(--el-fill-color-light);
   border-radius: 4px;
 }
@@ -577,7 +576,6 @@ watch(viewType, (newType) => {
   display: flex;
   background-color: var(--el-fill-color-light);
   border-radius: 4px;
-  padding: 2px;
 }
 
 .view-btn {

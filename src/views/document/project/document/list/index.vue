@@ -5,7 +5,6 @@
       ref="listRef"
       :view-type="viewType"
       :card-config="cardConfig"
-      title="文档列表"
       :filter-config="filterConfig"
       :columns="columns"
       :enable-advanced-filter="true"
@@ -18,6 +17,15 @@
       @selection-change="handleSelectionChange"
       @view-change="handleViewChange"
     >
+      <template #header-left>
+        <div class="list-title-container">
+          <div class="back-button" @click="goBack">
+            <el-icon><arrow-left /></el-icon>
+            <span>返回</span>
+          </div>
+          <h2 class="list-title">文档列表</h2>
+        </div>
+      </template>
       <!-- 顶部工具栏插槽 -->
       <template #toolbar>
         <div class="toolbar-left">
@@ -30,7 +38,9 @@
       <!-- 文档名称自定义插槽 -->
       <template #document-name="{ row }">
         <div class="document-name" @click="handleViewDocument(row)">
-          <el-icon><document /></el-icon>
+          <div class="document-icon">
+            <file-icon :format="row.format" />
+          </div>
           <span class="document-title">{{ row.name }}</span>
         </div>
       </template>
@@ -123,19 +133,21 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox, ElMessage } from 'element-plus'
-import { Plus, Document } from '@element-plus/icons-vue'
+import { Plus, ArrowLeft } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import DocumentCard from './components/DocumentCard.vue'
 import DocumentCreateDialog from './dialogs/DocumentCreateDialog.vue'
 import VersionHistoryDialog from './dialogs/VersionHistoryDialog.vue'
 import DocumentContentViewer from '@/components/DocumentContentViewer.vue'
+import FileIcon from '@/components/FileIcon/index.vue'
 import type { CardConfig, FilterFormItem, TableColumn, ViewType } from '@/components/BaseList/types'
 import { getDocumentList, getDocumentStatusOptions, getDocumentTypeOptions } from '@/api/document'
 import type { Document as DocumentModel, Project } from '@/types/document'
 
 const route = useRoute()
+const router = useRouter()
 const projectId = route.params.projectId as string
 
 // 列表实例
@@ -363,6 +375,10 @@ const handleViewChange = (type: ViewType) => {
   viewType.value = type
 }
 
+const goBack = () => {
+  router.back()
+}
+
 // 处理创建文档
 const handleCreateDocument = () => {
   createDialogData.value = {
@@ -541,6 +557,12 @@ onMounted(async () => {
   cursor: pointer;
   color: var(--el-color-primary);
 
+  .document-icon {
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
   &:hover {
     .document-title {
       text-decoration: underline;
@@ -577,5 +599,41 @@ onMounted(async () => {
 .toolbar-right {
   display: flex;
   align-items: center;
+}
+
+.list-title-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .back-button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--el-text-color-secondary);
+    background-color: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+
+    .el-icon {
+      font-size: 16px;
+    }
+
+    &:hover {
+      background-color: var(--el-fill-color-light);
+      color: var(--el-color-primary);
+    }
+  }
+
+  .list-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+  }
 }
 </style> 

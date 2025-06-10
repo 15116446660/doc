@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4A90E2;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#357ABD;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <path fill="#4A90E2" d="M15,5 H85 V95 H15 V5" />
+  <path fill="#FFFFFF" d="M10,0 H80 L90,10 V100 H10 V0" />
+  <path fill="#E6F0FA" d="M80,0 L90,10 H80 V0" />
+  <rect x="25" y="40" width="50" height="8" fill="#4A90E2"/>
+  <rect x="25" y="55" width="50" height="8" fill="#4A90E2"/>
+  <rect x="25" y="70" width="30" height="8" fill="#4A90E2"/>
+  <text x="50" y="30" font-family="Arial, sans-serif" font-size="14" fill="#357ABD" text-anchor="middle" font-weight="bold">DOCX</text>
+</svg> 
