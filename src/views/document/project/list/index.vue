@@ -75,6 +75,28 @@
             >
               查看文档
             </el-button>
+            <el-divider direction="vertical" />
+            <el-dropdown trigger="click" @command="command => handleCommand(command as 'members' | 'constants' | 'edit' | 'delete', row)">
+              <el-button type="primary" link>
+                更多<el-icon class="el-icon--right"><arrow-down /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item command="members">
+                    <el-icon><User /></el-icon>成员
+                  </el-dropdown-item>
+                  <el-dropdown-item command="constants">
+                    <el-icon><Tickets /></el-icon>项目常量
+                  </el-dropdown-item>
+                  <el-dropdown-item command="edit">
+                    <el-icon><EditPen /></el-icon>编辑
+                  </el-dropdown-item>
+                  <el-dropdown-item command="delete" divided class="danger-item">
+                    <el-icon><Delete /></el-icon>删除
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
           </template>
 
           <!-- 卡片视图插槽 -->
@@ -98,7 +120,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { Plus, ArrowLeft, ArrowRight } from '@element-plus/icons-vue'
+import { 
+  Plus, 
+  ArrowLeft, 
+  ArrowRight,
+  ArrowDown,
+  User,
+  Tickets,
+  EditPen,
+  Delete,
+} from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
 import ProjectTypeTree from './components/ProjectTypeTree.vue'
@@ -126,6 +157,119 @@ const sidebarCollapsed = ref(false)
 // 表格数据
 const tableData = ref<Project[]>([])
 
+// 处理查看文档
+const handleViewDocuments = (project: Project) => {
+  router.push({
+    name: 'DocumentList',
+    params: { projectId: project.id },
+    query: { projectName: project.name }
+  })
+}
+
+// 处理创建项目
+const handleCreateProject = () => {
+  createDialogData.value = {
+    status: 'SURVEY',
+    priority: 'P2',
+    startTime: new Date().toISOString().split('T')[0],
+    endTime: ''
+  }
+  createDialogVisible.value = true
+}
+
+// 处理行内编辑
+const handleEdit = (project: Project) => {
+  createDialogData.value = { ...project }
+  createDialogVisible.value = true
+}
+
+// 处理行内删除
+const handleDelete = (project: Project) => {
+  console.log('Delete project:', project.id)
+  // ElMessageBox.confirm(...)
+}
+
+// 处理成员管理
+const handleManageMembers = (project: Project) => {
+  console.log('Manage members for:', project.id)
+}
+
+// 处理项目常量
+const handleManageConstants = (project: Project) => {
+  console.log('Manage constants for:', project.id)
+}
+
+// 统一处理指令
+const handleCommand = (command: 'members' | 'constants' | 'edit' | 'delete', project: Project) => {
+  switch (command) {
+    case 'edit':
+      handleEdit(project)
+      break
+    case 'delete':
+      handleDelete(project)
+      break
+    case 'members':
+      handleManageMembers(project)
+      break
+    case 'constants':
+      handleManageConstants(project)
+      break
+  }
+}
+
+// 处理对话框提交
+const handleDialogSubmit = (formData: Project) => {
+  console.log('项目创建/更新成功，表单数据:', formData)
+  listRef.value?.refresh()
+}
+
+// 处理对话框错误
+const handleDialogError = (error: Error) => {
+  console.error('创建/更新项目失败:', error)
+}
+
+// 处理分类选择
+const handleTypeSelect = (type: ProjectType | null) => {
+  console.log('Selected type:', type)
+  if (type) {
+    listRef.value?.refresh({ categoryId: type.id })
+  } else {
+    listRef.value?.refresh({ categoryId: undefined })
+  }
+}
+
+// 切换侧边栏折叠状态
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
+
+// 处理视图切换
+const handleViewChange = (type: ViewType) => {
+  viewType.value = type
+}
+
+// 处理过滤条件变化
+const handleFilterChange = (filters: Record<string, any>) => {
+  console.log('Filter changed:', filters)
+}
+
+// 处理选择变化
+const handleSelectionChange = (selection: Project[]) => {
+  console.log('Selection changed:', selection)
+}
+
+// 处理数据加载完成
+const handleDataLoaded = (data: any) => {
+  // 处理API返回的数据结构，提取真正的记录列表
+  if (data && data.records) {
+    tableData.value = data.records
+  } else if (Array.isArray(data)) {
+    tableData.value = data
+  } else {
+    tableData.value = []
+  }
+}
+
 // 表格列配置
 const columns = ref<TableColumn[]>([
   {
@@ -136,19 +280,20 @@ const columns = ref<TableColumn[]>([
     align: 'center'
   },
   {
-    prop: 'projectNum',
-    label: '项目图号',
-    width: 120,
-    fixed: 'left',
-    align: 'center'
-  },
-  {
     prop: 'name',
     label: '项目名称',
     minWidth: 180,
     align: 'left',
+    headerAlign: 'center',
+    fixed: 'left',
     slot: 'project-name',
     showOverflowTooltip: true
+  },
+  {
+    prop: 'projectNum',
+    label: '项目图号',
+    width: 120,
+    align: 'center'
   },
   {
     prop: 'status',
@@ -250,18 +395,6 @@ const filterConfig = ref<FilterFormItem[]>([
   }
 ])
 
-// 卡片容器属性
-const cardContainerProps = {
-  gutter: 16,
-  column: {
-    xs: 1,
-    sm: 2,
-    md: 3,
-    lg: 4,
-    xl: 5
-  }
-}
-
 // 表格属性
 const tableProps = {
   border: true,
@@ -325,79 +458,6 @@ const getPriorityType = (priority: string) => {
     'P3': 'info'     // 低
   }
   return typeMap[priority] || 'info'
-}
-
-// 处理过滤条件变化
-const handleFilterChange = (filters: Record<string, any>) => {
-  console.log('Filter changed:', filters)
-}
-
-// 处理选择变化
-const handleSelectionChange = (selection: Project[]) => {
-  console.log('Selection changed:', selection)
-}
-
-// 处理数据加载完成
-const handleDataLoaded = (data: any) => {
-  // 处理API返回的数据结构，提取真正的记录列表
-  if (data && data.records) {
-    tableData.value = data.records
-  } else if (Array.isArray(data)) {
-    tableData.value = data
-  } else {
-    tableData.value = []
-  }
-}
-
-// 处理查看文档
-const handleViewDocuments = (project: Project) => {
-  router.push({
-    name: 'DocumentList',
-    params: { projectId: project.id },
-    query: { projectName: project.name }
-  })
-}
-
-// 处理创建项目
-const handleCreateProject = () => {
-  createDialogData.value = {
-    status: 'SURVEY',
-    priority: 'P2',
-    startTime: new Date().toISOString().split('T')[0],
-    endTime: ''
-  }
-  createDialogVisible.value = true
-}
-
-// 处理对话框提交
-const handleDialogSubmit = (formData: Project) => {
-  console.log('项目创建/更新成功，表单数据:', formData)
-  listRef.value?.refresh()
-}
-
-// 处理对话框错误
-const handleDialogError = (error: Error) => {
-  console.error('创建/更新项目失败:', error)
-}
-
-// 处理分类选择
-const handleTypeSelect = (type: ProjectType | null) => {
-  console.log('Selected type:', type)
-  if (type) {
-    listRef.value?.refresh({ categoryId: type.id })
-  } else {
-    listRef.value?.refresh({ categoryId: undefined })
-  }
-}
-
-// 切换侧边栏折叠状态
-const toggleSidebar = () => {
-  sidebarCollapsed.value = !sidebarCollapsed.value
-}
-
-// 处理视图切换
-const handleViewChange = (type: ViewType) => {
-  viewType.value = type
 }
 
 onMounted(async () => {
@@ -498,6 +558,18 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
+  cursor: pointer;
+
+  .name {
+    transition: color 0.2s;
+  }
+
+  &:hover {
+    .name {
+      color: var(--el-color-primary);
+      text-decoration: underline;
+    }
+  }
 }
 
 .user-info {
@@ -523,5 +595,14 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 16px;
+}
+
+.danger-item {
+  color: var(--el-color-danger);
+}
+
+.danger-item:hover {
+  background-color: var(--el-color-danger-light-9);
+  color: var(--el-color-danger);
 }
 </style>
