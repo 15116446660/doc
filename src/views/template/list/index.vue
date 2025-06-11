@@ -148,7 +148,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { Plus, ArrowLeft, ArrowRight, EditPen, Download, Delete } from '@element-plus/icons-vue'
+import { Plus, ArrowLeft, ArrowRight, EditPen, Download, Delete, View, Timer } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import TemplateCard from './components/TemplateCard.vue'
 import TemplateCreateDialog from './dialogs/TemplateCreateDialog.vue'
@@ -156,7 +156,7 @@ import TemplateTypeTree from './components/TemplateTypeTree.vue'
 import VersionHistoryDialog from './dialogs/VersionHistoryDialog.vue'
 import TemplateContentViewer from '@/components/TemplateContentViewer.vue'
 import type { FilterFormItem, OptionItem, TableColumn, ActionItem, ViewType, CardConfig } from '@/components/BaseList/types'
-import { getTemplateList, getTemplateStatusOptions, getTemplateCategoryOptions } from '@/api/template'
+import { getTemplateList, getTemplateStatusOptions } from '@/api/template'
 import type { Template, TemplateType } from '@/api/template'
 
 // 列表实例
@@ -183,7 +183,9 @@ const templateViewerVisible = ref(false)
 // 表格操作配置
 const templateActions: ActionItem[] = [
   { label: '编辑', command: 'edit', icon: EditPen },
+  { label: '预览', command: 'preview', icon: View },
   { label: '下载', command: 'download', icon: Download },
+  { label: '版本历史', command: 'version-history', icon: Timer },
   { label: '删除', command: 'delete', icon: Delete, divided: true }
 ]
 
@@ -308,7 +310,6 @@ const columns = ref<TableColumn[]>([
     width: 160,
     align: 'center',
     fixed: 'right',
-    headerAlign: 'center',
     actions: templateActions,
     maxVisibleActions: 1
   }
@@ -514,11 +515,17 @@ const handleVersionHistory = (template: Template) => {
 // 统一处理操作指令
 const handleActionCommand = (event: { command: string, row: Template }) => {
   switch (event.command) {
-    case 'edit':
-      handleEdit(event.row)
+    case 'preview':
+      handlePreviewTemplate(event.row)
       break
     case 'download':
       handleDownload(event.row)
+      break
+    case 'edit':
+      handleEdit(event.row)
+      break
+    case 'version-history':
+      handleVersionHistory(event.row)
       break
     case 'delete':
       handleDelete(event.row)
