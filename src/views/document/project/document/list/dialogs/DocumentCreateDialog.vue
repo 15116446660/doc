@@ -340,8 +340,11 @@ initOptions()
 <style lang="scss" scoped>
 .document-form {
   max-height: 60vh;
-  overflow-y: auto;
+  overflow-y: scroll;
   padding-right: 16px;
+  padding-bottom: 16px;
+  padding-top: 16px;
+  padding-left: 16px;
 }
 
 .document-upload {
