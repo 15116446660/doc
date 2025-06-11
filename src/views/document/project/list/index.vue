@@ -285,7 +285,7 @@ const columns = ref<TableColumn[]>([
   },
   {
     prop: 'projectNum',
-    label: '项目图号',
+    label: '产品型号',
     width: 120,
     align: 'center',
     headerAlign: 'center',
@@ -339,7 +339,14 @@ const columns = ref<TableColumn[]>([
   },
   {
     prop: 'endTime',
-    label: '结束时间',
+    label: '计划结束时间',
+    width: 150,
+    align: 'center',
+    headerAlign: 'center',
+  },
+  {
+    prop: 'actualEndTime',
+    label: '实际结束时间',
     width: 150,
     align: 'center',
     headerAlign: 'center',

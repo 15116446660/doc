@@ -208,6 +208,12 @@ const columns = ref<TableColumn[]>([
     showOverflowTooltip: true
   },
   {
+    prop: 'alias',
+    label: '别名',
+    width: 150,
+    showOverflowTooltip: true
+  },
+  {
     prop: 'templateCode',
     label: '模板编号',
     align: 'center',
@@ -255,18 +261,10 @@ const columns = ref<TableColumn[]>([
   },
   {
     prop: 'suffix',
-    label: '后缀',
-    width: 80,
+    label: '文件尾缀',
+    width: 100,
     align: 'center',
     headerAlign: 'center',
-  },
-  {
-    prop: 'standardType',
-    label: '标准类型',
-    width: 120,
-    align: 'center',
-    headerAlign: 'center',
-    showOverflowTooltip: true
   },
   {
     prop: 'reviseContent',
@@ -325,18 +323,10 @@ const filterConfig = ref<FilterFormItem[]>([
     placeholder: '模板名称/负责人'
   },
   {
-    type: 'select',
-    field: 'category',
-    label: '分类',
-    placeholder: '请选择分类',
-    props: {
-      remote: false,
-      loading: false
-    },
-    options: async () => {
-      const res = await getTemplateCategoryOptions()
-      return res as unknown as OptionItem[]
-    }
+    type: 'input',
+    field: 'alias',
+    label: '别名',
+    placeholder: '请输入别名'
   },
   {
     type: 'select',

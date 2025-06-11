@@ -151,8 +151,16 @@
         <!-- 信息列表 -->
         <div class="info-list">
           <div class="info-item">
+            <span class="info-label">别名:</span>
+            <span class="info-value">{{ template.alias || '-' }}</span>
+          </div>
+          <div class="info-item">
             <span class="info-label">适用范围:</span>
             <span class="info-value">{{ template.scope || template.applicableScope || '全部' }}</span>
+          </div>
+          <div class="info-item">
+            <span class="info-label">文件尾缀:</span>
+            <span class="info-value">{{ template.suffix || '-' }}</span>
           </div>
           <div class="info-item" v-if="layout === 'vertical' || !layout">
             <span class="info-label">文件类型:</span>
@@ -161,10 +169,6 @@
           <div class="info-item" v-if="layout === 'vertical' || !layout">
             <span class="info-label">文件格式:</span>
             <span class="info-value">{{ template.format || 'XP' }}</span>
-          </div>
-          <div class="info-item">
-            <span class="info-label">标准类型:</span>
-            <span class="info-value">{{ template.standardType || '行业标准' }}</span>
           </div>
         </div>
 

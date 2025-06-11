@@ -51,7 +51,7 @@
           <h3 class="title">{{ project.name }}</h3>
           <!-- 项目图号 -->
           <div class="project-code">
-            <span class="label">图号:</span>
+            <span class="label">产品型号:</span>
             <span class="value">{{ project.projectNum || '未设置' }}</span>
           </div>
         </div>
@@ -85,9 +85,15 @@
                 <span class="info-value">{{ formatShortDate(project.startTime) }}</span>
               </div>
               <div class="info-item">
-                <span class="info-label">结束:</span>
+                <span class="info-label">计划结束:</span>
                 <span class="info-value" :class="{ 'is-overdue': isOverdue(project.endTime) }">
                   {{ formatShortDate(project.endTime) }}
+                </span>
+              </div>
+              <div class="info-item">
+                <span class="info-label">实际结束:</span>
+                <span class="info-value">
+                  {{ formatShortDate(project.actualEndTime) }}
                 </span>
               </div>
             </div>
@@ -142,7 +148,8 @@ const isHovered = ref(false)
 const cardRef = ref<HTMLElement | null>(null)
 
 // 获取状态颜色
-function getStatusColor(status: string): string {
+function getStatusColor(status?: string): string {
+  if (!status) return '#6b7280'
   const colorMap: Record<string, string> = {
     'SURVEY': '#f59e0b',    // 调研中 - 橙色
     'ONGOING': '#3b82f6',   // 进行中 - 蓝色
@@ -154,7 +161,8 @@ function getStatusColor(status: string): string {
 }
 
 // 获取状态类型
-function getStatusType(status: string): string {
+function getStatusType(status?: string): string {
+  if (!status) return 'info'
   const typeMap: Record<string, string> = {
     'SURVEY': 'info',     // 调研中
     'ONGOING': 'success', // 进行中
@@ -166,7 +174,8 @@ function getStatusType(status: string): string {
 }
 
 // 获取状态标签
-function getStatusLabel(status: string): string {
+function getStatusLabel(status?: string): string {
+  if (!status) return '未知'
   const labelMap: Record<string, string> = {
     'SURVEY': '调研中',
     'ONGOING': '进行中',
@@ -178,7 +187,8 @@ function getStatusLabel(status: string): string {
 }
 
 // 获取优先级类型
-function getPriorityType(priority: string): string {
+function getPriorityType(priority?: string): string {
+  if (!priority) return 'info'
   const typeMap: Record<string, string> = {
     'P0': 'danger',  // 最高
     'P1': 'warning', // 高
@@ -235,7 +245,7 @@ function getDaysLeft(dueDate?: string): string {
 }
 
 // 截断文本
-function truncateText(text: string, maxLength: number): string {
+function truncateText(text?: string, maxLength: number): string {
   if (!text) return ''
   if (text.length <= maxLength) return text
   return text.substring(0, maxLength) + '...'

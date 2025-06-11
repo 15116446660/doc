@@ -10,6 +10,7 @@ export interface Project {
   directorHeadImg?: string
   startTime?: string
   endTime?: string
+  actualEndTime?: string
   documentCount?: number
   userCount?: number
   createTime?: string

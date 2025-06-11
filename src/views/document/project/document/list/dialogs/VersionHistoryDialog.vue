@@ -196,8 +196,8 @@ const handleRollback = async (version: DocumentVersion) => {
 <style lang="scss" scoped>
 .version-history {
   max-height: 60vh;
-  overflow-y: auto;
-  padding-right: 16px;
+  overflow-y: scroll;
+  padding: 4px;
 }
 
 .version-item {
