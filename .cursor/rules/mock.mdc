@@ -1,0 +1,93 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+### 规则标题
+
+**Mock 数据实现规范：统一使用 vite-plugin-mock**
+
+### 规则描述
+
+为了确保开发环境的统一性、可维护性，以及未来与真实后端接口的平滑对接，项目中所有的前端数据模拟（Mock）都必须通过 `vite-plugin-mock` 插件在 `src/mock/` 目录下进行拦截和处理。
+
+**严禁**在 Vue 组件内部、`setup` 脚本中，或 `src/api/` 的函数中直接硬编码返回模拟数据（例如 `return Promise.resolve([...])`）。
+
+### 实现流程
+
+当需要为一个新的 API 请求实现 Mock 数据时，必须遵循以下步骤：
+
+**第一步：在 `src/api/` 目录下定义真实的 API 请求函数**
+
+此函数应描述真实的请求路径、方法和参数，就像后端接口已经存在一样。
+
+*   **文件位置**: `src/api/some-module.ts`
+*   **示例**: 在 `src/api/document.ts` 中定义获取项目成员的函数。
+
+```typescript
+// src/api/document.ts
+import { get } from './request'
+import type { ProjectMember } from '@/types/document'
+
+// 这是“真实”的API定义，URL是将来要对接的后端地址
+export function getProjectMembers(projectId: string) {
+  return get<ProjectMember[]>(`/api/project/${projectId}/members`);
+}
+```
+
+**第二步：在 `src/mock/` 目录下创建并配置 Mock 处理器**
+
+为对应的 API 请求添加一个拦截处理器，返回模拟数据。
+
+*   **文件位置**: `src/mock/some-module.ts` (建议与 `api` 目录下的文件名对应)
+*   **示例**: 在 `src/mock/project.ts` 中拦截上一步定义的 API 请求。
+
+```typescript
+// src/mock/project.ts
+import { defineMock } from 'vite-plugin-mock'
+import type { ProjectMember } from '@/types/document'
+
+// 模拟的数据可以定义在这里
+const mockMembers: ProjectMember[] = [
+  { userId: 49, identity: 'COLLABORATOR', userName: '测试', orgName: '景嘉微', picture: '...', position: '测试' },
+  { userId: 46, identity: 'OWNER', userName: '向培', orgName: '研发管理部', picture: '', position: '开发' },
+  // ... 其他成员
+];
+
+export default defineMock([
+  {
+    // URL必须与 API 函数中定义的完全匹配
+    url: '/api/project/:projectId/members',
+    method: 'get',
+    response: ({ params }) => {
+      // 可以在这里模拟业务逻辑，例如基于 projectId 返回不同数据
+      console.log(`[Mock] Intercepted request for project members, ID: ${params.projectId}`);
+      
+      // 返回的数据结构必须符合真实接口的响应格式
+      return {
+        code: 200,
+        msg: '操作成功',
+        data: mockMembers
+      }
+    }
+  }
+])
+```
+
+### 总结要点
+
+*   **职责分离**: `src/api/` 只负责定义“如何请求”，`src/mock/` 只负责定义“返回什么模拟数据”。
+*   **URL 匹配**: Mock配置中的 `url` 必须与 `src/api/` 中函数请求的 `url` 完全一致，才能成功拦截。
+*   **数据结构**: Mock 返回的数据结构（包括 `code`, `msg`, `data` 等）应与后端真实响应体保持一致。
+
+---
+
+**为什么这样描述更有效？**
+
+1.  **明确了技术栈**: 直接指明 `vite-plugin-mock`。
+2.  **规定了文件结构**: 清晰定义了 `src/api` 和 `src/mock` 的职责。
+3.  **提供了完整流程**: 将一个模糊的要求分解成了两个具体的、可执行的步骤。
+4.  **给出了代码范例**: 这是最关键的一点。范例代码为 AI 提供了清晰的模仿蓝本，使其能够准确地生成符合规范的代码。
+5.  **强调了禁止项**: 明确告知 AI 不能做什么，避免了错误实现。
+
+将上述内容添加到您的 `mdc` 规则文件中，我在后续的开发中就能很好地遵循这一架构要求了。
