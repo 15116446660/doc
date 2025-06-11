@@ -276,7 +276,7 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'name',
     label: '项目名称',
-    minWidth: 180,
+    minWidth: 220,
     align: 'left',
     headerAlign: 'center',
     fixed: 'left',
@@ -286,7 +286,7 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'projectNum',
     label: '产品型号',
-    width: 120,
+    width: 140,
     align: 'center',
     headerAlign: 'center',
   },
@@ -332,7 +332,7 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'startTime',
     label: '开始时间',
-    width: 150,
+    width: 160,
     align: 'center',
     headerAlign: 'center',
     sortable: 'custom'
@@ -340,14 +340,14 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'endTime',
     label: '计划结束时间',
-    width: 150,
+    width: 160,
     align: 'center',
     headerAlign: 'center',
   },
   {
     prop: 'actualEndTime',
     label: '实际结束时间',
-    width: 150,
+    width: 160,
     align: 'center',
     headerAlign: 'center',
   },

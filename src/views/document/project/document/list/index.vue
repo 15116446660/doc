@@ -192,7 +192,7 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'name',
     label: '文档名称',
-    minWidth: 180,
+    minWidth: 250,
     align: 'center',
     fixed: 'left',
     slot: 'document-name',
@@ -201,7 +201,7 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'documentCode',
     label: '文档编号',
-    width: 120,
+    width: 140,
     align: 'center'
   },
   {

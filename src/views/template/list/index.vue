@@ -202,7 +202,7 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'name',
     label: '模板名称',
-    minWidth: 180,
+    minWidth: 220,
     align: 'center',
     headerAlign: 'center',
     fixed: 'left',
@@ -218,9 +218,8 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'templateCode',
     label: '模板编号',
-    align: 'center',
-    headerAlign: 'center',
-    width: 120
+    width: 140,
+    align: 'center'
   },
   {
     prop: 'enableStatus',
@@ -279,7 +278,7 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'creator',
     label: '创建人',
-    width: 100,
+    width: 120,
     align: 'center',
     headerAlign: 'center',
     slot: 'creator'
@@ -287,13 +286,13 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'createTime',
     label: '创建时间',
-    width: 150,
+    width: 180,
     sortable: 'custom'
   },
   {
     prop: 'updateTime',
     label: '修改时间',
-    width: 150,
+    width: 180,
     sortable: 'custom'
   },
   {
