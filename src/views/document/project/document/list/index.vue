@@ -216,7 +216,8 @@ const columns = ref<TableColumn[]>([
     label: '状态',
     width: 100,
     align: 'center',
-    slot: 'status'
+    slot: 'status',
+    sortable: 'custom'
   },
   {
     prop: 'syncStatus',
@@ -249,13 +250,15 @@ const columns = ref<TableColumn[]>([
     prop: 'createTime',
     label: '创建时间',
     width: 180,
-    align: 'center'
+    align: 'center',
+    sortable: 'custom'
   },
   {
     prop: 'updateTime',
     label: '上次更新时间',
     width: 180,
-    align: 'center'
+    align: 'center',
+    sortable: 'custom'
   },
   {
     prop: 'version',

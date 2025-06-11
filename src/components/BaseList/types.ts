@@ -86,11 +86,12 @@ export interface TableColumn {
   width?: string | number
   minWidth?: string | number
   fixed?: boolean | 'left' | 'right'
-  sortable?: boolean
+  sortable?: boolean | 'custom'
   slot?: string // 自定义单元格插槽名
   headerSlot?: string // 自定义表头插槽名
   formatter?: (row: any, column: any, cellValue: any, index: number) => any
   align?: 'left' | 'center' | 'right'
+  headerAlign?: 'left' | 'center' | 'right'
   showOverflowTooltip?: boolean
   actions?: ActionItem[]
   maxVisibleActions?: number

@@ -287,16 +287,14 @@ const columns = ref<TableColumn[]>([
   {
     prop: 'createTime',
     label: '创建时间',
-    width: 180,
-    align: 'center',
-    headerAlign: 'center',
+    width: 150,
+    sortable: 'custom'
   },
   {
     prop: 'updateTime',
     label: '修改时间',
-    width: 180,
-    align: 'center',
-    headerAlign: 'center',
+    width: 150,
+    sortable: 'custom'
   },
   {
     prop: 'version',

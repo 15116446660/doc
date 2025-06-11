@@ -190,19 +190,22 @@ const handleManageConstants = (project: Project) => {
 }
 
 // 统一处理指令
-const handleCommand = (command: 'members' | 'constants' | 'edit' | 'delete', project: Project) => {
-  switch (command) {
+const handleActionCommand = (event: { command: string, row: Project }) => {
+  switch (event.command) {
+    case 'view-documents':
+      handleViewDocuments(event.row)
+      break
     case 'edit':
-      handleEdit(project)
+      handleEdit(event.row)
       break
     case 'delete':
-      handleDelete(project)
+      handleDelete(event.row)
       break
     case 'members':
-      handleManageMembers(project)
+      handleManageMembers(event.row)
       break
     case 'constants':
-      handleManageConstants(project)
+      handleManageConstants(event.row)
       break
   }
 }
@@ -302,6 +305,7 @@ const columns = ref<TableColumn[]>([
     slot: 'priority',
     align: 'center',
     headerAlign: 'center',
+    sortable: 'custom'
   },
   {
     prop: 'directorName',
@@ -331,6 +335,7 @@ const columns = ref<TableColumn[]>([
     width: 150,
     align: 'center',
     headerAlign: 'center',
+    sortable: 'custom'
   },
   {
     prop: 'endTime',
@@ -345,6 +350,7 @@ const columns = ref<TableColumn[]>([
     width: 180,
     align: 'center',
     headerAlign: 'center',
+    sortable: 'custom'
   },
   {
     prop: 'creator',

@@ -296,13 +296,19 @@ const sortInfo = ref<{ prop?: string, order?: string }>({})
 
 // 合并请求参数
 const requestParams = computed(() => {
-  return {
+  const params: Record<string, any> = {
     pageNum: currentPage.value,
     pageSize: currentPageSize.value,
     ...filterValues.value,
-    ...sortInfo.value,
     ...props.requestParams
   }
+
+  if (sortInfo.value.prop && sortInfo.value.order) {
+    params.sortField = sortInfo.value.prop
+    params.sortOrder = sortInfo.value.order === 'ascending' ? 'asc' : 'desc'
+  }
+
+  return params
 })
 
 // 分页属性
@@ -336,8 +342,8 @@ const handleActionCommand = (action: ActionItem, row: any) => {
   emit('action-command', { command: action.command, row })
 }
 
-const handleDropdownCommand = (action: ActionItem, row: any) => {
-  handleActionCommand(action, row)
+const handleDropdownCommand = (action: unknown, row: any) => {
+  handleActionCommand(action as ActionItem, row)
 }
 
 // 计算可见操作
@@ -432,7 +438,7 @@ const handleFilterChange = (event: FilterChangeEvent) => {
 
 // 处理排序变化
 const handleSortChange = (sort: { prop: string, order: string }) => {
-  sortInfo.value = sort
+  sortInfo.value = { prop: sort.prop, order: sort.order }
   emit('sort-change', sort)
   fetchData()
 }
