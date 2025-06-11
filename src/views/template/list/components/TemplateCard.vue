@@ -78,14 +78,13 @@
       <div class="card-content">
         <div class="content-header" v-if="layout === 'horizontal'">
           <div class="header-left">
+            <!-- 标题 -->
+            <h3 class="title">{{ template.name || template.title || '无' }}</h3>
             <!-- 模板编号 -->
             <div class="template-code">
               <span class="label">编号:</span>
-              <span class="value">{{ template.templateCode || 'TMP-001' }}</span>
+              <span class="value">{{ template.templateCode || '--' }}</span>
             </div>
-            
-            <!-- 标题 -->
-            <h3 class="title">{{ template.name || template.title || '产品需求文档模版' }}</h3>
           </div>
           
           <div class="header-right">

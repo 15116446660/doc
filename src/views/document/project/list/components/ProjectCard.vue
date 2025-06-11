@@ -47,14 +47,13 @@
       <!-- 项目内容区域 -->
       <div class="card-content">
         <div class="card-header">
+          <!-- 项目名称 -->
+          <h3 class="title">{{ project.name }}</h3>
           <!-- 项目图号 -->
           <div class="project-code">
             <span class="label">图号:</span>
             <span class="value">{{ project.projectNum || '未设置' }}</span>
           </div>
-          
-          <!-- 项目名称 -->
-          <h3 class="title">{{ project.name }}</h3>
         </div>
         
         <!-- 状态和优先级 -->

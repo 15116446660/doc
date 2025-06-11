@@ -1,71 +1,96 @@
 <template>
   <div class="project-list-container">
-    <base-list
-      ref="listRef"
-      title="项目列表"
-      :filter-config="filterConfig"
-      :columns="columns"
-      :enable-advanced-filter="true"
-      :enable-view-switch="true"
-      :request-api="getProjectList"
-      :table-props="tableProps"
-      :pagination-config="paginationConfig"
-      @filter-change="handleFilterChange"
-      @view-change="handleViewChange"
-      @action-command="handleActionCommand"
-    >
-      <!-- 顶部工具栏插槽 -->
-      <template #toolbar>
-        <el-button type="primary" @click="handleCreateProject">
-          <el-icon><plus /></el-icon>新建项目
-        </el-button>
-      </template>
-      
-      <!-- 项目名称自定义插槽 -->
-      <template #project-name="{ row }">
-        <div class="project-name" @click="handleViewProject(row)">
-          <span class="project-title">{{ row.title || '未命名项目' }}</span>
+    <div class="project-list-layout" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
+      <!-- 左侧分类树 -->
+      <div class="project-type-sidebar" :class="{ 'collapsed': sidebarCollapsed }">
+        <div v-if="!sidebarCollapsed" class="sidebar-content">
+          <project-type-tree ref="treeRef" @select="handleTypeSelect" />
         </div>
-      </template>
+      </div>
 
-      <!-- 状态自定义插槽 -->
-      <template #status="{ row }">
-        <el-tag :type="getStatusType(row.status)">{{ row.status || '未设置' }}</el-tag>
-      </template>
+      <!-- 右侧列表 -->
+      <div class="project-list-main">
+        <base-list
+          ref="listRef"
+          card-layout="vertical"
+          title="项目列表"
+          :filter-config="filterConfig"
+          :columns="columns"
+          :enable-advanced-filter="true"
+          :enable-view-switch="true"
+          :request-api="getProjectList"
+          :table-props="tableProps"
+          :pagination-config="paginationConfig"
+          @filter-change="handleFilterChange"
+          @view-change="handleViewChange"
+          @action-command="handleActionCommand"
+        >
+          <template #header-left>
+            <div class="list-header-left">
+              <el-button
+                :icon="sidebarCollapsed ? ArrowRight : ArrowLeft"
+                text
+                circle
+                @click="toggleSidebar"
+                class="sidebar-toggle-btn"
+              />
+              <h2 class="list-title">项目列表</h2>
+            </div>
+          </template>
+          <!-- 顶部工具栏插槽 -->
+          <template #toolbar>
+            <el-button type="primary" @click="handleCreateProject">
+              <el-icon><plus /></el-icon>新建项目
+            </el-button>
+          </template>
+          
+          <!-- 项目名称自定义插槽 -->
+          <template #project-name="{ row }">
+            <div class="project-name" @click="handleViewProject(row)">
+              <span class="project-title">{{ row.title || '未命名项目' }}</span>
+            </div>
+          </template>
 
-      <!-- 风险自定义插槽 -->
-      <template #risk="{ row }">
-        <el-tag :type="getRiskType(row.risk)">{{ row.risk || '未设置' }}</el-tag>
-      </template>
+          <!-- 状态自定义插槽 -->
+          <template #status="{ row }">
+            <el-tag :type="getStatusType(row.status)">{{ row.status || '未设置' }}</el-tag>
+          </template>
 
-      <!-- 进度自定义插槽 -->
-      <template #progress="{ row }">
-        <el-progress :percentage="row.progress || 0" />
-      </template>
+          <!-- 风险自定义插槽 -->
+          <template #risk="{ row }">
+            <el-tag :type="getRiskType(row.risk)">{{ row.risk || '未设置' }}</el-tag>
+          </template>
 
-      <!-- 负责人自定义插槽 -->
-      <template #leader="{ row }">
-        <div class="user-info">
-          <el-avatar :size="24" :src="row.leaderAvatar">
-            {{ row?.team?.charAt(0) || 'U' }}
-          </el-avatar>
-          <span>{{ row.team || '未分配' }}</span>
+          <!-- 进度自定义插槽 -->
+          <template #progress="{ row }">
+            <el-progress :percentage="row.progress || 0" />
+          </template>
+
+          <!-- 负责人自定义插槽 -->
+          <template #leader="{ row }">
+            <div class="user-info">
+              <el-avatar :size="24" :src="row.leaderAvatar">
+                {{ row?.team?.charAt(0) || 'U' }}
+              </el-avatar>
+              <span>{{ row.team || '未分配' }}</span>
+            </div>
+          </template>
+
+          <!-- 卡片视图插槽 -->
+          <template #card="{ item }">
+            <project-card
+              :project="item"
+              @edit="handleEdit"
+              @delete="handleDelete"
+              @view="handleViewProject"
+            />
+          </template>
+        </base-list>
+        
+        <!-- 项目创建对话框 -->
+        <project-create-dialog ref="projectCreateDialogRef" />
+      </div>
     </div>
-      </template>
-
-      <!-- 卡片视图插槽 -->
-      <template #card="{ item }">
-        <project-card
-          :project="item"
-          @edit="handleEdit"
-          @delete="handleDelete"
-          @view="handleViewProject"
-        />
-      </template>
-    </base-list>
-    
-    <!-- 项目创建对话框 -->
-    <project-create-dialog ref="projectCreateDialogRef" />
   </div>
 </template>
 
@@ -403,6 +428,18 @@ const handleActionCommand = (event: { command: string, row: Project }) => {
       break
   }
 }
+
+// 处理侧边栏切换
+const sidebarCollapsed = ref(false)
+const toggleSidebar = () => {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+}
+
+// 处理类型选择
+const treeRef = ref()
+const handleTypeSelect = (type: string) => {
+  console.log('Type selected:', type)
+}
 </script>
 
 <style lang="scss" scoped>
@@ -410,6 +447,40 @@ const handleActionCommand = (event: { command: string, row: Project }) => {
   height: 100%;
   padding: 20px;
   background-color: var(--el-bg-color);
+}
+
+.project-list-layout {
+  height: 100%;
+  display: flex;
+  gap: 20px;
+  position: relative;
+  transition: gap 0.3s ease-in-out;
+
+  &.sidebar-collapsed {
+    gap: 0;
+  }
+}
+
+.project-type-sidebar {
+  overflow: hidden;
+
+  &.collapsed {
+    width: 0px;
+    flex-shrink: 0;
+  }
+
+  .sidebar-content {
+    height: 100%;
+    overflow: hidden;
+  }
+}
+
+.project-list-main {
+  flex: 1;
+  min-width: 0;
+  background-color: var(--el-bg-color-overlay);
+  border-radius: 8px;
+  // box-shadow: var(--el-box-shadow-light);
 }
 
 .project-name {
@@ -502,5 +573,36 @@ const handleActionCommand = (event: { command: string, row: Project }) => {
   &:hover {
     text-decoration: underline;
   }
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.list-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.list-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.sidebar-toggle-btn {
+  font-size: 18px;
+  color: var(--el-text-color-regular);
+  &:hover {
+    color: var(--el-color-primary);
+    background-color: var(--el-color-primary-light-9);
+  }
+}
+
+.danger-item {
+  color: var(--el-color-danger);
 }
 </style>

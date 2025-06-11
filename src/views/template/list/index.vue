@@ -1,16 +1,10 @@
 <template>
   <div class="template-list-container">
-    <div class="template-list-layout">
+    <div class="template-list-layout" :class="{ 'collapsed': sidebarCollapsed }">
       <!-- 左侧分类树 -->
       <div class="template-type-sidebar" :class="{ 'collapsed': sidebarCollapsed }">
         <div v-if="!sidebarCollapsed" class="sidebar-content">
           <template-type-tree ref="treeRef" @select="handleTypeSelect" />
-        </div>
-        <div class="sidebar-toggle" @click="toggleSidebar">
-          <el-icon :size="20">
-            <arrow-left v-if="!sidebarCollapsed" />
-            <arrow-right v-else />
-          </el-icon>
         </div>
       </div>
 
@@ -18,21 +12,34 @@
       <div class="template-list-main">
         <base-list
           ref="listRef"
-          title="模板列表"
           :filter-config="filterConfig"
           :columns="columns"
           :enable-advanced-filter="true"
           :enable-view-switch="true"
+          :view-type="viewType"
           :request-api="getTemplateList"
           :table-props="tableProps"
           :pagination-config="paginationConfig"
           :card-layout="cardLayout"
+          :card-config="cardConfig"
           :show-filter-bar="false"
           @filter-change="handleFilterChange"
           @view-change="handleViewChange"
           @selection-change="handleSelectionChange"
           @action-command="handleActionCommand"
         >
+          <template #header-left>
+            <div class="list-header-left">
+              <el-button
+                :icon="sidebarCollapsed ? ArrowRight : ArrowLeft"
+                text
+                circle
+                @click="toggleSidebar"
+                class="sidebar-toggle-btn"
+              />
+              <h2 class="list-title">模板列表</h2>
+            </div>
+          </template>
           <!-- 顶部工具栏插槽 -->
           <template #toolbar>
             <el-button type="primary" @click="handleCreateTemplate">
@@ -148,7 +155,7 @@ import TemplateCreateDialog from './dialogs/TemplateCreateDialog.vue'
 import TemplateTypeTree from './components/TemplateTypeTree.vue'
 import VersionHistoryDialog from './dialogs/VersionHistoryDialog.vue'
 import TemplateContentViewer from '@/components/TemplateContentViewer.vue'
-import type { FilterFormItem, OptionItem, TableColumn, ActionItem } from '@/components/BaseList/types'
+import type { FilterFormItem, OptionItem, TableColumn, ActionItem, ViewType, CardConfig } from '@/components/BaseList/types'
 import { getTemplateList, getTemplateStatusOptions, getTemplateCategoryOptions } from '@/api/template'
 import type { Template, TemplateType } from '@/api/template'
 
@@ -187,92 +194,116 @@ const columns = ref<TableColumn[]>([
     label: '序号',
     width: 55,
     fixed: 'left',
-    align: 'center'
-  },
-  {
-    prop: 'templateCode',
-    label: '模板编号',
-    width: 120,
-    fixed: 'left',
-    align: 'center'
+    align: 'center',
+    headerAlign: 'center'
   },
   {
     prop: 'name',
     label: '模板名称',
     minWidth: 180,
     align: 'center',
+    headerAlign: 'center',
+    fixed: 'left',
     slot: 'template-name',
     showOverflowTooltip: true
+  },
+  {
+    prop: 'templateCode',
+    label: '模板编号',
+    align: 'center',
+    headerAlign: 'center',
+    width: 120
   },
   {
     prop: 'enableStatus',
     label: '启用状态',
     width: 100,
+    align: 'center',
+    headerAlign: 'center',
     slot: 'enable-status'
   },
   {
     prop: 'status',
     label: '审核状态',
     width: 100,
+    align: 'center',
+    headerAlign: 'center',
     slot: 'status'
   },
   {
     prop: 'scope',
     label: '适用范围',
     width: 120,
+    align: 'center',
+    headerAlign: 'center',
     showOverflowTooltip: true
   },
   {
     prop: 'type',
     label: '类型',
     width: 120,
+    align: 'center',
+    headerAlign: 'center',
     showOverflowTooltip: true
   },
   {
     prop: 'format',
     label: '格式',
     width: 80,
-    align: 'center'
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'suffix',
     label: '后缀',
     width: 80,
-    align: 'center'
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'standardType',
     label: '标准类型',
     width: 120,
+    align: 'center',
+    headerAlign: 'center',
     showOverflowTooltip: true
   },
   {
     prop: 'reviseContent',
     label: '修订内容',
     width: 150,
+    align: 'center',
+    headerAlign: 'center',
     showOverflowTooltip: true
   },
   {
     prop: 'creator',
     label: '创建人',
     width: 100,
+    align: 'center',
+    headerAlign: 'center',
     slot: 'creator'
   },
   {
     prop: 'createTime',
     label: '创建时间',
-    width: 150
+    width: 180,
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'updateTime',
     label: '修改时间',
-    width: 150
+    width: 180,
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'version',
     label: '版本',
     width: 80,
     align: 'center',
+    headerAlign: 'center',
     fixed: 'right',
     slot: 'version'
   },
@@ -281,6 +312,7 @@ const columns = ref<TableColumn[]>([
     width: 160,
     align: 'center',
     fixed: 'right',
+    headerAlign: 'center',
     actions: templateActions,
     maxVisibleActions: 1
   }
@@ -359,12 +391,21 @@ const cardPaginationConfig = {
   background: true
 }
 
+const cardConfig: CardConfig = {
+  gridFillMode: 'auto-fill',
+  gap: '10px',
+  minWidth: '270px',
+  maxWidth: '320px',
+  minHeight: '220px',
+  maxHeight: '2600px'
+}
+
 // 当前视图类型
-const currentViewType = ref('table')
+const viewType = ref<ViewType>('table')
 
 // 根据视图类型获取分页配置
 const paginationConfig = computed(() => {
-  return currentViewType.value === 'cards' ? cardPaginationConfig : tablePaginationConfig
+  return viewType.value === 'cards' ? cardPaginationConfig : tablePaginationConfig
 })
 
 // 卡片布局方式
@@ -387,9 +428,9 @@ const handleFilterChange = (filters: Record<string, any>) => {
 }
 
 // 处理视图切换
-const handleViewChange = (type: string) => {
+const handleViewChange = (type: ViewType) => {
   console.log('View changed:', type)
-  currentViewType.value = type
+  viewType.value = type
 }
 
 // 处理选择变化
@@ -540,6 +581,10 @@ const handleTypeSelect = (type: TemplateType | null) => {
   display: flex;
   gap: 20px;
   position: relative;
+  transition: gap 0.3s ease-in-out;
+  &.sidebar-collapsed {
+    gap: 0;
+  }
 }
 
 .template-type-sidebar {
@@ -553,7 +598,7 @@ const handleTypeSelect = (type: TemplateType | null) => {
   overflow: hidden;
 
   &.collapsed {
-    width: 20px;
+    width: 0px;
     flex-shrink: 0;
   }
 
@@ -561,37 +606,11 @@ const handleTypeSelect = (type: TemplateType | null) => {
     height: 100%;
     overflow: hidden;
   }
-
-  .sidebar-toggle {
-    position: absolute;
-    top: 50%;
-    right: 0;
-    width: 20px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--el-color-primary-light-8);
-    color: var(--el-color-primary);
-    cursor: pointer;
-    border-radius: 4px 0 0 4px;
-    transform: translateY(-50%);
-    transition: all 0.3s;
-    z-index: 10;
-    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
-
-    &:hover {
-      background-color: var(--el-color-primary-light-5);
-      color: white;
-      width: 24px;
-    }
-  }
 }
 
 .template-list-main {
   flex: 1;
   min-width: 0;
-  margin-left: 20px;
   background-color: var(--el-bg-color-overlay);
   border-radius: 8px;
 }
@@ -625,6 +644,27 @@ const handleTypeSelect = (type: TemplateType | null) => {
   &:hover {
     color: var(--el-color-primary-light-3);
     text-decoration: underline;
+  }
+}
+
+.list-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.list-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.sidebar-toggle-btn {
+  font-size: 18px;
+  color: var(--el-text-color-regular);
+  &:hover {
+    color: var(--el-color-primary);
+    background-color: var(--el-color-primary-light-9);
   }
 }
 

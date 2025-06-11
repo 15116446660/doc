@@ -1,16 +1,10 @@
 <template>
   <div class="project-list-container">
-    <div class="project-list-layout">
+    <div class="project-list-layout" :class="{ 'sidebar-collapsed': sidebarCollapsed }">
       <!-- 左侧分类树 -->
       <div class="project-type-sidebar" :class="{ 'collapsed': sidebarCollapsed }">
         <div v-if="!sidebarCollapsed" class="sidebar-content">
           <project-type-tree ref="treeRef" @select="handleTypeSelect" />
-        </div>
-        <div class="sidebar-toggle" @click="toggleSidebar">
-          <el-icon :size="20">
-            <arrow-left v-if="!sidebarCollapsed" />
-            <arrow-right v-else />
-          </el-icon>
         </div>
       </div>
 
@@ -18,7 +12,6 @@
       <div class="project-list-main">
         <base-list
           ref="listRef"
-          title="项目列表"
           card-layout="vertical"
           :filter-config="filterConfig"
           :columns="columns"
@@ -33,7 +26,20 @@
           @selection-change="handleSelectionChange"
           @data-loaded="handleDataLoaded"
           @view-change="handleViewChange"
+          @action-command="handleActionCommand"
         >
+          <template #header-left>
+            <div class="list-header-left">
+              <el-button
+                :icon="sidebarCollapsed ? ArrowRight : ArrowLeft"
+                text
+                circle
+                @click="toggleSidebar"
+                class="sidebar-toggle-btn"
+              />
+              <h2 class="list-title">项目列表</h2>
+            </div>
+          </template>
           <!-- 工具栏插槽 -->
           <template #toolbar>
             <div class="toolbar-left">
@@ -65,38 +71,6 @@
 
           <template #priority="{ row }">
             <el-tag :type="getPriorityType(row.priority)">{{ row.priority }}</el-tag>
-          </template>
-
-          <template #actions="{ row }">
-            <el-button
-              type="primary"
-              link
-              @click="handleViewDocuments(row)"
-            >
-              查看文档
-            </el-button>
-            <el-divider direction="vertical" />
-            <el-dropdown trigger="click" @command="command => handleCommand(command as 'members' | 'constants' | 'edit' | 'delete', row)">
-              <el-button type="primary" link>
-                更多<el-icon class="el-icon--right"><arrow-down /></el-icon>
-              </el-button>
-              <template #dropdown>
-                <el-dropdown-menu>
-                  <el-dropdown-item command="members">
-                    <el-icon><User /></el-icon>成员
-                  </el-dropdown-item>
-                  <el-dropdown-item command="constants">
-                    <el-icon><Tickets /></el-icon>项目常量
-                  </el-dropdown-item>
-                  <el-dropdown-item command="edit">
-                    <el-icon><EditPen /></el-icon>编辑
-                  </el-dropdown-item>
-                  <el-dropdown-item command="delete" divided class="danger-item">
-                    <el-icon><Delete /></el-icon>删除
-                  </el-dropdown-item>
-                </el-dropdown-menu>
-              </template>
-            </el-dropdown>
           </template>
 
           <!-- 卡片视图插槽 -->
@@ -131,17 +105,17 @@ import {
   Plus, 
   ArrowLeft, 
   ArrowRight,
-  ArrowDown,
   User,
   Tickets,
   EditPen,
   Delete,
+  View,
 } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
 import ProjectTypeTree from './components/ProjectTypeTree.vue'
 import ProjectCard from './components/ProjectCard.vue'
-import type { FilterFormItem, TableColumn, CardConfig, ViewType } from '@/components/BaseList/types'
+import type { FilterFormItem, TableColumn, CardConfig, ViewType, ActionItem } from '@/components/BaseList/types'
 import { getProjectList, getProjectStatusOptions } from '@/api/document'
 import type { Project, ProjectType } from '@/types/document'
 
@@ -163,6 +137,15 @@ const sidebarCollapsed = ref(false)
 
 // 表格数据
 const tableData = ref<Project[]>([])
+
+// 表格操作配置
+const projectActions: ActionItem[] = [
+  { label: '查看文档', command: 'view-documents', icon: View },
+  { label: '成员', command: 'members', icon: User },
+  { label: '项目常量', command: 'constants', icon: Tickets },
+  { label: '编辑', command: 'edit', icon: EditPen },
+  { label: '删除', command: 'delete', icon: Delete, divided: true }
+]
 
 // 处理查看文档
 const handleViewDocuments = (project: Project) => {
@@ -284,7 +267,8 @@ const columns = ref<TableColumn[]>([
     label: '序号',
     width: 55,
     fixed: 'left',
-    align: 'center'
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'name',
@@ -300,64 +284,83 @@ const columns = ref<TableColumn[]>([
     prop: 'projectNum',
     label: '项目图号',
     width: 120,
-    align: 'center'
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'status',
     label: '状态',
     width: 100,
-    slot: 'status'
+    slot: 'status',
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'priority',
     label: '优先级',
     width: 100,
-    slot: 'priority'
+    slot: 'priority',
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'directorName',
     label: '负责人',
     width: 120,
-    slot: 'director'
+    slot: 'director',
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'userCount',
     label: '成员数',
     width: 90,
-    align: 'center'
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'documentCount',
     label: '文档数',
     width: 90,
-    align: 'center'
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'startTime',
     label: '开始时间',
-    width: 150
+    width: 150,
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'endTime',
     label: '结束时间',
-    width: 150
+    width: 150,
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'createTime',
     label: '创建时间',
-    width: 180
+    width: 180,
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     prop: 'creator',
     label: '创建人',
-    width: 120
+    width: 120,
+    align: 'center',
+    headerAlign: 'center',
   },
   {
     label: '操作',
-    width: 250,
+    width: 200,
     align: 'center',
+    headerAlign: 'center',
     fixed: 'right',
-    slot: 'actions'
+    actions: projectActions,
+    maxVisibleActions: 1
   }
 ])
 
@@ -504,6 +507,11 @@ onMounted(async () => {
   display: flex;
   gap: 20px;
   position: relative;
+  transition: gap 0.3s ease-in-out;
+
+  &.sidebar-collapsed {
+    gap: 0;
+  }
 }
 
 .project-type-sidebar {
@@ -517,7 +525,7 @@ onMounted(async () => {
   overflow: hidden;
 
   &.collapsed {
-    width: 20px;
+    width: 0px;
     flex-shrink: 0;
   }
 
@@ -525,37 +533,11 @@ onMounted(async () => {
     height: 100%;
     overflow: hidden;
   }
-
-  .sidebar-toggle {
-    position: absolute;
-    top: 50%;
-    right: 0;
-    width: 20px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--el-color-primary-light-8);
-    color: var(--el-color-primary);
-    cursor: pointer;
-    border-radius: 4px 0 0 4px;
-    transform: translateY(-50%);
-    transition: all 0.3s;
-    z-index: 10;
-    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.05);
-
-    &:hover {
-      background-color: var(--el-color-primary-light-5);
-      color: white;
-      width: 24px;
-    }
-  }
 }
 
 .project-list-main {
   flex: 1;
   min-width: 0;
-  margin-left: 20px;
   background-color: var(--el-bg-color-overlay);
   border-radius: 8px;
   // box-shadow: var(--el-box-shadow-light);
@@ -566,14 +548,10 @@ onMounted(async () => {
   align-items: center;
   gap: 8px;
   cursor: pointer;
-
-  .name {
-    transition: color 0.2s;
-  }
+  color: var(--el-color-primary);
 
   &:hover {
     .name {
-      color: var(--el-color-primary);
       text-decoration: underline;
     }
   }
@@ -611,5 +589,26 @@ onMounted(async () => {
 .danger-item:hover {
   background-color: var(--el-color-danger-light-9);
   color: var(--el-color-danger);
+}
+
+.list-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.list-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.sidebar-toggle-btn {
+  font-size: 18px;
+  color: var(--el-text-color-regular);
+  &:hover {
+    color: var(--el-color-primary);
+    background-color: var(--el-color-primary-light-9);
+  }
 }
 </style>
