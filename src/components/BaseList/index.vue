@@ -188,7 +188,7 @@ const props = withDefaults(defineProps<BaseListProps>(), {
   enableViewSwitch: true,
   enablePagination: true,
   cardLayout: 'horizontal',
-  cardConfig: () => ({ gutter: 16, column: { xs: 24, sm: 12, md: 8, lg: 6, xl: 4 } }),
+  cardConfig: () => ({ gutter: 32, column: { xs: 24, sm: 12, md: 8, lg: 6, xl: 4 } }),
   showFilterBar: false,
   paginationConfig: () => ({
     pageSize: 10,

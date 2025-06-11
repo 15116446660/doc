@@ -391,7 +391,7 @@ const cardPaginationConfig = {
 
 const cardConfig: CardConfig = {
   gridFillMode: 'auto-fill',
-  gap: '10px',
+  gap: '30px',
   minWidth: '270px',
   maxWidth: '320px',
   minHeight: '220px',

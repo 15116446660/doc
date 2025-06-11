@@ -296,11 +296,11 @@ const handleMouseLeave = () => {
   overflow: hidden;
   border: none;
   position: relative;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--el-box-shadow);
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--el-box-shadow-dark);
   }
   
   :deep(.el-card__body) {

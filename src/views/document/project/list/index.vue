@@ -445,12 +445,12 @@ const paginationConfig = computed(() => {
 
 // 卡片配置
 const cardConfig: CardConfig = {
-  minWidth: '200px',
   gridFillMode: 'auto-fill',
-  gap: '10px',
+  gap: '30px',
+  minWidth: '200px',
+  maxWidth: '220px',
   minHeight: '120px',
-  maxHeight: '120px',
-  maxWidth: '220px'
+  maxHeight: '120px'
 }
 
 // 获取状态类型

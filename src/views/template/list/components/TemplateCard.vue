@@ -285,13 +285,14 @@ const handleMouseLeave = () => {
   width: 100%;
   cursor: pointer;
   transition: all 0.3s ease;
-  border-radius: 16px;
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: none;
   position: relative;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  // box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--el-box-shadow);
 
   :deep(.el-card__body) {
     padding: 0;
@@ -302,7 +303,7 @@ const handleMouseLeave = () => {
 
   &:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--el-box-shadow-dark);
 
     .document-cover {
       .document-icon {
@@ -318,7 +319,7 @@ const handleMouseLeave = () => {
 
   &.horizontal-layout {
     :deep(.el-card__body) {
-      border-radius: 16px;
+      border-radius: 8px;
       overflow: hidden;
     }
 
