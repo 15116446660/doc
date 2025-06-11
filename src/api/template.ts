@@ -163,6 +163,7 @@ export interface VersionHistoryItem {
   status: string
   reviewReason?: string
   updater: string
+  updaterAvatar?: string
   updateTime: string
 }
 
