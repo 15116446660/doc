@@ -80,7 +80,7 @@
           <!-- 创建人自定义插槽 -->
           <template #creator="{ row }">
             <div class="user-info">
-              <el-avatar :size="24" :src="row.ownerAvatar">
+              <el-avatar :size="24" :src="row.ownerAvatar || '/assets/svg/avator.svg'">
                 {{ (row?.creator || row?.owner || 'U')?.charAt(0) }}
               </el-avatar>
               <span>{{ row.creator || row.owner || '未分配' }}</span>

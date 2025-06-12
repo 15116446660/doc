@@ -4,6 +4,7 @@ import { ElDialog, ElMessage } from 'element-plus'
 import { Plus, Close, Search } from '@element-plus/icons-vue'
 import type { User } from '@/types/user'
 import type { ProjectMember } from '@/api/project'
+import UserAvatar from '@/components/UserAvatar.vue'
 // import { getUserList } from '@/api/user'
 // import { getProjectMembers, updateProjectMembers } from '@/api/project'
 
@@ -173,7 +174,7 @@ async function handleSave() {
           <el-scrollbar>
             <ul v-infinite-scroll="loadAllUsers" :infinite-scroll-disabled="allUsers.length >= allUsersTotal">
               <li v-for="user in allUsers" :key="user.id" class="user-item">
-                <el-avatar :size="32" :src="user.avatar">{{ user.name[0] }}</el-avatar>
+                <UserAvatar :picture="user.avatar" :user-name="user.name" :size="32" />
                 <div class="user-info">
                   <span class="name">{{ user.name }}</span>
                   <span class="org">{{ user.orgName }} / {{ user.position }}</span>
@@ -202,7 +203,7 @@ async function handleSave() {
           <el-scrollbar>
             <ul>
               <li v-for="member in projectMembers" :key="member.userId" class="user-item">
-                 <el-avatar :size="32" :src="member.picture">{{ member.userName[0] }}</el-avatar>
+                <UserAvatar :picture="member.picture" :user-name="member.userName" :size="32" />
                 <div class="user-info">
                   <span class="name">{{ member.userName }}</span>
                   <span class="org">{{ member.orgName }} / {{ member.position }}</span>

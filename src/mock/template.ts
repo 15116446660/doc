@@ -180,7 +180,7 @@ const generateTemplates = (count: number) => {
       status: statusOption.status,
       statusColor: statusOption.color,
       owner: Random.cname(),
-      ownerAvatar: `https://placeholder.pics/svg/30/${Random.hex()}/FFFFFF/${Random.character('upper')}`,
+      ownerAvatar: null,
       version,
       description: Random.cparagraph(1, 3),
       content: generateTemplateContent(),

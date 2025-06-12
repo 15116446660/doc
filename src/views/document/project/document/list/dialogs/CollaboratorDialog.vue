@@ -18,7 +18,7 @@
               <div class="card-content">
                 <div class="card-header">
                   <div class="user-info">
-                    <el-avatar :size="48" :src="user.picture">{{ user.userName.substring(0, 1) }}</el-avatar>
+                    <UserAvatar :picture="user.picture" :user-name="user.userName" :size="48" />
                     <div class="user-details">
                       <div class="user-name">{{ user.userName }}</div>
                       <div class="user-org">{{ user.orgName }} / {{ user.position }}</div>
@@ -49,7 +49,7 @@
             <el-table-column label="成员" width="220">
               <template #default="{ row }">
                 <div class="user-info">
-                  <el-avatar :size="40" :src="row.picture">{{ row.userName.substring(0, 1) }}</el-avatar>
+                  <UserAvatar :picture="row.picture" :user-name="row.userName" :size="40" />
                   <div class="user-details">
                     <div class="user-name">{{ row.userName }}</div>
                     <div class="user-org">{{ row.orgName }} / {{ row.position }}</div>
@@ -122,6 +122,7 @@ import {
 import type { DocumentCollaborator } from '@/types/document'
 import { getDocumentCollaborators, updateDocumentCollaborators } from '@/api/document'
 import { cloneDeep } from 'lodash-es'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 type PermissionKey = 'down' | 'edit' | 'upload' | 'del' | 'print' | 'comment' | 'copy'
 
