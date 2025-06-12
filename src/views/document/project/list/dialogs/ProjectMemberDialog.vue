@@ -7,18 +7,18 @@
     @update:model-value="$emit('update:modelValue', $event)"
     @close="handleClose"
   >
-    <div
-      v-loading="loading"
-      class="member-dialog-container"
-    >
+    <div v-loading="loading" class="member-dialog-container" :class="`mode-${mode}`">
       <!-- Left Panel: Current Members -->
       <div class="panel current-members-panel">
         <div class="panel-header">
           <h3>
-            当前成员 ({{ editingMembers.length }})
+            当前成员 ({{ (mode === 'view' ? currentMembers : editingMembers).length }})
           </h3>
+          <el-button v-if="mode === 'view'" type="primary" size="small" @click="handleEnterEditMode">
+            管理成员
+          </el-button>
           <el-button
-            v-if="canClearCurrentMembers"
+            v-if="mode === 'edit' && canClearCurrentMembers"
             type="danger"
             size="small"
             link
@@ -35,14 +35,11 @@
               class="current-member-grid"
             >
               <div
-                v-for="member in sortedEditingMembers"
+                v-for="member in (mode === 'view' ? sortedCurrentMembers : sortedEditingMembers)"
                 :key="member.userId"
                 class="member-card"
               >
-                <el-avatar
-                  :size="48"
-                  :src="member.picture"
-                >
+                <el-avatar :size="48" :src="member.picture">
                   {{ member.userName.substring(0, 1) }}
                 </el-avatar>
                 <div class="member-card-name">
@@ -51,14 +48,8 @@
                 <div class="member-card-org">
                   {{ member.orgName }}
                 </div>
-                <div
-                  v-if="member.identity !== 'OWNER'"
-                  class="remove-action"
-                >
-                  <el-tooltip
-                    content="移除成员"
-                    placement="top"
-                  >
+                <div v-if="mode === 'edit' && member.identity !== 'OWNER'" class="remove-action">
+                  <el-tooltip content="移除成员" placement="top">
                     <el-button
                       type="danger"
                       link
@@ -67,23 +58,20 @@
                     />
                   </el-tooltip>
                 </div>
-                <div
-                  v-if="member.identity === 'OWNER'"
-                  class="owner-tag"
-                >
+                <div v-if="member.identity === 'OWNER'" class="owner-tag">
                   负责人
                 </div>
               </div>
             </transition-group>
             <el-empty
-              v-if="!loading && editingMembers.length === 0"
+              v-if="!loading && (mode === 'view' ? currentMembers : editingMembers).length === 0"
               description="暂无项目成员"
             />
           </el-scrollbar>
         </div>
       </div>
       <!-- Right Panel: Add Members -->
-      <div class="panel add-members-panel">
+      <div v-if="mode === 'edit'" class="panel add-members-panel">
         <div class="panel-header">
           <h3>
             添加新成员
@@ -131,10 +119,7 @@
             :prefix-icon="Search"
           />
         </div>
-        <div
-          v-loading="userLoading"
-          class="panel-body"
-        >
+        <div v-loading="userLoading" class="panel-body">
           <el-scrollbar>
             <div class="user-card-grid">
               <div
@@ -168,8 +153,13 @@
     </div>
     <template #footer>
       <span class="dialog-footer">
-        <el-button @click="$emit('update:modelValue', false)">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="handleSaveChanges"> 确认 </el-button>
+        <template v-if="mode === 'edit'">
+          <el-button @click="handleCancelEdit">取消</el-button>
+          <el-button type="primary" :loading="saving" @click="handleSaveChanges"> 确认 </el-button>
+        </template>
+        <template v-else>
+          <el-button @click="$emit('update:modelValue', false)">关闭</el-button>
+        </template>
       </span>
     </template>
   </el-dialog>
@@ -189,16 +179,26 @@ const props = defineProps<{
 
 const emit = defineEmits(['update:modelValue', 'change'])
 
+const mode = ref<'view' | 'edit'>('view')
 const loading = ref(false)
 const userLoading = ref(false)
 const saving = ref(false)
 
-const editingMembers = ref<ProjectMember[]>([])
+const currentMembers = ref<ProjectMember[]>([]) // "Source of truth"
+const editingMembers = ref<ProjectMember[]>([]) // "Draft" state for editing
 const allCompanyUsers = ref<CompanyUser[]>([])
 const departmentTree = ref<Department[]>([])
 const selectedUsers = ref<Set<number>>(new Set())
 
 const filterParams = reactive({ name: '', depId: '', position: '' })
+
+const sortedCurrentMembers = computed(() => {
+  return [...currentMembers.value].sort((a, b) => {
+    if (a.identity === 'OWNER') return -1
+    if (b.identity === 'OWNER') return 1
+    return a.userName.localeCompare(b.userName)
+  })
+})
 
 const sortedEditingMembers = computed(() => {
   return [...editingMembers.value].sort((a, b) => {
@@ -212,13 +212,11 @@ const canClearCurrentMembers = computed(() => {
   return editingMembers.value.some(m => m.identity !== 'OWNER')
 })
 
-// Computed property to find users available to be added
 const availableUsers = computed(() => {
   const currentMemberIds = new Set(editingMembers.value.map(m => m.userId))
   return allCompanyUsers.value.filter(u => !currentMemberIds.has(u.userId))
 })
 
-// Computed property to filter the available users based on text/dep inputs
 const filteredAvailableUsers = computed(() => {
   let users = availableUsers.value
   if (filterParams.name) {
@@ -233,26 +231,49 @@ const filteredAvailableUsers = computed(() => {
   return users
 })
 
-const loadInitialData = async () => {
+const loadInitialData = async (isRefresh = false) => {
   if (!props.projectId) return
-  loading.value = true
-  userLoading.value = true
-  try {
-    const [membersRes, usersRes, departmentsRes] = await Promise.all([
-      getProjectMembers(props.projectId),
-      getUsers({}), // Fetch all users
-      departmentTree.value.length === 0 ? getDepartments() : Promise.resolve(departmentTree.value)
-    ])
-    editingMembers.value = membersRes || []
-    allCompanyUsers.value = usersRes.records || []
-    departmentTree.value = departmentsRes || []
-  } catch (error) {
-    console.error('Failed to load initial data:', error)
-    ElMessage.error('加载数据失败')
-  } finally {
-    loading.value = false
-    userLoading.value = false
+  if (!isRefresh) {
+    loading.value = true
   }
+  try {
+    currentMembers.value = await getProjectMembers(props.projectId)
+  } catch (error) {
+    console.error('Failed to load project members:', error)
+    ElMessage.error('加载成员列表失败')
+  } finally {
+    if (!isRefresh) {
+      loading.value = false
+    }
+  }
+}
+
+const handleEnterEditMode = async () => {
+  editingMembers.value = JSON.parse(JSON.stringify(currentMembers.value))
+  mode.value = 'edit'
+
+  if (allCompanyUsers.value.length === 0) {
+    userLoading.value = true
+    try {
+      const [usersRes, departmentsRes] = await Promise.all([
+        getUsers({}),
+        departmentTree.value.length === 0 ? getDepartments() : Promise.resolve(departmentTree.value)
+      ])
+      allCompanyUsers.value = usersRes.records || []
+      departmentTree.value = departmentsRes || []
+    } catch (error) {
+      console.error('Failed to load data for editing:', error)
+      ElMessage.error('加载用户列表失败')
+      mode.value = 'view'
+    } finally {
+      userLoading.value = false
+    }
+  }
+}
+
+const handleCancelEdit = () => {
+  mode.value = 'view'
+  selectedUsers.value.clear()
 }
 
 const toggleUserSelection = (user: CompanyUser) => {
@@ -295,7 +316,8 @@ const handleSaveChanges = async () => {
     const finalUserIds = editingMembers.value.map(m => m.userId)
     await saveProjectMembers(props.projectId, finalUserIds)
     ElMessage.success('成员保存成功')
-    emit('update:modelValue', false)
+    await loadInitialData(true)
+    mode.value = 'view'
     emit('change')
   } catch (error) {
     console.error('Failed to save members:', error)
@@ -306,6 +328,8 @@ const handleSaveChanges = async () => {
 }
 
 const resetState = () => {
+  mode.value = 'view'
+  currentMembers.value = []
   editingMembers.value = []
   allCompanyUsers.value = []
   selectedUsers.value.clear()
@@ -327,6 +351,7 @@ watch(
   () => props.modelValue,
   (isVisible) => {
     if (isVisible) {
+      mode.value = 'view'
       loadInitialData()
     }
   },
@@ -347,6 +372,12 @@ watch(
   background-color: #f7f8fa;
   padding: 16px;
   border-radius: 8px;
+
+  &.mode-view {
+    .current-members-panel {
+      flex: 1 1 100%; // Take full width
+    }
+  }
 }
 
 .panel {
@@ -358,6 +389,7 @@ watch(
   overflow: hidden;
   background-color: #fff;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: all 0.3s ease-in-out;
 }
 
 .panel-header {
@@ -385,7 +417,6 @@ watch(
   padding: 8px;
 }
 
-// Base card style
 .member-card,
 .user-card {
   border: 1px solid #e4e7ed;
@@ -416,7 +447,6 @@ watch(
   }
 }
 
-// Grid layout for cards
 .current-member-grid,
 .user-card-grid {
   display: grid;
@@ -425,25 +455,22 @@ watch(
   padding: 8px;
 }
 
-// Hover effects for cards
-.member-card:hover,
 .user-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
-// Specific styles for current member cards
 .member-card {
+  &:hover .remove-action {
+    opacity: 1;
+  }
+
   .remove-action {
     position: absolute;
     top: 4px;
     right: 4px;
     opacity: 0;
     transition: opacity 0.2s ease-in-out;
-  }
-
-  &:hover .remove-action {
-    opacity: 1;
   }
 
   .owner-tag {
@@ -460,7 +487,6 @@ watch(
   }
 }
 
-// Specific styles for user selection cards
 .user-card {
   cursor: pointer;
 
@@ -503,8 +529,7 @@ watch(
   }
 }
 
-// Transition styles
-.list-move, /* apply transition to moving elements */
+.list-move,
 .list-enter-active,
 .list-leave-active {
   transition: all 0.5s ease;
@@ -516,8 +541,6 @@ watch(
   transform: translateY(30px);
 }
 
-/* ensure leaving items are taken out of layout flow so that moving
-   animations can be calculated correctly. */
 .list-leave-active {
   position: absolute;
 }
