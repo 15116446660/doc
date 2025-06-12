@@ -1,5 +1,7 @@
-import type { MockMethod } from 'vite-plugin-mock'
 import mockjs from 'mockjs'
+import type { MockMethod } from 'vite-plugin-mock'
+import type { ProjectMember, Department, CompanyUser } from '@/types/document'
+
 const { Random } = mockjs
 
 // 项目分类数据
@@ -472,4 +474,216 @@ const mockData: MockMethod[] = [
   }
 ]
 
-export default mockData 
+// Based on screenshot 1
+let mockMembers: ProjectMember[] = [
+  {
+    userId: 49,
+    identity: 'COLLABORATOR',
+    userName: '测试',
+    orgName: '景嘉微',
+    picture: '/image/2025/05/22/d236bdf01837494b85486123dc2deb16photo.png',
+    position: '测试'
+  },
+  {
+    userId: 46,
+    identity: 'OWNER',
+    userName: '向培',
+    orgName: '研发管理部',
+    picture: '',
+    position: '开发'
+  }
+]
+
+// Based on screenshot 2
+const departmentTree: Department[] = [
+  {
+    id: '1921021729972363266',
+    orgName: '景嘉微',
+    orgCode: 'JJW',
+    pid: '0',
+    delFlag: 0,
+    status: 'Y',
+    children: [
+      {
+        id: '1921021730035277826',
+        orgName: '研发管理部',
+        orgCode: 'YFGLB',
+        pid: '1921021729972363266',
+        delFlag: 0,
+        status: 'Y'
+      },
+      {
+        id: '1930886819549171714',
+        orgName: '电子事业部',
+        orgCode: 'DZSYB',
+        pid: '1921021729972363266',
+        delFlag: 0,
+        status: 'Y'
+      }
+    ]
+  }
+]
+
+// Based on screenshot 3, generate more for pagination, and add department info
+const departmentsForUsers = [
+  { id: '1921021730035277826', name: '研发管理部' },
+  { id: '1930886819549171714', name: '电子事业部' }
+]
+const allUsers: CompanyUser[] = Array.from({ length: 201 }).map((_, i) => {
+  const dep = departmentsForUsers[i % departmentsForUsers.length]
+  const positions = ['软件工程师', 'UI设计师', '产品经理', '测试工程师', '运维工程师']
+  return {
+    userId: 137 + i,
+    identity: '',
+    userName: Random.cname(),
+    orgId: dep.id,
+    orgName: dep.name,
+    position: positions[i % positions.length]
+  }
+})
+
+const memberMocks: MockMethod[] = [
+  {
+    url: '/api/project/:projectId/members',
+    method: 'get',
+    response: (req: { params?: { projectId: string } }) => {
+      return {
+        code: 200,
+        msg: '操作成功',
+        data: mockMembers
+      }
+    }
+  },
+  {
+    url: '/api/departments',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        msg: '操作成功',
+        data: departmentTree
+      }
+    }
+  },
+  {
+    url: '/api/users',
+    method: 'get',
+    response: ({
+      query
+    }: {
+      query: { current?: number; size?: number; name?: string; depId?: string; position?: string }
+    }) => {
+      const { current, size, name, depId, position } = query
+      let userList = [...allUsers]
+      if (name) {
+        userList = userList.filter(u => u.userName.includes(name))
+      }
+      if (depId) {
+        userList = userList.filter(u => u.orgId === depId)
+      }
+      if (position) {
+        userList = userList.filter(u => u.position && u.position.includes(position))
+      }
+
+      // If no pagination, return all
+      if (current === undefined || size === undefined) {
+        return {
+          code: 200,
+          data: {
+            records: userList,
+            total: userList.length,
+            current: 1,
+            size: userList.length
+          }
+        }
+      }
+
+      const start = (current - 1) * size
+      const end = current * size
+      const records = userList.slice(start, end)
+      return {
+        code: 200,
+        data: {
+          current: Number(current),
+          records,
+          size: Number(size),
+          total: userList.length
+        }
+      }
+    }
+  },
+  {
+    url: '/api/project/:projectId/members',
+    method: 'post',
+    response: ({ body }: { body: { userIds: number[] } }) => {
+      const { userIds } = body
+      const newMembers: ProjectMember[] = allUsers
+        .filter(u => userIds.includes(u.userId))
+        .map(u => ({
+          userId: u.userId,
+          identity: 'COLLABORATOR',
+          userName: u.userName,
+          orgName: '未指定',
+          picture: '',
+          position: '新成员'
+        }))
+      mockMembers.push(...newMembers)
+      return { code: 200, msg: '添加成功' }
+    }
+  },
+  {
+    url: '/api/project/:projectId/members/save',
+    method: 'post',
+    response: ({ body }: { body: { userIds: number[] } }) => {
+      const { userIds } = body
+      // Create new members list based on provided IDs
+      const newMemberList = allUsers
+        .filter(u => userIds.includes(u.userId))
+        .map(u => {
+          // Check if user was already a member to preserve their role
+          const existingMember = mockMembers.find(m => m.userId === u.userId)
+          return {
+            userId: u.userId,
+            identity: existingMember?.identity || 'COLLABORATOR',
+            userName: u.userName,
+            orgName: u.orgName || '未指定',
+            picture: existingMember?.picture || '',
+            position: u.position || '新成员'
+          }
+        })
+      
+      // Ensure owner is always present
+      const owner = mockMembers.find(m => m.identity === 'OWNER')
+      if (owner && !newMemberList.some(m => m.userId === owner.userId)) {
+        newMemberList.unshift(owner)
+      }
+
+      mockMembers = newMemberList
+      return { code: 200, msg: '成员保存成功' }
+    }
+  },
+  {
+    url: '/api/project/:projectId/members/delete',
+    method: 'post',
+    response: ({ body }: { body: { userId: number } }) => {
+      const { userId } = body
+      mockMembers = mockMembers.filter(m => m.userId !== userId)
+      return { code: 200, msg: '删除成功' }
+    }
+  },
+  {
+    url: '/api/project/:projectId/members/update',
+    method: 'post',
+    response: ({ body }: { body: { userId: number; identity: 'OWNER' | 'COLLABORATOR' | 'ADMIN' } }) => {
+      const { userId, identity } = body
+      const member = mockMembers.find(m => m.userId === userId)
+      if (member) {
+        member.identity = identity
+        return { code: 200, msg: '更新成功' }
+      }
+      return { code: 404, msg: '成员未找到' }
+    }
+  }
+]
+
+export default [...mockData, ...memberMocks] 

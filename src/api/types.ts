@@ -2,21 +2,21 @@
 export interface ApiResponse<T = any> {
   code: number;
   data: T;
-  message?: string;
+  msg?: string;
 }
 
 // 分页参数接口
 export interface PaginationParams {
-  page?: number;
-  limit?: number;
+  current?: number;
+  size?: number;
 }
 
 // 分页响应接口
 export interface PaginationResponse<T> {
-  list: T[];
+  records: T[];
   total: number;
-  page: number;
-  limit: number;
+  current: number;
+  size: number;
 }
 
 // 通用查询参数接口

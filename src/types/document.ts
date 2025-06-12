@@ -72,4 +72,32 @@ export interface DocumentVersion {
 export interface OptionItem {
   label: string
   value: string
+}
+
+export interface ProjectMember {
+  userId: number
+  identity: 'OWNER' | 'COLLABORATOR' | 'ADMIN'
+  userName: string
+  orgName: string
+  picture: string
+  position: string
+}
+
+export interface Department {
+  id: string
+  orgName: string
+  orgCode: string
+  pid: string
+  status: string
+  delFlag: number
+  children?: Department[]
+}
+
+export interface CompanyUser {
+  userId: number
+  identity: string
+  userName: string
+  orgId?: string
+  orgName?: string
+  position?: string
 } 

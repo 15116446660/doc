@@ -95,6 +95,14 @@
       @submit="handleDialogSubmit"
       @error="handleDialogError"
     />
+
+    <!-- 成员管理对话框 -->
+    <project-member-dialog
+      v-show="memberDialogVisible"
+      v-model="memberDialogVisible"
+      :project-id="selectedProjectId"
+      @change="handleMemberChange"
+    />
   </div>
 </template>
 
@@ -113,6 +121,7 @@ import {
 } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
+import ProjectMemberDialog from './dialogs/ProjectMemberDialog.vue'
 import ProjectTypeTree from './components/ProjectTypeTree.vue'
 import ProjectCard from './components/ProjectCard.vue'
 import type { FilterFormItem, TableColumn, CardConfig, ViewType, ActionItem } from '@/components/BaseList/types'
@@ -131,6 +140,8 @@ const viewType = ref<ViewType>('table')
 // 对话框控制
 const createDialogVisible = ref(false)
 const createDialogData = ref<Partial<Project>>()
+const memberDialogVisible = ref(false)
+const selectedProjectId = ref<number | null>(null)
 
 // 侧边栏折叠状态
 const sidebarCollapsed = ref(false)
@@ -181,7 +192,13 @@ const handleDelete = (project: Project) => {
 
 // 处理成员管理
 const handleManageMembers = (project: Project) => {
-  console.log('Manage members for:', project.id)
+  selectedProjectId.value = project.id
+  memberDialogVisible.value = true
+}
+
+// 成员变更后刷新列表
+const handleMemberChange = () => {
+  listRef.value?.refresh()
 }
 
 // 处理项目常量

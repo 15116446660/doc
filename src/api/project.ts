@@ -1,5 +1,6 @@
-import { get } from './request'
+import { get, post, del, put } from './request'
 import type { PaginationResponse, QueryParams } from './types'
+import type { ProjectMember, Department, CompanyUser } from '@/types/document'
 
 // 项目分类接口
 export interface ProjectCategory {
@@ -123,4 +124,44 @@ export const updateProject = (id: number, data: any) => {
 // 获取项目详情
 export const getProjectDetail = (id: number) => {
   return get<Project>(`/api/project/detail/${id}`)
+}
+
+// 获取项目成员
+export function getProjectMembers(projectId: string | number) {
+  return get<ProjectMember[]>(`/api/project/${projectId}/members`)
+}
+
+// 获取所有部门
+export function getDepartments() {
+  return get<Department[]>('/api/departments')
+}
+
+// 获取公司所有用户（分页）
+export interface UserQueryParams extends QueryParams {
+  name?: string
+  depId?: string
+  position?: string
+}
+export function getUsers(params: UserQueryParams) {
+  return get<PaginationResponse<CompanyUser>>('/api/users', params)
+}
+
+// 添加项目成员
+export function addProjectMembers(projectId: string | number, userIds: number[]) {
+  return post(`/api/project/${projectId}/members`, { userIds })
+}
+
+// 保存项目所有成员
+export function saveProjectMembers(projectId: string | number, userIds: number[]) {
+  return post(`/api/project/${projectId}/members/save`, { userIds })
+}
+
+// 删除项目成员
+export function removeProjectMember(projectId: string | number, userId: number) {
+  return post(`/api/project/${projectId}/members/delete`, { userId })
+}
+
+// 更新项目成员角色
+export function updateProjectMember(projectId: string | number, userId: number, identity: string) {
+  return post(`/api/project/${projectId}/members/update`, { userId, identity })
 } 
