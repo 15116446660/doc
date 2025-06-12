@@ -17,12 +17,25 @@
           <h3>
             当前成员 ({{ editingMembers.length }})
           </h3>
+          <el-button
+            v-if="canClearCurrentMembers"
+            type="danger"
+            size="small"
+            link
+            @click="handleClearCurrentMembers"
+          >
+            清空全部
+          </el-button>
         </div>
         <div class="panel-body">
           <el-scrollbar>
-            <div class="current-member-grid">
+            <transition-group
+              tag="div"
+              name="list"
+              class="current-member-grid"
+            >
               <div
-                v-for="member in editingMembers"
+                v-for="member in sortedEditingMembers"
                 :key="member.userId"
                 class="member-card"
               >
@@ -42,12 +55,17 @@
                   v-if="member.identity !== 'OWNER'"
                   class="remove-action"
                 >
-                  <el-button
-                    type="danger"
-                    link
-                    :icon="Delete"
-                    @click="handleLocalRemove(member)"
-                  />
+                  <el-tooltip
+                    content="移除成员"
+                    placement="top"
+                  >
+                    <el-button
+                      type="danger"
+                      link
+                      :icon="Delete"
+                      @click="handleLocalRemove(member)"
+                    />
+                  </el-tooltip>
                 </div>
                 <div
                   v-if="member.identity === 'OWNER'"
@@ -56,7 +74,7 @@
                   负责人
                 </div>
               </div>
-            </div>
+            </transition-group>
             <el-empty
               v-if="!loading && editingMembers.length === 0"
               description="暂无项目成员"
@@ -75,9 +93,18 @@
               type="primary"
               size="small"
               :disabled="selectedUsers.size === 0"
+              :icon="Plus"
               @click="handleLocalAdd"
             >
               添加选中 ({{ selectedUsers.size }})
+            </el-button>
+            <el-button
+              v-if="selectedUsers.size > 0"
+              size="small"
+              :icon="CircleClose"
+              @click="handleClearSelection"
+            >
+              清空
             </el-button>
           </div>
         </div>
@@ -151,7 +178,7 @@
 <script setup lang="ts">
 import { ref, watch, reactive, computed } from 'vue'
 import { ElMessage } from 'element-plus'
-import { Delete, Search, Select } from '@element-plus/icons-vue'
+import { Delete, Search, Select, Plus, CircleClose } from '@element-plus/icons-vue'
 import type { ProjectMember, Department, CompanyUser } from '@/types/document'
 import { getProjectMembers, getDepartments, getUsers, saveProjectMembers } from '@/api/project'
 
@@ -172,6 +199,18 @@ const departmentTree = ref<Department[]>([])
 const selectedUsers = ref<Set<number>>(new Set())
 
 const filterParams = reactive({ name: '', depId: '', position: '' })
+
+const sortedEditingMembers = computed(() => {
+  return [...editingMembers.value].sort((a, b) => {
+    if (a.identity === 'OWNER') return -1
+    if (b.identity === 'OWNER') return 1
+    return a.userName.localeCompare(b.userName)
+  })
+})
+
+const canClearCurrentMembers = computed(() => {
+  return editingMembers.value.some(m => m.identity !== 'OWNER')
+})
 
 // Computed property to find users available to be added
 const availableUsers = computed(() => {
@@ -222,6 +261,10 @@ const toggleUserSelection = (user: CompanyUser) => {
   } else {
     selectedUsers.value.add(user.userId)
   }
+}
+
+const handleClearSelection = () => {
+  selectedUsers.value.clear()
 }
 
 const handleLocalAdd = () => {
@@ -275,6 +318,11 @@ const handleClose = () => {
   resetState()
 }
 
+const handleClearCurrentMembers = () => {
+  const owner = editingMembers.value.find(m => m.identity === 'OWNER')
+  editingMembers.value = owner ? [owner] : []
+}
+
 watch(
   () => props.modelValue,
   (isVisible) => {
@@ -287,96 +335,155 @@ watch(
 </script>
 
 <style scoped lang="scss">
+:deep(.el-dialog__body) {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
 .member-dialog-container {
   display: flex;
-  gap: 20px;
+  gap: 24px;
   height: 60vh;
+  background-color: #f7f8fa;
+  padding: 16px;
+  border-radius: 8px;
+}
 
-  .panel {
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-    flex: 1;
-    overflow: hidden;
+.panel {
+  border: 1px solid #e4e7ed;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  background-color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.panel-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e4e7ed;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-shrink: 0;
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
   }
-
-  .panel-header {
-    padding: 10px 15px;
-    border-bottom: 1px solid #dcdfe6;
-    background-color: #f5f7fa;
+  .add-member-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    flex-shrink: 0;
-    h3 {
-      margin: 0;
-      font-size: 16px;
-    }
-  }
-
-  .panel-body {
-    flex-grow: 1;
-    overflow: hidden;
-    position: relative;
-    padding: 5px;
+    gap: 8px;
   }
 }
 
-.current-members-panel {
-  .current-member-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 15px;
-    padding: 10px;
+.panel-body {
+  flex-grow: 1;
+  overflow: hidden;
+  position: relative;
+  padding: 8px;
+}
+
+// Base card style
+.member-card,
+.user-card {
+  border: 1px solid #e4e7ed;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease-in-out;
+  position: relative;
+  background-color: #fff;
+
+  .member-card-name,
+  .user-card-name {
+    margin-top: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    text-align: center;
+    word-break: break-all;
   }
 
-  .member-card {
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s;
-    position: relative;
+  .member-card-org,
+  .user-card-org {
+    font-size: 12px;
+    color: #909399;
+    margin-top: 4px;
+  }
+}
 
-    .member-card-name {
-      margin-top: 8px;
-      font-size: 14px;
-      text-align: center;
-      word-break: break-all;
-    }
-    
-    .member-card-org {
-      font-size: 12px;
-      color: #909399;
-      margin-top: 4px;
-    }
+// Grid layout for cards
+.current-member-grid,
+.user-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 16px;
+  padding: 8px;
+}
 
-    .remove-action {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
+// Hover effects for cards
+.member-card:hover,
+.user-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+}
 
-    &:hover .remove-action {
-      opacity: 1;
-    }
+// Specific styles for current member cards
+.member-card {
+  .remove-action {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease-in-out;
+  }
 
-    .owner-tag {
-      position: absolute;
-      top: 5px;
-      left: 5px;
-      background-color: #f5ab1b;
-      color: white;
-      font-size: 10px;
-      padding: 2px 4px;
-      border-radius: 3px;
-    }
+  &:hover .remove-action {
+    opacity: 1;
+  }
+
+  .owner-tag {
+    position: absolute;
+    top: -1px;
+    left: -1px;
+    background: linear-gradient(145deg, #ffc107, #f5ab1b);
+    color: white;
+    font-size: 10px;
+    padding: 3px 6px;
+    border-radius: 6px 0 6px 0;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+}
+
+// Specific styles for user selection cards
+.user-card {
+  cursor: pointer;
+
+  &.selected {
+    border-color: var(--el-color-primary);
+    background-color: #f2f8ff;
+    box-shadow: 0 0 0 2px var(--el-color-primary-light-7);
+  }
+
+  .selection-indicator {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    color: var(--el-color-primary);
+    font-size: 18px;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.2s ease-in-out;
+  }
+
+  &.selected .selection-indicator {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
@@ -384,70 +491,34 @@ watch(
   .add-members-filter {
     display: flex;
     gap: 10px;
-    padding: 10px;
-    border-bottom: 1px solid #dcdfe6;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e4e7ed;
     flex-shrink: 0;
+    background-color: #fafbfc;
 
-    .el-select, .el-tree-select, .el-input {
+    .el-tree-select,
+    .el-input {
       flex: 1;
     }
   }
+}
 
-  .user-card-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-    gap: 15px;
-    padding: 10px;
-  }
+// Transition styles
+.list-move, /* apply transition to moving elements */
+.list-enter-active,
+.list-leave-active {
+  transition: all 0.5s ease;
+}
 
-  .user-card {
-    border: 1px solid #dcdfe6;
-    border-radius: 4px;
-    padding: 10px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: all 0.3s;
-    position: relative;
+.list-enter-from,
+.list-leave-to {
+  opacity: 0;
+  transform: translateY(30px);
+}
 
-    &:hover {
-      border-color: #409eff;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-
-    &.selected {
-      border-color: #409eff;
-      background-color: #ecf5ff;
-    }
-
-    .selection-indicator {
-      position: absolute;
-      top: 5px;
-      right: 5px;
-      color: #409eff;
-      font-size: 16px;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-
-    &.selected .selection-indicator {
-      opacity: 1;
-    }
-
-    .user-card-name {
-      margin-top: 8px;
-      font-size: 14px;
-      text-align: center;
-      word-break: break-all;
-    }
-
-    .user-card-org {
-      font-size: 12px;
-      color: #909399;
-      margin-top: 4px;
-    }
-  }
+/* ensure leaving items are taken out of layout flow so that moving
+   animations can be calculated correctly. */
+.list-leave-active {
+  position: absolute;
 }
 </style> 
