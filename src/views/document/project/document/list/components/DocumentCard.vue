@@ -16,6 +16,7 @@
           <template #dropdown>
             <el-dropdown-menu>
               <el-dropdown-item command="edit"><el-icon><EditPen /></el-icon>编辑</el-dropdown-item>
+              <el-dropdown-item command="collaborators"><el-icon><User /></el-icon>协作者</el-dropdown-item>
               <el-dropdown-item command="sync"><el-icon><Refresh /></el-icon>同步</el-dropdown-item>
               <el-dropdown-item command="download"><el-icon><Download /></el-icon>下载</el-dropdown-item>
               <el-dropdown-item command="delete" divided class="danger"><el-icon><Delete /></el-icon>删除</el-dropdown-item>
@@ -86,6 +87,7 @@ const emit = defineEmits<{
   (e: 'sync', doc: DocumentModel): void
   (e: 'download', doc: DocumentModel): void
   (e: 'delete', doc: DocumentModel): void
+  (e: 'collaborators', doc: DocumentModel): void
 }>()
 
 const handleViewDocument = () => emit('view', props.document)
@@ -93,6 +95,7 @@ const handleEdit = () => emit('edit', props.document)
 const handleSync = () => emit('sync', props.document)
 const handleDownload = () => emit('download', props.document)
 const handleDelete = () => emit('delete', props.document)
+const handleCollaborators = () => emit('collaborators', props.document)
 
 const handleCommand = (command: string) => {
   const actions: Record<string, () => void> = {
@@ -100,6 +103,7 @@ const handleCommand = (command: string) => {
     sync: handleSync,
     download: handleDownload,
     delete: handleDelete,
+    collaborators: handleCollaborators,
   }
   actions[command]?.()
 }

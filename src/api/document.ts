@@ -102,16 +102,9 @@ export const getDirectorOptions = () => {
 }
 
 export function getDocumentCollaborators(documentId: string) {
-  return request<DocumentCollaborator[]>({
-    url: `/api/document/collaborators?documentId=${documentId}`,
-    method: 'get'
-  })
+  return get<DocumentCollaborator[]>(`/api/document/collaborators?documentId=${documentId}`)
 }
 
-export function updateDocumentCollaborators(documentId: string, data: DocumentCollaborator[]) {
-  return request<void>({
-    url: `/api/document/collaborators?documentId=${documentId}`,
-    method: 'post',
-    data
-  })
+export function updateDocumentCollaborators(documentId: string, collaborators: DocumentCollaborator[]) {
+  return post(`/api/document/collaborators/update?documentId=${documentId}`, { collaborators })
 }

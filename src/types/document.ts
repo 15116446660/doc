@@ -97,7 +97,24 @@ export interface CompanyUser {
   userId: number
   identity: string
   userName: string
-  orgId?: string
-  orgName?: string
+  orgId: string
+  orgName: string
   position?: string
-} 
+}
+
+export interface DocumentCollaborator {
+  userId: number
+  userName: string
+  orgName: string
+  position: string
+  picture: string
+  identity: 'DIRECTOR' | string | null
+  selected: 0 | 1
+  down: 0 | 1
+  edit: 0 | 1
+  upload: 0 | 1
+  del: 0 | 1
+  print: 0 | 1
+  comment: 0 | 1
+  copy: 0 | 1
+}

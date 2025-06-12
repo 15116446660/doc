@@ -81,6 +81,7 @@
       <!-- 操作自定义插槽 -->
       <template #actions="{ row }">
         <el-button type="primary" text @click="handleEdit(row)">编辑</el-button>
+        <el-button type="primary" text @click="handleCollaborators(row)">协作者</el-button>
         <el-button type="primary" text @click="handleSync(row)">同步</el-button>
         <el-button type="success" text @click="handleDownload(row)">下载</el-button>
         <el-button type="danger" text @click="handleDelete(row)">删除</el-button>
@@ -92,6 +93,7 @@
           :document="item"
           @view="handleViewDocument"
           @edit="handleEdit"
+          @collaborators="handleCollaborators"
           @sync="handleSync"
           @download="handleDownload"
           @delete="handleDelete"
@@ -116,6 +118,12 @@
       @success="handleImportSuccess"
     />
     -->
+
+    <!-- 协作者管理对话框 -->
+    <collaborator-dialog
+      v-model="collaboratorDialogVisible"
+      :document-id="currentDocument?.id"
+    />
 
     <!-- 版本历史对话框 -->
     <version-history-dialog
@@ -142,11 +150,13 @@ import {
   EditPen,
   Refresh,
   Download,
-  Delete 
+  Delete,
+  User
 } from '@element-plus/icons-vue'
 import BaseList from '@/components/BaseList/index.vue'
 import DocumentCard from './components/DocumentCard.vue'
 import DocumentCreateDialog from './dialogs/DocumentCreateDialog.vue'
+import CollaboratorDialog from './dialogs/CollaboratorDialog.vue'
 import VersionHistoryDialog from './dialogs/VersionHistoryDialog.vue'
 import DocumentContentViewer from '@/components/DocumentContentViewer.vue'
 import FileIcon from '@/components/FileIcon/index.vue'
@@ -169,12 +179,14 @@ const projectInfo = ref<Project>()
 const createDialogVisible = ref(false)
 const createDialogData = ref<Partial<DocumentModel>>()
 const versionHistoryVisible = ref(false)
+const collaboratorDialogVisible = ref(false)
 const documentViewerVisible = ref(false)
 const currentDocument = ref<DocumentModel>()
 
 // 表格操作配置
 const documentActions: ActionItem[] = [
   { label: '编辑', command: 'edit', icon: EditPen },
+  { label: '协作者', command: 'collaborators', icon: User },
   { label: '同步', command: 'sync', icon: Refresh },
   { label: '下载', command: 'download', icon: Download },
   { label: '删除', command: 'delete', icon: Delete, divided: true }
@@ -472,6 +484,12 @@ const handleViewDocument = (document: DocumentModel) => {
   documentViewerVisible.value = true
 }
 
+// 处理协作者管理
+const handleCollaborators = (document: DocumentModel) => {
+  currentDocument.value = document
+  collaboratorDialogVisible.value = true
+}
+
 // 处理版本历史
 const handleVersionHistory = (document: DocumentModel) => {
   currentDocument.value = document
@@ -506,6 +524,9 @@ const handleActionCommand = (event: { command: string, row: DocumentModel }) => 
   switch (event.command) {
     case 'edit':
       handleEdit(event.row)
+      break
+    case 'collaborators':
+      handleCollaborators(event.row)
       break
     case 'sync':
       handleSync(event.row)
