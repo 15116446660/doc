@@ -72,7 +72,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/store/auth'
 import SidebarItem from './components/SidebarItem.vue'
 import Breadcrumb from './components/Breadcrumb.vue'
-import { Fold, Expand, CaretBottom, Plus } from '@element-plus/icons-vue'
+import { Fold, Expand, CaretBottom } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -91,7 +91,11 @@ const routes = computed(() => {
 
 // 当前激活的菜单
 const activeMenu = computed(() => {
-  return route.path
+  const { meta, path } = route
+  if (meta.activeMenu) {
+    return meta.activeMenu as string
+  }
+  return path
 })
 
 // 用户信息

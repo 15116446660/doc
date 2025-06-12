@@ -98,7 +98,8 @@ const routes: Array<RouteRecordRaw> = [
         meta: {
           title: '文档列表',
           icon: 'Document',
-          hidden: true
+          hidden: true,
+          activeMenu: '/document/library'
         }
       },
       {
