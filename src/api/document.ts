@@ -1,6 +1,13 @@
 import request from '@/utils/request'
-import type { Project, Document, DocumentVersion, OptionItem } from '@/types/document'
+import type {
+  Project,
+  Document,
+  DocumentVersion,
+  OptionItem,
+  DocumentCollaborator
+} from '@/types/document'
 import type { PageResult } from '@/types/global'
+import { get, post } from './request'
 
 // Project APIs
 export const getProjectList = (params: any) => {
@@ -92,4 +99,19 @@ export const getDirectorOptions = () => {
     url: '/api/project/director-options',
     method: 'get'
   })
-} 
+}
+
+export function getDocumentCollaborators(documentId: string) {
+  return request<DocumentCollaborator[]>({
+    url: `/api/document/collaborators?documentId=${documentId}`,
+    method: 'get'
+  })
+}
+
+export function updateDocumentCollaborators(documentId: string, data: DocumentCollaborator[]) {
+  return request<void>({
+    url: `/api/document/collaborators?documentId=${documentId}`,
+    method: 'post',
+    data
+  })
+}

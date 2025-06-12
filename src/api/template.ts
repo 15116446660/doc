@@ -1,5 +1,6 @@
-import { get, post, put, del } from './request'
+import { get, post } from './request'
 import type { OptionItem } from '@/components/BaseList/types'
+import type { ApiResponse } from './types'
 
 export interface Template {
   id: string | number
@@ -92,12 +93,12 @@ export function createTemplate(data: Partial<Template>) {
 
 // 更新模板
 export function updateTemplate(id: string, data: Partial<Template>) {
-  return put<Template>(`/api/templates/${id}`, data)
+  return post<Template>(`/api/templates/update?id=${id}`, data)
 }
 
 // 删除模板
 export function deleteTemplate(id: string) {
-  return del<void>(`/api/templates/${id}`)
+  return post<void>(`/api/templates/delete?id=${id}`)
 }
 
 // 复制模板
@@ -107,7 +108,7 @@ export function copyTemplate(id: string) {
 
 // 获取模板详情
 export function getTemplate(id: string) {
-  return get<Template>(`/api/templates/${id}`)
+  return get<Template>(`/api/templates?id=${id}`)
 }
 
 // 获取模板类型选项
@@ -135,8 +136,8 @@ export interface TemplateType {
 }
 
 // 获取模板分类树
-export function getTemplateTypeTree() {
-  return get<TemplateType[]>('/api/template/types/tree')
+export function getTemplateTypeTree(): Promise<ApiResponse<TemplateType[]>> {
+  return get('/api/template/types/tree')
 }
 
 // 新增模板分类
@@ -146,12 +147,12 @@ export function createTemplateType(data: Partial<TemplateType>) {
 
 // 更新模板分类
 export function updateTemplateType(id: number, data: Partial<TemplateType>) {
-  return put<TemplateType>(`/api/template/types/${id}`, data)
+  return post<TemplateType>(`/api/template/types/update?id=${id}`, data)
 }
 
 // 删除模板分类
 export function deleteTemplateType(id: number) {
-  return del<void>(`/api/template/types/${id}`)
+  return post<void>(`/api/template/types/delete?id=${id}`)
 }
 
 // 版本历史记录接口

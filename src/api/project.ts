@@ -1,5 +1,5 @@
-import { get, post, del, put } from './request'
-import type { PaginationResponse, QueryParams } from './types'
+import { get, post } from './request'
+import type { PaginationResponse, QueryParams, ApiResponse } from './types'
 import type { ProjectMember, Department, CompanyUser } from '@/types/document'
 
 // 项目分类接口
@@ -52,8 +52,8 @@ export interface Project {
 }
 
 // 获取项目分类
-export function getProjectCategories() {
-  return get<ProjectCategory[]>('/api/project/categories')
+export function getProjectCategories(): Promise<ApiResponse<ProjectCategory[]>> {
+  return get('/api/project/categories')
 }
 
 // 获取项目列表
@@ -118,17 +118,17 @@ export const createProject = (data: any) => {
 
 // 更新项目（模拟put，实际开发请用axios.put）
 export const updateProject = (id: number, data: any) => {
-  return get(`/api/project/update/${id}`, data)
+  return get(`/api/project/update?id=${id}`, data)
 }
 
 // 获取项目详情
 export const getProjectDetail = (id: number) => {
-  return get<Project>(`/api/project/detail/${id}`)
+  return get<Project>(`/api/project/detail?id=${id}`)
 }
 
 // 获取项目成员
 export function getProjectMembers(projectId: string | number) {
-  return get<ProjectMember[]>(`/api/project/${projectId}/members`)
+  return get<ProjectMember[]>(`/api/project/members?projectId=${projectId}`)
 }
 
 // 获取所有部门
@@ -148,20 +148,20 @@ export function getUsers(params: UserQueryParams) {
 
 // 添加项目成员
 export function addProjectMembers(projectId: string | number, userIds: number[]) {
-  return post(`/api/project/${projectId}/members`, { userIds })
+  return post(`/api/project/members?projectId=${projectId}`, { userIds })
 }
 
 // 保存项目所有成员
 export function saveProjectMembers(projectId: string | number, userIds: number[]) {
-  return post(`/api/project/${projectId}/members/save`, { userIds })
+  return post(`/api/project/members/save?projectId=${projectId}`, { userIds })
 }
 
 // 删除项目成员
 export function removeProjectMember(projectId: string | number, userId: number) {
-  return post(`/api/project/${projectId}/members/delete`, { userId })
+  return post(`/api/project/members/delete?projectId=${projectId}&userId=${userId}`)
 }
 
 // 更新项目成员角色
 export function updateProjectMember(projectId: string | number, userId: number, identity: string) {
-  return post(`/api/project/${projectId}/members/update`, { userId, identity })
+  return post(`/api/project/members/update?projectId=${projectId}&userId=${userId}`, { identity })
 } 

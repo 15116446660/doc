@@ -544,9 +544,9 @@ const allUsers: CompanyUser[] = Array.from({ length: 201 }).map((_, i) => {
 
 const memberMocks: MockMethod[] = [
   {
-    url: '/api/project/:projectId/members',
+    url: '/api/project/members',
     method: 'get',
-    response: (req: { params?: { projectId: string } }) => {
+    response: (req: { query?: { projectId: string } }) => {
       return {
         code: 200,
         msg: '操作成功',
@@ -613,10 +613,12 @@ const memberMocks: MockMethod[] = [
     }
   },
   {
-    url: '/api/project/:projectId/members',
+    url: '/api/project/members',
     method: 'post',
-    response: ({ body }: { body: { userIds: number[] } }) => {
+    response: ({ body, query }: { body: { userIds: number[] }; query: { projectId: string } }) => {
       const { userIds } = body
+      const { projectId } = query
+      console.log(`[Mock] Adding members to project ${projectId}:`, userIds)
       const newMembers: ProjectMember[] = allUsers
         .filter(u => userIds.includes(u.userId))
         .map(u => ({
@@ -632,10 +634,12 @@ const memberMocks: MockMethod[] = [
     }
   },
   {
-    url: '/api/project/:projectId/members/save',
+    url: '/api/project/members/save',
     method: 'post',
-    response: ({ body }: { body: { userIds: number[] } }) => {
+    response: ({ body, query }: { body: { userIds: number[] }; query: { projectId: string } }) => {
       const { userIds } = body
+      const { projectId } = query
+      console.log(`[Mock] Saving members for project ${projectId}:`, userIds)
       // Create new members list based on provided IDs
       const newMemberList = allUsers
         .filter(u => userIds.includes(u.userId))
@@ -663,20 +667,23 @@ const memberMocks: MockMethod[] = [
     }
   },
   {
-    url: '/api/project/:projectId/members/delete',
+    url: '/api/project/members/delete',
     method: 'post',
-    response: ({ body }: { body: { userId: number } }) => {
-      const { userId } = body
-      mockMembers = mockMembers.filter(m => m.userId !== userId)
+    response: ({ query }) => {
+      const { projectId, userId } = query
+      console.log(`[Mock] Deleting member ${userId} from project ${projectId}`)
+      mockMembers = mockMembers.filter(m => m.userId !== Number(userId))
       return { code: 200, msg: '删除成功' }
     }
   },
   {
-    url: '/api/project/:projectId/members/update',
+    url: '/api/project/members/update',
     method: 'post',
-    response: ({ body }: { body: { userId: number; identity: 'OWNER' | 'COLLABORATOR' | 'ADMIN' } }) => {
-      const { userId, identity } = body
-      const member = mockMembers.find(m => m.userId === userId)
+    response: ({ query, body }) => {
+      const { projectId, userId } = query
+      const { identity } = body
+      console.log(`[Mock] Updating member ${userId} in project ${projectId} to ${identity}`)
+      const member = mockMembers.find(m => m.userId === Number(userId))
       if (member) {
         member.identity = identity
         return { code: 200, msg: '更新成功' }

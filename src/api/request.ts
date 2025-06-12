@@ -3,6 +3,10 @@ import type { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios'
 import { ElMessage, ElLoading } from 'element-plus'
 import type { ApiResponse } from './types'
 
+export interface RequestConfig extends AxiosRequestConfig {
+  rawResponse?: boolean
+}
+
 // 创建axios实例
 const service = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '',
@@ -28,37 +32,29 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
+    const config = response.config as RequestConfig
     const res = response.data
 
-    // 如果返回的状态码不是200，说明接口请求有问题，直接抛出错误
     if (res.code !== 200) {
-      ElMessage({
-        message: res.message || '请求失败',
-        type: 'error',
-        duration: 5 * 1000
-      })
-
-      // 处理特定错误码
-      if (res.code === 401) {
-        // 未登录或token过期，可以在这里处理登出逻辑
-        localStorage.removeItem('token')
-        localStorage.removeItem('user')
-        window.location.href = '/login'
-      }
-
-      return Promise.reject(new Error(res.message || '请求失败'))
-    } else {
-      // 直接返回数据部分
-      return res.data
+      ElMessage.error(res.msg || 'Request failed')
+      return Promise.reject(new Error(res.msg || 'Error'))
     }
+
+    // If rawResponse is true, return the full axios response object
+    if (config.rawResponse) {
+      return response
+    }
+
+    // Default behavior: return only the 'data' part of the response body
+    return res.data
   },
   (error: AxiosError<ApiResponse>) => {
     console.error('响应错误:', error)
     
     // 获取错误信息
     let message = '请求失败'
-    if (error.response?.data?.message) {
-      message = error.response.data.message
+    if (error.response?.data?.msg) {
+      message = error.response.data.msg
     } else if (error.message) {
       message = error.message
     }
@@ -83,23 +79,13 @@ service.interceptors.response.use(
 )
 
 // 封装GET请求
-export function get<T>(url: string, params?: any, config?: AxiosRequestConfig): Promise<T> {
+export function get<T>(url: string, params?: any, config?: RequestConfig): Promise<T> {
   return service.get(url, { params, ...config })
 }
 
 // 封装POST请求
-export function post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+export function post<T>(url: string, data?: any, config?: RequestConfig): Promise<T> {
   return service.post(url, data, config)
-}
-
-// 封装PUT请求
-export function put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-  return service.put(url, data, config)
-}
-
-// 封装DELETE请求
-export function del<T>(url: string, params?: any, config?: AxiosRequestConfig): Promise<T> {
-  return service.delete(url, { params, ...config })
 }
 
 // 带加载状态的请求

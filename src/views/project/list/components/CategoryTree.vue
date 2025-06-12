@@ -76,13 +76,18 @@ const handleNodeClick = (data: ProjectCategory) => {
 // 获取分类数据
 const fetchCategories = async () => {
   loading.value = true
+  debugger
   try {
     const res = await getProjectCategories()
-    if (res.data.code === 200) {
-      categories.value = res.data.data
+    if (res.code === 200) {
+      categories.value = res.data
+    } else {
+      console.error('获取项目分类失败:', res)
+      categories.value = []
     }
   } catch (error) {
     console.error('获取项目分类失败:', error)
+    categories.value = []
   } finally {
     loading.value = false
   }
@@ -94,6 +99,7 @@ watch(searchText, (val) => {
 })
 
 onMounted(() => {
+  debugger
   fetchCategories()
 })
 </script>

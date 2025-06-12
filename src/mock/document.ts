@@ -125,6 +125,12 @@ const mockTemplates = [
   { id: 't3', name: '技术方案模板' }
 ]
 
+const mockCollaborators = [
+  { id: '1', name: '张三', headImg: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png' },
+  { id: '2', name: '李四', headImg: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png' },
+  { id: '3', name: '王五', headImg: 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png' }
+]
+
 const documentMocks: MockMethod[] = [
   {
     url: '/api/project/list',
@@ -300,6 +306,22 @@ const documentMocks: MockMethod[] = [
       code: 200,
       message: '成功',
       data: mockTemplates.map((t) => ({ label: t.name, value: t.id }))
+    }
+  },
+  {
+    url: '/api/document/collaborators',
+    method: 'get',
+    response: ({ query }) => {
+      console.log(`[Mock] Getting collaborators for document ${query.documentId}`)
+      return { code: 200, msg: 'Success', data: mockCollaborators }
+    }
+  },
+  {
+    url: '/api/document/collaborators',
+    method: 'post',
+    response: ({ query, body }) => {
+      console.log(`[Mock] Updating collaborators for document ${query.documentId}`, body)
+      return { code: 200, msg: '更新成功' }
     }
   }
 ]

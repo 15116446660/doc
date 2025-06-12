@@ -3,6 +3,7 @@
     <el-aside :width="isCollapse ? '64px' : '240px'" class="sidebar">
       <div class="logo-container">
         <el-icon class="logo-icon" :size="28">
+          <img src="/assets/svg/logo.svg" alt="logo" />
         </el-icon>
         <div class="logo-title-container">
           <h1 class="logo-title" v-show="!isCollapse">景智标书</h1>
