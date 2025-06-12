@@ -148,7 +148,7 @@ const getSyncStatusText = (status: string) => {
   transition: all 0.2s ease-in-out;
   display: flex;
   flex-direction: column;
-  height: 260px;
+  height: 240px;
   box-shadow: var(--el-box-shadow);
 
   &:hover {

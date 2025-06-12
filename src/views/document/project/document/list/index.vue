@@ -354,8 +354,8 @@ const cardConfig: CardConfig = {
   gap: '30px',
   minWidth: '200px',
   maxWidth: '220px',
-  minHeight: '120px',
-  maxHeight: '120px'
+  minHeight: '240px',
+  maxHeight: '260px'
 }
 
 // 获取状态类型
