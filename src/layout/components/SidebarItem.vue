@@ -78,14 +78,9 @@ const resolvePath = (routePath: string) => {
   min-height: 40px;
   padding: 0 12px;
   height: 48px;
-}
-
-/* 折叠时图标居中 */
-:deep(.el-menu--collapse) .el-menu-item,
-:deep(.el-menu--collapse) .el-sub-menu__title {
-  padding: 0 !important;
-  text-align: center;
+  display: flex;
   justify-content: center;
+  align-items: center;
 }
 
 :deep(.el-menu--collapse) .menu-icon {
@@ -100,6 +95,19 @@ const resolvePath = (routePath: string) => {
   background-color: rgba(99, 102, 241, 0.1) !important;
   border: 1px solid rgb(191 219 254 / 0.5) !important;
   background-image: linear-gradient(to right, #eff6ff, #faf5ff);
+}
+
+.el-sub-menu.is-active.menu-sub {
+  background-color: rgba(99, 102, 241, 0.1) !important;
+  border: 1px solid rgb(191 219 254 / 0.5) !important;
+  border-radius: 6px;
+  background-image: linear-gradient(to right, #eff6ff, #faf5ff);
+}
+
+.el-sub-menu.is-active.is-opened.menu-sub {
+  background-color: transparent !important;
+  border: none !important;
+  background-image: none !important;
 }
 
 .menu-icon {
@@ -129,6 +137,18 @@ const resolvePath = (routePath: string) => {
 
 :deep(.el-sub-menu__title:hover) {
   background-color: #f3f4f6 !important;
+}
+
+:deep(.el-menu-item) {
+  display: flex;
+  justify-content: v-bind('isCollapse ? "center" : "flex-start"');
+  align-items: center;
+}
+
+:deep(.el-sub-menu__title) {
+  display: flex;
+  justify-content: v-bind('isCollapse ? "center" : "flex-start"');
+  align-items: center;
 }
 
 :deep(.el-menu-item:hover) {
