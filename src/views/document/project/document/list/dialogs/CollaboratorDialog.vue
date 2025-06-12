@@ -8,87 +8,91 @@
     @open="handleOpen"
     @close="handleClose"
   >
-    <div v-loading="loading">
-      <!-- VIEW MODE -->
-      <div v-if="mode === 'view'" class="view-mode-content">
-        <el-empty v-if="viewCollaborators.length === 0" description="当前文档没有协作者" />
-        <div v-else class="collaborator-cards-grid">
-          <el-card v-for="user in viewCollaborators" :key="user.userId" shadow="never" class="collaborator-card">
-            <div class="card-header">
-              <div class="user-info">
-                <el-avatar :size="40" :src="user.picture">{{ user.userName.substring(0, 1) }}</el-avatar>
-                <div class="user-details">
-                  <div class="user-name">{{ user.userName }}</div>
-                  <div class="user-org">{{ user.orgName }} / {{ user.position }}</div>
+    <div v-loading="loading" class="dialog-content-wrapper">
+      <transition name="fade-mode" mode="out-in">
+        <!-- VIEW MODE -->
+        <div v-if="mode === 'view'" class="view-mode-content">
+          <el-empty v-if="viewCollaborators.length === 0" description="当前文档没有协作者" />
+          <transition-group v-else tag="div" name="card-fade" class="collaborator-cards-grid">
+            <el-card v-for="user in viewCollaborators" :key="user.userId" shadow="hover" class="collaborator-card">
+              <div class="card-content">
+                <div class="card-header">
+                  <div class="user-info">
+                    <el-avatar :size="48" :src="user.picture">{{ user.userName.substring(0, 1) }}</el-avatar>
+                    <div class="user-details">
+                      <div class="user-name">{{ user.userName }}</div>
+                      <div class="user-org">{{ user.orgName }} / {{ user.position }}</div>
+                    </div>
+                  </div>
+                  <el-tag effect="light" round>{{ user.identity }}</el-tag>
+                </div>
+                <div class="permissions-display">
+                  <div
+                    v-for="perm in permissionIcons"
+                    :key="perm.key"
+                    class="permission-icon"
+                    :class="{ active: user[perm.key] === 1 }"
+                  >
+                    <el-tooltip :content="perm.label" placement="top">
+                      <el-icon><component :is="perm.icon" /></el-icon>
+                    </el-tooltip>
+                  </div>
                 </div>
               </div>
-              <el-tag size="small">{{ user.identity }}</el-tag>
-            </div>
-            <div class="permissions-display">
-              <div
-                v-for="perm in permissionIcons"
-                :key="perm.key"
-                class="permission-icon"
-                :class="{ active: user[perm.key] === 1 }"
-              >
-                <el-tooltip :content="perm.label" placement="top">
-                  <el-icon><component :is="perm.icon" /></el-icon>
-                </el-tooltip>
-              </div>
-            </div>
-          </el-card>
+            </el-card>
+          </transition-group>
         </div>
-      </div>
 
-      <!-- EDIT MODE -->
-      <div v-if="mode === 'edit'" class="edit-mode-content">
-        <el-table :data="editingCollaborators" style="width: 100%" height="50vh" border>
-          <el-table-column label="成员" width="200">
-            <template #default="{ row }">
-              <div class="user-info-table">
-                <el-avatar :size="32" :src="row.picture">{{ row.userName.substring(0, 1) }}</el-avatar>
-                <div class="user-details">
-                  <div class="user-name">{{ row.userName }}</div>
-                  <div class="user-org">{{ row.orgName }} / {{ row.position }}</div>
+        <!-- EDIT MODE -->
+        <div v-else-if="mode === 'edit'" class="edit-mode-content">
+          <el-table :data="editingCollaborators" style="width: 100%" height="50vh" border stripe>
+            <el-table-column label="成员" width="220">
+              <template #default="{ row }">
+                <div class="user-info">
+                  <el-avatar :size="40" :src="row.picture">{{ row.userName.substring(0, 1) }}</el-avatar>
+                  <div class="user-details">
+                    <div class="user-name">{{ row.userName }}</div>
+                    <div class="user-org">{{ row.orgName }} / {{ row.position }}</div>
+                  </div>
                 </div>
-              </div>
-            </template>
-          </el-table-column>
-          <el-table-column label="协作者" width="80" align="center">
-            <template #default="{ row }">
-              <el-switch
-                v-model="row.selected"
-                :active-value="1"
-                :inactive-value="0"
-                @change="handleSelectionChange(row)"
-              />
-            </template>
-          </el-table-column>
-          <el-table-column label="角色" width="140">
-            <template #default="{ row }">
-              <el-select v-model="row.identity" placeholder="请选择角色" :disabled="row.selected === 0">
-                <el-option label="主管" value="DIRECTOR"></el-option>
-                <el-option label="协作者" value="COLLABORATOR"></el-option>
-              </el-select>
-            </template>
-          </el-table-column>
-          <el-table-column label="权限">
-            <template #default="{ row }">
-              <div class="permission-group">
-                <el-checkbox
-                  v-for="perm in permissionIcons"
-                  :key="perm.key"
-                  v-model="row[perm.key]"
-                  :true-value="1"
-                  :false-value="0"
-                  :disabled="row.selected === 0"
-                  :label="perm.label"
+              </template>
+            </el-table-column>
+            <el-table-column label="协作者" width="80" align="center">
+              <template #default="{ row }">
+                <el-switch
+                  v-model="row.selected"
+                  :active-value="1"
+                  :inactive-value="0"
+                  @change="handleSelectionChange(row)"
                 />
-              </div>
-            </template>
-          </el-table-column>
-        </el-table>
-      </div>
+              </template>
+            </el-table-column>
+            <el-table-column label="角色" width="140">
+              <template #default="{ row }">
+                <el-select v-model="row.identity" placeholder="请选择角色" :disabled="row.selected === 0">
+                  <el-option label="主管" value="DIRECTOR"></el-option>
+                  <el-option label="协作者" value="COLLABORATOR"></el-option>
+                </el-select>
+              </template>
+            </el-table-column>
+            <el-table-column label="权限">
+              <template #default="{ row }">
+                <div class="permission-group">
+                  <el-checkbox
+                    v-for="perm in permissionIcons"
+                    :key="perm.key"
+                    v-model="row[perm.key]"
+                    :true-value="1"
+                    :false-value="0"
+                    :disabled="row.selected === 0"
+                    :label="perm.label"
+                  />
+                </div>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </transition>
     </div>
     <template #footer>
       <div v-if="mode === 'view'">
@@ -173,7 +177,12 @@ const handleCancelEdit = () => {
 const handleSelectionChange = (row: DocumentCollaborator) => {
   if (row.selected === 0) {
     row.identity = null
-    permissionIcons.forEach(p => { row[p.key] = 0 })
+    permissionIcons.forEach(p => {
+      const key = p.key as keyof DocumentCollaborator
+      if (typeof row[key] === 'number') {
+        ;(row[key] as any) = 0
+      }
+    })
   } else {
     row.identity = 'COLLABORATOR'
     row.down = 1
@@ -212,64 +221,116 @@ const handleClose = () => {
 </script>
 
 <style scoped lang="scss">
+// Transitions
+.fade-mode-enter-active,
+.fade-mode-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-mode-enter-from,
+.fade-mode-leave-to {
+  opacity: 0;
+}
+
+.card-fade-enter-active,
+.card-fade-leave-active {
+  transition: all 0.5s ease;
+}
+.card-fade-enter-from,
+.card-fade-leave-to {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.card-fade-move {
+  transition: transform 0.5s ease;
+}
+
+
+// Main content wrapper
+.dialog-content-wrapper {
+  background: rgba(0,0,0,0.02);
+  border-radius: 8px;
+  padding: 24px;
+  min-height: 400px;
+}
+
 .view-mode-content {
   min-height: 300px;
 }
 
 .collaborator-cards-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
 }
 
 .collaborator-card {
-  border: 1px solid var(--el-border-color-lighter);
-  transition: box-shadow 0.2s;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.9), rgba(245, 245, 255, 0.8));
+  backdrop-filter: blur(10px);
+  transition: all 0.3s ease;
+  overflow: hidden;
+
   &:hover {
-    box-shadow: var(--el-box-shadow-light);
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    border-color: var(--el-color-primary-light-7);
+  }
+  
+  .card-content {
+    padding: 8px;
   }
 }
 
 .card-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  align-items: flex-start;
+  margin-bottom: 20px;
+
+  .el-tag {
+    font-weight: 600;
+  }
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-.user-info-table {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 .user-details {
   display: flex;
   flex-direction: column;
+  gap: 4px;
 }
 .user-name {
-  font-weight: 500;
+  font-weight: 600;
+  font-size: 16px;
 }
 .user-org {
   font-size: 12px;
-  color: #909399;
+  color: #888;
 }
+
 .permissions-display {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  padding-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+  gap: 12px;
+  padding-top: 16px;
+  margin-top: 12px;
   border-top: 1px solid var(--el-border-color-lighter);
 }
 .permission-icon {
-  font-size: 18px;
+  font-size: 20px;
   color: var(--el-text-color-disabled);
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  
   &.active {
     color: var(--el-color-primary);
+    text-shadow: 0 0 10px var(--el-color-primary-light-5);
   }
 }
 
@@ -278,7 +339,22 @@ const handleClose = () => {
   flex-wrap: wrap;
   gap: 10px;
   .el-checkbox {
-    min-width: 70px;
+    min-width: 80px;
+    margin-right: 10px;
+  }
+}
+
+:deep(.el-dialog__header) {
+  padding-bottom: 20px;
+  .el-dialog__title {
+    font-size: 20px;
+    font-weight: 600;
+  }
+}
+
+:deep(.el-table) {
+  .el-table__header-wrapper th {
+    background-color: var(--el-fill-color-light) !important;
   }
 }
 </style>
