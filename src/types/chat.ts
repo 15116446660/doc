@@ -48,6 +48,7 @@ export interface Conversation {
 export interface AIModel {
   id: string;
   name: string;
+  logo?: string;
   description?: string;
   icon?: string;
   apiEndpoint?: string;

@@ -4,22 +4,29 @@
     <div class="top-toolbar">
       <div class="toolbar-left">
         <!-- 模型选择器 -->
-        <el-dropdown trigger="click" @command="handleModelChange" :disabled="isGenerating">
+        <el-dropdown trigger="click" @command="handleModelChange" :disabled="isGenerating" popper-class="beautiful-popper">
           <div class="model-selector">
-            <el-icon><Cpu /></el-icon>
+            <img v-if="currentModelLogo" :src="currentModelLogo" class="model-logo" alt="logo" />
+            <el-icon v-else class="model-logo-default"><Cpu /></el-icon>
             <span>{{ currentModelName }}</span>
             <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
           </div>
           <template #dropdown>
             <el-dropdown-menu>
-              <el-dropdown-item 
-                v-for="model in models" 
-                :key="model.id" 
-                :command="model.id"
-                :class="{ 'is-active': model.id === currentModelId }"
-              >
-                {{ model.name }}
-              </el-dropdown-item>
+              <div class="panel-title">选择模型</div>
+              <div class="model-list-wrapper">
+                <el-dropdown-item
+                  v-for="model in models"
+                  :key="model.id"
+                  :command="model.id"
+                  :class="{ 'is-active': model.id === currentModelId }"
+                  class="model-dropdown-item"
+                >
+                  <img v-if="model.logo" :src="model.logo" class="model-logo" alt="logo" />
+                  <el-icon v-else class="model-logo-default"><Cpu /></el-icon>
+                  <span>{{ model.name }}</span>
+                </el-dropdown-item>
+              </div>
               <el-dropdown-item divided @click.stop="openModelConfig">
                 <el-icon><Setting /></el-icon>
                 <span>模型配置</span>
@@ -96,19 +103,22 @@
 
       <!-- 命令建议面板 -->
       <div v-if="showCommandSuggestions" class="command-suggestions-panel">
-        <div 
-          v-for="(cmd, index) in suggestionCommands" 
-          :key="cmd.id"
-          :class="['command-item', { active: index === activeCommandIndex }]"
-          @click.stop="selectCommand(cmd)"
-          @mouseenter="activeCommandIndex = index"
-        >
-          <div class="command-icon">
-            <el-icon><component :is="cmd.icon || 'Operation'" /></el-icon>
-          </div>
-          <div class="command-info">
-            <div class="command-name">{{ cmd.name }}</div>
-            <div class="command-desc">{{ cmd.description }}</div>
+        <div class="panel-title">可用命令</div>
+        <div class="command-list-wrapper">
+          <div
+            v-for="(cmd, index) in suggestionCommands"
+            :key="cmd.id"
+            :class="['command-item', { active: index === activeCommandIndex }]"
+            @click.stop="selectCommand(cmd)"
+            @mouseenter="activeCommandIndex = index"
+          >
+            <div class="command-icon">
+              <el-icon><component :is="cmd.icon || 'Operation'" /></el-icon>
+            </div>
+            <div class="command-info">
+              <div class="command-name">{{ cmd.name }}</div>
+              <div class="command-desc">{{ cmd.description }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -149,7 +159,7 @@
             :width="300"
             trigger="click"
             v-model:visible="isKnowledgeBasePanelVisible"
-            popper-class="knowledge-base-popper"
+            popper-class="beautiful-popper"
             :show-arrow="false"
           >
             <template #reference>
@@ -240,7 +250,6 @@ const iconMap: Record<string, any> = {
   CircleClose,
 };
 
-// Temporary type definition
 interface KnowledgeBase {
   id: string;
   name: string;
@@ -261,8 +270,14 @@ const props = withDefaults(
     isGenerating: false,
     isDeepThinkingMode: false,
     isRAGMode: false,
-    currentModelId: '',
-    models: () => [],
+    currentModelId: 'gpt-4',
+    models: () => [
+      { id: 'gpt-4-mini', name: 'GPT-4 mini', logo: 'https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/openai.png' },
+      { id: 'gpt-4', name: 'GPT-4', logo: 'https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/openai.png' },
+      { id: 'claude-3', name: 'Claude 3', logo: 'https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/anthropic.png' },
+      { id: 'gemini-pro', name: 'Gemini Pro', logo: 'https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/google-gemini.png' },
+      { id: 'custom-model', name: '自定义模型' },
+    ],
   }
 );
 
@@ -291,7 +306,7 @@ const showCommandSuggestions = ref(false);
 const activeCommandIndex = ref(0);
 
 const isKnowledgeBasePanelVisible = ref(false);
-const knowledgeBases = ref<KnowledgeBase[]>([ // Mock Data
+const knowledgeBases = ref<KnowledgeBase[]>([
   { id: 'kb-1', name: '产品设计规范文档', description: '包含所有产品线的设计原则和组件规范。', icon: 'Document' },
   { id: 'kb-2', name: '研发项目管理知识库', description: '覆盖项目流程、代码规范和常见问题解答。', icon: 'FolderOpened' },
   { id: 'kb-3', name: '市场与竞品分析报告', description: '最新的市场趋势和竞争对手动态分析。', icon: 'DataAnalysis' },
@@ -314,6 +329,11 @@ const maxVisibleQuickCommands = 5;
 const currentModelName = computed(() => {
   const model = props.models?.find(m => m.id === props.currentModelId);
   return model ? model.name : '选择模型';
+});
+
+const currentModelLogo = computed(() => {
+  const model = props.models?.find(m => m.id === props.currentModelId);
+  return model ? model.logo : null;
 });
 
 const canSend = computed(() => {
@@ -361,14 +381,14 @@ const handleFileChange = (event: Event) => {
 const sendMessage = () => {
   if (!canSend.value) return;
   const commandToSend = inputMessage.value;
-  
-  if(commandToSend.startsWith('/')) {
-     emit('send', commandToSend, attachments.value);
+
+  if (commandToSend.startsWith('/')) {
+    emit('send', commandToSend, attachments.value);
   } else {
     const context = selectedText.value ? { selectedText: selectedText.value } : undefined;
     emit('send', inputMessage.value, attachments.value, context);
   }
-  
+
   inputMessage.value = '';
   attachments.value = [];
   clearSelectedText();
@@ -406,6 +426,13 @@ const selectKnowledgeBase = (kbId: string) => {
   }
 };
 
+const clearSelectedKnowledgeBase = () => {
+  selectedKnowledgeBaseId.value = null;
+  if (props.isRAGMode) {
+    emit('toggleRAG');
+  }
+};
+
 const clearSelectedText = () => {
   selectedText.value = '';
 };
@@ -428,7 +455,7 @@ const handleInput = (value: string) => {
 const handleKeydown = (e: KeyboardEvent) => {
   const text = inputMessage.value.trim();
   if (e.key === '/' && text === '') {
-     showCommandSuggestions.value = true;
+    showCommandSuggestions.value = true;
   }
 
   if (showCommandSuggestions.value && suggestionCommands.value.length > 0) {
@@ -443,9 +470,9 @@ const handleKeydown = (e: KeyboardEvent) => {
         break;
       case 'Enter':
       case 'Tab':
-        if(text.startsWith('/')) {
-            e.preventDefault();
-            selectCommand(suggestionCommands.value[activeCommandIndex.value]);
+        if (text.startsWith('/')) {
+          e.preventDefault();
+          selectCommand(suggestionCommands.value[activeCommandIndex.value]);
         }
         break;
       case 'Escape':
@@ -468,13 +495,6 @@ const handleMouseUp = () => {
   if (text && text.length > 10) {
     // Only trigger for reasonably long selections
     selectedText.value = text;
-  }
-};
-
-const clearSelectedKnowledgeBase = () => {
-  selectedKnowledgeBaseId.value = null;
-  if (props.isRAGMode) {
-    emit('toggleRAG');
   }
 };
 // #endregion
@@ -645,13 +665,18 @@ onUnmounted(() => {
   left: 0;
   right: 0;
   background: var(--el-bg-color-overlay);
-  border: 1px solid var(--el-border-color-lighter);
-  border-radius: 8px;
-  box-shadow: var(--el-box-shadow-light);
+  border: 1px solid var(--el-border-color-extra-light);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   max-height: 300px;
-  overflow-y: auto;
   z-index: 10;
-  padding: 4px;
+  display: flex;
+  flex-direction: column;
+
+  .command-list-wrapper {
+    overflow-y: auto;
+    padding: 4px;
+  }
 
   .command-item {
     display: flex;
@@ -688,6 +713,24 @@ onUnmounted(() => {
       }
     }
   }
+}
+
+.panel-title {
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--el-text-color-secondary);
+  flex-shrink: 0;
+}
+
+:deep(.el-dropdown-menu) {
+  padding: 0 !important;
+}
+
+.model-list-wrapper {
+  max-height: 250px;
+  overflow-y: auto;
+  padding: 6px;
 }
 
 .kb-trigger-wrapper {
@@ -781,13 +824,38 @@ onUnmounted(() => {
     transform: translateY(0);
   }
 }
+
+.model-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .model-logo {
+    width: 20px;
+    height: 20px;
+    object-fit: contain;
+  }
+
+  .model-logo-default {
+    width: 20px;
+    height: 20px;
+    font-size: 20px;
+  }
+
+  &.is-active,
+  &.is-active:hover,
+  &.is-active:focus {
+    background-color: var(--el-color-primary-light-8) !important;
+    color: var(--el-color-primary) !important;
+    font-weight: 500;
+  }
+}
 </style>
 
 <style lang="scss">
-.knowledge-base-popper {
-  padding: 0 !important;
-  border-radius: 8px !important;
-  border: 1px solid var(--el-border-color-lighter) !important;
-  box-shadow: var(--el-box-shadow-light) !important;
+.beautiful-popper {
+  border-radius: 12px !important;
+  border: 1px solid var(--el-border-color-extra-light) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
 }
 </style> 
