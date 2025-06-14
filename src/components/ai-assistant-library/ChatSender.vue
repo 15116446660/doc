@@ -143,17 +143,55 @@
               思考 (R1)
             </el-button>
           </el-tooltip>
-          <el-tooltip content="知识库检索" placement="top">
-            <el-button 
-              class="mode-btn"
-              :class="{ 'is-active': isRAGMode }"
-              @click="toggleRAGMode"
-              size="small"
-            >
-              <el-icon><DataLine /></el-icon>
-              搜索
-            </el-button>
-          </el-tooltip>
+          
+          <el-popover
+            placement="top-start"
+            :width="300"
+            trigger="click"
+            v-model:visible="isKnowledgeBasePanelVisible"
+            popper-class="knowledge-base-popper"
+            :show-arrow="false"
+          >
+            <template #reference>
+              <div class="kb-trigger-wrapper">
+                <el-tooltip content="知识库检索" placement="top" v-if="!selectedKnowledgeBaseId">
+                  <el-button 
+                    class="mode-btn"
+                    :class="{ 'is-active': isRAGMode }"
+                    @click.stop="handleKnowledgeBaseButtonClick"
+                    size="small"
+                  >
+                    <el-icon><DataLine /></el-icon>
+                    搜索
+                  </el-button>
+                </el-tooltip>
+
+                <div class="selected-kb-display" v-else-if="selectedKnowledgeBase" @click.stop="handleKnowledgeBaseButtonClick">
+                   <el-icon class="kb-icon"><component :is="iconMap[selectedKnowledgeBase.icon] || Document" /></el-icon>
+                   <span class="kb-name">{{ selectedKnowledgeBase.name }}</span>
+                   <el-icon class="clear-icon" @click.stop="clearSelectedKnowledgeBase"><CircleClose /></el-icon>
+                </div>
+              </div>
+            </template>
+            <div class="knowledge-base-panel">
+              <div class="panel-header">选择知识库</div>
+              <div class="panel-body">
+                <div
+                  v-for="kb in knowledgeBases"
+                  :key="kb.id"
+                  class="kb-item"
+                  :class="{ active: selectedKnowledgeBaseId === kb.id }"
+                  @click="selectKnowledgeBase(kb.id)"
+                >
+                  <el-icon class="kb-icon"><component :is="iconMap[kb.icon] || Document" /></el-icon>
+                  <div class="kb-info">
+                    <div class="kb-name">{{ kb.name }}</div>
+                    <div class="kb-desc">{{ kb.description }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </el-popover>
         </div>
         <div class="toolbar-right">
           <el-button
@@ -185,10 +223,30 @@ import {
   Operation,
   Close,
   DataLine,
+  Document,
+  FolderOpened,
+  DataAnalysis,
+  CircleClose,
 } from '@element-plus/icons-vue';
 import type { AIModel } from '@/types/chat';
 import type { SubCommand, BaseCommand } from '@/types/command';
 import { useCommands } from '@/hooks/useCommands';
+
+// Icon mapping to resolve linter errors and for dynamic rendering
+const iconMap: Record<string, any> = {
+  Document,
+  FolderOpened,
+  DataAnalysis,
+  CircleClose,
+};
+
+// Temporary type definition
+interface KnowledgeBase {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+}
 
 // #region --- Props & Emits Definition ---
 const props = withDefaults(
@@ -232,6 +290,14 @@ const { commands, subCommands, clearActiveCommand } = useCommands();
 const showCommandSuggestions = ref(false);
 const activeCommandIndex = ref(0);
 
+const isKnowledgeBasePanelVisible = ref(false);
+const knowledgeBases = ref<KnowledgeBase[]>([ // Mock Data
+  { id: 'kb-1', name: '产品设计规范文档', description: '包含所有产品线的设计原则和组件规范。', icon: 'Document' },
+  { id: 'kb-2', name: '研发项目管理知识库', description: '覆盖项目流程、代码规范和常见问题解答。', icon: 'FolderOpened' },
+  { id: 'kb-3', name: '市场与竞品分析报告', description: '最新的市场趋势和竞争对手动态分析。', icon: 'DataAnalysis' },
+]);
+const selectedKnowledgeBaseId = ref<string | null>(null);
+
 const quickCommands = ref([
   { id: 'explain', name: '解释', prompt: '请解释以下内容：' },
   { id: 'translate', name: '翻译', prompt: '请将以下内容翻译成中文：' },
@@ -274,6 +340,10 @@ const hiddenQuickCommands = computed(() => quickCommands.value.slice(maxVisibleQ
 
 const suggestionCommands = computed<Array<BaseCommand | SubCommand>>(() => {
   return subCommands.value.length > 0 ? subCommands.value : commands.value;
+});
+
+const selectedKnowledgeBase = computed(() => {
+  return knowledgeBases.value.find(kb => kb.id === selectedKnowledgeBaseId.value) || null;
 });
 // #endregion
 
@@ -323,7 +393,18 @@ const handleCommand = (command: string) => {
 };
 
 const toggleDeepThinkingMode = () => emit('toggleDeepThinking');
-const toggleRAGMode = () => emit('toggleRAG');
+
+const handleKnowledgeBaseButtonClick = () => {
+  isKnowledgeBasePanelVisible.value = true;
+};
+
+const selectKnowledgeBase = (kbId: string) => {
+  selectedKnowledgeBaseId.value = kbId;
+  isKnowledgeBasePanelVisible.value = false;
+  if (!props.isRAGMode) {
+    emit('toggleRAG');
+  }
+};
 
 const clearSelectedText = () => {
   selectedText.value = '';
@@ -387,6 +468,13 @@ const handleMouseUp = () => {
   if (text && text.length > 10) {
     // Only trigger for reasonably long selections
     selectedText.value = text;
+  }
+};
+
+const clearSelectedKnowledgeBase = () => {
+  selectedKnowledgeBaseId.value = null;
+  if (props.isRAGMode) {
+    emit('toggleRAG');
   }
 };
 // #endregion
@@ -602,6 +690,87 @@ onUnmounted(() => {
   }
 }
 
+.kb-trigger-wrapper {
+  display: inline-block;
+}
+
+.selected-kb-display {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--el-color-primary-light-9);
+  color: var(--el-color-primary);
+  border: 1px solid var(--el-color-primary-light-8);
+  border-radius: 16px;
+  padding: 0 10px;
+  height: 24px;
+  font-size: 12px;
+  cursor: pointer;
+
+  .kb-name {
+    font-weight: 500;
+  }
+
+  .clear-icon {
+    color: var(--el-text-color-secondary);
+    transition: color 0.2s;
+    &:hover {
+      color: var(--el-color-primary);
+    }
+  }
+}
+
+.knowledge-base-panel {
+  .panel-header {
+    font-weight: 500;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+  }
+
+  .panel-body {
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .kb-item {
+    display: flex;
+    align-items: center;
+    padding: 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--el-fill-color-light);
+    }
+
+    &.active {
+      background-color: var(--el-color-primary-light-9);
+      .kb-name, .kb-icon {
+        color: var(--el-color-primary);
+      }
+    }
+  }
+
+  .kb-icon {
+    font-size: 18px;
+    margin-right: 10px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .kb-info {
+    .kb-name {
+      font-weight: 500;
+      font-size: 14px;
+    }
+    .kb-desc {
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+    }
+  }
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -611,5 +780,14 @@ onUnmounted(() => {
     opacity: 1;
     transform: translateY(0);
   }
+}
+</style>
+
+<style lang="scss">
+.knowledge-base-popper {
+  padding: 0 !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--el-border-color-lighter) !important;
+  box-shadow: var(--el-box-shadow-light) !important;
 }
 </style> 
