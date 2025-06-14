@@ -301,6 +301,20 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: 'AI配置' }
       }
     ]
+  },
+  {
+    path: '/ai-assistant',
+    name: 'AIAssistant',
+    component: () => import('../layout/index.vue'),
+    meta: { title: 'AI助手', icon: 'ChatDotRound' },
+    children: [
+      {
+        path: 'demo',
+        name: 'AIAssistantDemo',
+        component: () => import('../views/AIAssistantDemo.vue'),
+        meta: { title: 'AI对话助手演示' }
+      }
+    ]
   }
 ]
 
