@@ -229,6 +229,8 @@ const emit = defineEmits<{
 const {
   commands,
   subCommands,
+  loading: commandsLoading,
+  error: commandsError,
   fetchSubCommands,
   executeCommand,
   clearActiveCommand
@@ -274,42 +276,13 @@ const sendMessage = async () => {
   
   // 检查是否是命令
   const trimmedMessage = inputMessage.value.trim();
-  if (trimmedMessage.startsWith('/')) {
-    const commandText = trimmedMessage.substring(1).trim();
-    const commandParts = commandText.split(' ');
-    const commandName = commandParts[0];
-    
-    // 查找匹配的命令
-    const matchedBaseCommand = commands.value.find(cmd => 
-      cmd.name.toLowerCase() === commandName.toLowerCase()
-    );
-    
-    if (matchedBaseCommand) {
-      // 如果是基础命令，获取其子命令
-      if (matchedBaseCommand.hasSubCommands) {
-        const context: CommandContext = {
-          userId: 'current-user',
-          input: commandName.toLowerCase()
-        };
-        
-        await fetchSubCommands(matchedBaseCommand.id, context);
-        showCommandSuggestions.value = subCommands.value.length > 0;
-        activeCommandIndex.value = 0;
-        return;
-      }
-    }
-    
-    // 查找匹配的子命令
-    const selectedCommand = subCommands.value.find(cmd => 
-      cmd.name.toLowerCase() === commandName.toLowerCase()
-    );
-    
+  if (trimmedMessage.startsWith('/') && subCommands.value.length > 0 && activeCommandIndex.value >= 0) {
+    const selectedCommand = subCommands.value[activeCommandIndex.value];
     if (selectedCommand) {
       const context: CommandContext = {
-        userId: 'current-user',
-        input: commandParts.slice(1).join(' '),
-        modelId: props.currentModelId,
-        parentCommandId: selectedCommand.parentId
+        userId: 'current-user', // 这里应该从用户状态获取
+        input: trimmedMessage.substring(selectedCommand.name.length + 2).trim(),
+        modelId: props.currentModelId
       };
       
       const result = await executeCommand(selectedCommand.id, context);
@@ -448,25 +421,9 @@ const toggleRAGMode = () => {
 };
 
 // 选择命令
-const selectCommand = async (command: SubCommand) => {
-  // 如果是基础命令（有 hasSubCommands 属性），则获取其子命令
-  if ('hasSubCommands' in command && command.hasSubCommands) {
-    inputMessage.value = `/${command.name} `;
-    
-    // 获取子命令
-    const context: CommandContext = {
-      userId: 'current-user',
-      input: command.name.toLowerCase()
-    };
-    
-    await fetchSubCommands(command.id, context);
-    showCommandSuggestions.value = subCommands.value.length > 0;
-    activeCommandIndex.value = 0;
-  } else {
-    // 普通子命令，直接填充到输入框
-    inputMessage.value = `/${command.name} `;
-    showCommandSuggestions.value = false;
-  }
+const selectCommand = (command: SubCommand) => {
+  inputMessage.value = `/${command.name} `;
+  showCommandSuggestions.value = false;
   
   // 聚焦输入框并将光标移到末尾
   nextTick(() => {
@@ -490,12 +447,6 @@ watch(inputMessage, async (newValue) => {
     if (commandText === '') {
       showCommandSuggestions.value = true;
       activeCommandIndex.value = 0;
-      
-      // 当只输入 / 时，显示所有基础命令作为子命令
-      subCommands.value = commands.value.map(cmd => ({
-        ...cmd,
-        parentId: 'root'
-      }));
       return;
     }
     

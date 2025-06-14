@@ -1,7 +1,7 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { v4 as uuidv4 } from 'uuid'
-import { getCommands, createCommand, updateCommand, deleteCommand } from '@/api/chat'
+import { getCommands, getSharedCommands, createCommand, createSharedCommand, updateCommand, deleteCommand } from '@/api/chat'
 import type { Command, CommandParameter } from '@/types/chat'
 
 /**
@@ -34,6 +34,16 @@ export function usePromptCommands() {
     return Object.keys(commandsByCategory.value)
   })
   
+  // 计算属性：私有命令
+  const privateCommands = computed(() => {
+    return commands.value.filter(cmd => cmd.shareType === 'private' || !cmd.shareType)
+  })
+  
+  // 计算属性：共享命令
+  const sharedCommands = computed(() => {
+    return commands.value.filter(cmd => cmd.shareType === 'shared')
+  })
+  
   /**
    * 加载命令列表
    */
@@ -43,8 +53,17 @@ export function usePromptCommands() {
     loading.value = true
     
     try {
-      const response = await getCommands()
-      commands.value = response
+      // 加载私有命令
+      const privateResponse = await getCommands()
+      
+      // 加载共享命令
+      const sharedResponse = await getSharedCommands()
+      
+      // 合并命令列表，确保系统命令在前面
+      const systemCommands = privateResponse.filter(cmd => cmd.isSystem)
+      const nonSystemPrivateCommands = privateResponse.filter(cmd => !cmd.isSystem)
+      
+      commands.value = [...systemCommands, ...nonSystemPrivateCommands, ...sharedResponse]
       
       // 合并本地自定义命令
       const localCommands = loadLocalCommands()
@@ -90,8 +109,8 @@ export function usePromptCommands() {
    * 保存自定义命令到本地存储
    */
   function saveLocalCommands(): void {
-    // 只保存非系统命令
-    const customCommands = commands.value.filter(cmd => !cmd.isSystem)
+    // 只保存非系统命令和私有命令
+    const customCommands = commands.value.filter(cmd => !cmd.isSystem && cmd.shareType === 'private')
     localStorage.setItem('customCommands', JSON.stringify(customCommands))
   }
   
@@ -100,29 +119,48 @@ export function usePromptCommands() {
    */
   async function addCommand(commandData: Omit<Command, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     try {
-      // 尝试通过API创建
-      const response = await createCommand(commandData)
+      // 根据共享类型选择不同的API
+      let response: Command
+      
+      if (commandData.shareType === 'shared') {
+        // 创建共享命令
+        response = await createSharedCommand(commandData)
+      } else {
+        // 创建私有命令
+        response = await createCommand(commandData)
+      }
       
       // 添加到本地列表
       commands.value.push(response)
+      
+      // 如果是私有命令，保存到本地存储
+      if (commandData.shareType === 'private') {
+        saveLocalCommands()
+      }
       
       return response.id
     } catch (error) {
       console.error('创建命令失败:', error)
       
-      // 如果API失败，创建本地命令
-      const newCommand: Command = {
-        ...commandData,
-        id: `local-${uuidv4().substring(0, 8)}`,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-        isSystem: false
+      // 如果API失败且是私有命令，创建本地命令
+      if (commandData.shareType === 'private') {
+        const newCommand: Command = {
+          ...commandData,
+          id: `local-${uuidv4().substring(0, 8)}`,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+          isSystem: false,
+          shareType: 'private'
+        }
+        
+        commands.value.push(newCommand)
+        saveLocalCommands()
+        
+        return newCommand.id
+      } else {
+        ElMessage.error('创建共享命令失败，请检查网络连接')
+        throw error
       }
-      
-      commands.value.push(newCommand)
-      saveLocalCommands()
-      
-      return newCommand.id
     }
   }
   
@@ -148,8 +186,10 @@ export function usePromptCommands() {
         updatedAt: Date.now()
       }
       
-      // 保存到本地存储
-      saveLocalCommands()
+      // 如果是私有命令，保存到本地存储
+      if (commands.value[index].shareType === 'private') {
+        saveLocalCommands()
+      }
       
       return true
     } catch (error) {
@@ -259,6 +299,8 @@ export function usePromptCommands() {
     // 计算属性
     commandsByCategory,
     categories,
+    privateCommands,
+    sharedCommands,
     
     // 方法
     loadCommands,

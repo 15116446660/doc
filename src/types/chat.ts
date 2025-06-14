@@ -63,6 +63,15 @@ export interface AIModel {
   isDefault?: boolean;
 }
 
+// 命令参数类型
+export interface CommandParameter {
+  name: string;
+  description?: string;
+  required?: boolean;
+  defaultValue?: string;
+  type?: 'string' | 'number' | 'boolean' | 'array';
+}
+
 // 命令类型
 export interface Command {
   id: string;
@@ -75,14 +84,8 @@ export interface Command {
   updatedAt: number;
   isSystem?: boolean;
   parameters?: CommandParameter[];
-}
-
-// 命令参数类型
-export interface CommandParameter {
-  name: string;
-  description?: string;
-  required?: boolean;
-  defaultValue?: string;
+  shareType: 'private' | 'shared'; // 命令共享类型：private-本地私有，shared-服务端共享
+  creator?: string; // 创建者信息，仅共享命令有效
 }
 
 // 知识库类型

@@ -1,26 +1,28 @@
 import axios from 'axios'
-import type { AxiosInstance, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
+import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { ElMessage } from 'element-plus'
 
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_APP_BASE_API || '/', // api 的 base_url
-  timeout: 5000 // 请求超时时间
+  baseURL: import.meta.env.VITE_API_BASE_URL || '',
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 
 // 请求拦截器
 service.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    // 在发送请求之前做些什么
-    // 比如添加token
-    // const token = localStorage.getItem('token')
-    // if (token) {
-    //   config.headers.Authorization = `Bearer ${token}`
-    // }
+  (config) => {
+    // 从localStorage获取token
+    const token = localStorage.getItem('token')
+    if (token) {
+      config.headers['Authorization'] = `Bearer ${token}`
+    }
     return config
   },
   (error) => {
-    // 对请求错误做些什么
-    console.log(error) // for debug
+    console.error('Request error:', error)
     return Promise.reject(error)
   }
 )
@@ -29,35 +31,39 @@ service.interceptors.request.use(
 service.interceptors.response.use(
   (response: AxiosResponse) => {
     const res = response.data
-    // 对响应数据做点什么
-    // 如果是二进制流，则直接返回
-    if (response.request.responseType === 'blob' || response.request.responseType === 'arraybuffer') {
-      return res
-    }
-
-    // 根据code判断
-    if (res.code && res.code !== 200) {
-      // ElMessage({
-      //   message: res.message || 'Error',
-      //   type: 'error',
-      //   duration: 5 * 1000
-      // })
-      console.error('API Error:', res.message)
+    
+    // 如果响应码不是200，说明请求出错
+    if (response.status !== 200) {
+      ElMessage.error(res.message || 'Error')
       return Promise.reject(new Error(res.message || 'Error'))
-    } else {
-      // 只返回data部分
-      return res.data
     }
+    
+    return res
   },
   (error) => {
-    console.log('err' + error) // for debug
-    // ElMessage({
-    //   message: error.message,
-    //   type: 'error',
-    //   duration: 5 * 1000
-    // })
+    console.error('Response error:', error)
+    ElMessage.error(error.message || 'Request failed')
     return Promise.reject(error)
   }
 )
 
-export default service 
+// 封装请求方法
+const request = {
+  get<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    return service.get(url, config)
+  },
+
+  post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return service.post(url, data, config)
+  },
+
+  put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+    return service.put(url, data, config)
+  },
+
+  delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    return service.delete(url, config)
+  }
+}
+
+export default request 

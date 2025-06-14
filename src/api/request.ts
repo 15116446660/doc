@@ -88,6 +88,16 @@ export function post<T>(url: string, data?: any, config?: RequestConfig): Promis
   return service.post(url, data, config)
 }
 
+// 封装PUT请求
+export function put<T>(url: string, data?: any, config?: RequestConfig): Promise<T> {
+  return service.put(url, data, config)
+}
+
+// 封装DELETE请求
+export function del<T>(url: string, config?: RequestConfig): Promise<T> {
+  return service.delete(url, config)
+}
+
 // 带加载状态的请求
 export function requestWithLoading<T>(requestPromise: Promise<T>, loadingText = '加载中...'): Promise<T> {
   const loading = ElLoading.service({

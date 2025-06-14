@@ -1,4 +1,4 @@
-import { get, post } from './request'
+import { get, post, put, del } from './request'
 import type { Message, Conversation, AIModel, Command, KnowledgeBase } from '@/types/chat'
 
 /**
@@ -57,28 +57,50 @@ export function getModels() {
  * 获取命令列表
  */
 export function getCommands() {
-  return get<Command[]>('/api/chat/commands')
+  return get<Command[]>('/api/commands')
 }
 
 /**
- * 创建自定义命令
+ * 获取共享命令列表
  */
-export function createCommand(command: Omit<Command, 'id' | 'createdAt' | 'updatedAt'>) {
-  return post<Command>('/api/chat/commands', command)
+export function getSharedCommands() {
+  return get<Command[]>('/api/commands/shared')
 }
 
 /**
- * 更新自定义命令
+ * 创建命令
  */
-export function updateCommand(id: string, command: Partial<Command>) {
-  return post<Command>(`/api/chat/commands/${id}`, command)
+export function createCommand(command: Partial<Command>) {
+  return post<Command>('/api/commands', command)
 }
 
 /**
- * 删除自定义命令
+ * 创建共享命令
  */
-export function deleteCommand(id: string) {
-  return post<void>(`/api/chat/commands/${id}/delete`)
+export function createSharedCommand(command: Partial<Command>) {
+  return post<Command>('/api/commands/shared', command)
+}
+
+/**
+ * 更新命令
+ */
+export function updateCommand(commandId: string, updates: Partial<Command>) {
+  // 根据命令ID判断是否为共享命令
+  if (commandId.startsWith('shared-')) {
+    return put<Command>(`/api/commands/shared/${commandId}`, updates)
+  }
+  return put<Command>(`/api/commands/${commandId}`, updates)
+}
+
+/**
+ * 删除命令
+ */
+export function deleteCommand(commandId: string) {
+  // 根据命令ID判断是否为共享命令
+  if (commandId.startsWith('shared-')) {
+    return del<void>(`/api/commands/shared/${commandId}`)
+  }
+  return del<void>(`/api/commands/${commandId}`)
 }
 
 /**

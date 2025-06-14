@@ -2121,6 +2121,381 @@ API交互规范指导前端与后端的通信方式和数据处理策略。
    - 用户点击选择特定子命令
    - 前端生成新的用户消息，包含子命令信息
    - 调用相应接口执行子命令逻辑
+## 子命令需求分析与最佳实践方案
+
+### 需求分析
+
+子命令功能主要解决以下场景需求：
+
+1. **复杂命令分层**：当命令功能复杂时，需要将其分解为多级结构
+2. **上下文相关操作**：基于当前文档或项目提供不同的子命令选项
+3. **引导式交互**：通过问答形式引导用户完成复杂任务
+4. **动态选项生成**：根据服务端数据或用户权限动态生成可用选项
+5. **减少记忆负担**：用户无需记忆所有可用命令及其参数
+
+### 使用场景
+
+1. **文档操作场景**：
+   - 一级命令：`/document`
+   - 子命令：`查看目录`、`提取摘要`、`格式转换`等
+
+2. **项目管理场景**：
+   - 一级命令：`/project`
+   - 子命令：基于当前项目ID获取`查看成员`、`查看进度`等
+
+3. **AI辅助场景**：
+   - 一级命令：`/assist`
+   - 子命令：`编写代码`、`优化文案`、`翻译内容`等
+
+4. **系统功能场景**：
+   - 一级命令：`/system`
+   - 子命令：`清理缓存`、`导出设置`、`切换模式`等
+
+### 最佳实践方案
+
+#### 1. 架构设计
+
+```mermaid
+graph TD
+    A[用户输入一级命令] --> B{是否需要子命令}
+    B -->|是| C[调用子命令获取接口]
+    B -->|否| D[直接执行命令]
+    C --> E[显示子命令选项]
+    E --> F[用户选择子命令]
+    F --> G[执行最终命令]
+    D --> G
+```
+
+#### 2. 数据结构设计
+
+```typescript
+// 一级命令定义
+interface Command {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  hasSubCommands: boolean;      // 是否有子命令
+  subCommandsEndpoint?: string; // 子命令获取接口
+  subCommandsParams?: string[]; // 子命令所需参数
+  directExecute?: boolean;      // 是否直接执行
+  template?: string;           // 提示词模板
+}
+
+// 子命令定义
+interface SubCommand {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  template: string;           // 提示词模板
+  params?: ParamDefinition[]; // 参数定义
+}
+
+// 参数定义
+interface ParamDefinition {
+  name: string;
+  description: string;
+  required: boolean;
+  defaultValue?: string;
+}
+```
+
+#### 3. 交互流程实现
+
+1. **子命令获取流程**：
+```typescript
+async function fetchSubCommands(command: Command, context: any): Promise<SubCommand[]> {
+  if (!command.hasSubCommands) return [];
+  
+  // 构建请求参数
+  const params: Record<string, any> = {};
+  if (command.subCommandsParams) {
+    command.subCommandsParams.forEach(param => {
+      params[param] = context[param] || null;
+    });
+  }
+  
+  // 调用API获取子命令
+  try {
+    const response = await fetch(command.subCommandsEndpoint!, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(params)
+    });
+    
+    return await response.json();
+  } catch (error) {
+    console.error('获取子命令失败:', error);
+    return [];
+  }
+}
+```
+
+2. **子命令展示**：
+```typescript
+function displaySubCommands(subCommands: SubCommand[]): void {
+  // 创建AI回复气泡，展示子命令选项
+  const message = {
+    role: 'assistant',
+    content: '请选择以下操作：',
+    subCommands: subCommands
+  };
+  
+  messages.value.push(message);
+  
+  // 滚动到底部
+  nextTick(() => {
+    scrollToBottom();
+  });
+}
+```
+
+3. **子命令选择处理**：
+```typescript
+function handleSubCommandSelect(subCommand: SubCommand): void {
+  // 创建用户选择消息
+  const userMessage = {
+    role: 'user',
+    content: `已选择: ${subCommand.name}`
+  };
+  
+  messages.value.push(userMessage);
+  
+  // 处理子命令模板
+  const processedTemplate = processTemplate(subCommand.template, currentContext);
+  
+  // 发送到AI处理
+  sendToAI(processedTemplate);
+}
+```
+
+#### 4. 模板处理机制
+
+```typescript
+function processTemplate(template: string, context: any): string {
+  // 替换上下文变量
+  let result = template;
+  
+  // 替换{input}为用户输入
+  if (context.input) {
+    result = result.replace(/{input}/g, context.input);
+  }
+  
+  // 替换其他上下文变量
+  Object.entries(context).forEach(([key, value]) => {
+    result = result.replace(new RegExp(`{${key}}`, 'g'), String(value));
+  });
+  
+  return result;
+}
+```
+
+#### 5. 前端实现建议
+
+1. **子命令UI组件**：
+```vue
+<template>
+  <div class="sub-commands-container">
+    <div class="sub-commands-title">请选择操作：</div>
+    <div class="sub-commands-list">
+      <div 
+        v-for="cmd in subCommands" 
+        :key="cmd.id"
+        class="sub-command-item"
+        @click="selectSubCommand(cmd)"
+      >
+        <div class="sub-command-icon">
+          <el-icon><component :is="cmd.icon || 'Operation'" /></el-icon>
+        </div>
+        <div class="sub-command-info">
+          <div class="sub-command-name">{{ cmd.name }}</div>
+          <div class="sub-command-desc">{{ cmd.description }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+```
+
+2. **命令气泡样式**：
+```css
+.sub-commands-container {
+  padding: 12px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  margin: 8px 0;
+}
+
+.sub-commands-title {
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+.sub-command-item {
+  display: flex;
+  align-items: center;
+  padding: 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  margin-bottom: 4px;
+}
+
+.sub-command-item:hover {
+  background-color: #eaeaea;
+}
+
+.sub-command-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background-color: var(--el-color-primary-light-8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  color: var(--el-color-primary);
+}
+
+.sub-command-info {
+  flex: 1;
+}
+
+.sub-command-name {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.sub-command-desc {
+  font-size: 12px;
+  color: #666;
+}
+```
+
+#### 6. 后端API设计
+
+1. **子命令获取接口**：
+```
+POST /api/commands/sub-commands
+```
+
+请求体：
+```json
+{
+  "commandId": "document",
+  "projectId": "123",
+  "documentId": "456",
+  "userId": "789"
+}
+```
+
+响应：
+```json
+{
+  "code": 200,
+  "msg": "获取成功",
+  "data": [
+    {
+      "id": "doc_summary",
+      "name": "生成摘要",
+      "description": "为当前文档生成摘要内容",
+      "icon": "Document",
+      "template": "请为以下文档生成一份摘要：\n{documentContent}"
+    },
+    {
+      "id": "doc_outline",
+      "name": "提取大纲",
+      "description": "提取文档的章节结构",
+      "icon": "Menu",
+      "template": "请为以下文档提取大纲结构：\n{documentContent}"
+    }
+  ]
+}
+```
+
+#### 7. 参数占位符规范
+
+1. **基础占位符**：
+   - `{input}` - 用户输入的内容
+   - `{userName}` - 当前用户名
+   - `{currentDate}` - 当前日期
+
+2. **文档相关占位符**：
+   - `{documentId}` - 当前文档ID
+   - `{documentTitle}` - 文档标题
+   - `{documentContent}` - 文档内容
+   - `{selectedText}` - 选中的文本
+
+3. **项目相关占位符**：
+   - `{projectId}` - 当前项目ID
+   - `{projectName}` - 项目名称
+
+4. **自定义占位符**：
+   - `{param:paramName}` - 需要用户输入的参数
+   - `{param:paramName:默认值}` - 带默认值的参数
+
+#### 8. 缓存与性能优化
+
+1. **子命令缓存**：
+```typescript
+const commandCache = new Map<string, {
+  commands: SubCommand[],
+  timestamp: number
+}>();
+
+async function getSubCommandsWithCache(commandId: string, context: any): Promise<SubCommand[]> {
+  const cacheKey = `${commandId}_${JSON.stringify(context)}`;
+  const cached = commandCache.get(cacheKey);
+  
+  // 缓存有效期10分钟
+  if (cached && Date.now() - cached.timestamp < 10 * 60 * 1000) {
+    return cached.commands;
+  }
+  
+  const command = commands.find(cmd => cmd.id === commandId);
+  if (!command) return [];
+  
+  const subCommands = await fetchSubCommands(command, context);
+  
+  // 更新缓存
+  commandCache.set(cacheKey, {
+    commands: subCommands,
+    timestamp: Date.now()
+  });
+  
+  return subCommands;
+}
+```
+
+2. **预加载常用子命令**：
+```typescript
+// 在应用初始化时预加载常用命令
+function preloadCommonCommands() {
+  const commonCommands = ['document', 'project', 'assist'];
+  const defaultContext = { userId: currentUser.id };
+  
+  commonCommands.forEach(async commandId => {
+    const command = commands.find(cmd => cmd.id === commandId);
+    if (command?.hasSubCommands) {
+      await getSubCommandsWithCache(commandId, defaultContext);
+    }
+  });
+}
+```
+
+### 最佳实践总结
+
+1. **命令分层设计**：一级命令简单明了，子命令详细具体
+2. **动态子命令**：通过API动态获取，支持上下文相关选项
+3. **直观的用户界面**：子命令以卡片形式展示，包含图标和描述
+4. **模板占位符**：使用统一的占位符语法，支持多种上下文变量
+5. **性能优化**：实施缓存策略，预加载常用命令
+6. **错误处理**：提供友好的错误提示和降级方案
+7. **扩展性**：设计支持未来添加更多层级和参数类型
+
+通过这套方案，可以构建一个既易用又强大的子命令系统，满足各种复杂场景的需求，同时保持良好的用户体验。 
+
 
 ### 对话气泡设计
 
