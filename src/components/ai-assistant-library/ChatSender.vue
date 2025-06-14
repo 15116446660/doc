@@ -466,8 +466,8 @@ const clearSelectedText = () => {
   selectedText.value = '';
 };
 
-const executeQuickCommand = (command: { prompt: string }) => {
-  const finalPrompt = `${command.prompt}\n\n---\n\n${selectedText.value}`;
+const executeQuickCommand = (command: QuickCommand) => {
+  const finalPrompt = command.prompt.replace('{selectedText}', selectedText.value);
   const context = { selectedText: selectedText.value };
   emit('send', finalPrompt, [], context);
   clearSelectedText();
