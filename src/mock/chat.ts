@@ -1,6 +1,11 @@
 import type { MockMethod } from 'vite-plugin-mock'
-import type { AIModel, Command, KnowledgeBase, Message } from '@/types/chat'
+import type { AIModel, Command, KnowledgeBase, Message, SubCommand, QuickCommand } from '@/types/chat'
 import { v4 as uuidv4 } from 'uuid'
+
+interface RequestParams {
+    body?: any;
+    query?: any;
+}
 
 // 模拟AI模型列表
 const mockModels: AIModel[] = [
@@ -51,76 +56,17 @@ const mockModels: AIModel[] = [
 
 // 模拟命令列表
 const mockCommands: Command[] = [
-  {
-    id: 'cmd-expand',
-    name: '扩展内容',
-    icon: 'expand',
-    description: '扩展和丰富给定的内容',
-    prompt: '请扩展以下内容，使其更加详细和丰富：\n\n{input}',
-    category: '内容创作',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    isSystem: true
-  },
-  {
-    id: 'cmd-summarize',
-    name: '内容摘要',
-    icon: 'summarize',
-    description: '总结长文本的要点',
-    prompt: '请总结以下内容的要点：\n\n{input}',
-    category: '内容分析',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    isSystem: true
-  },
-  {
-    id: 'cmd-rewrite',
-    name: '重写内容',
-    icon: 'edit',
-    description: '以不同风格重写内容',
-    prompt: '请重写以下内容，保持意思不变但使用不同的表达方式：\n\n{input}',
-    category: '内容创作',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    isSystem: true
-  },
-  {
-    id: 'cmd-check',
-    name: '内容检查',
-    icon: 'check',
-    description: '检查文本中的错误和问题',
-    prompt: '请检查以下内容中的语法错误、拼写错误和表达不清的地方：\n\n{input}',
-    category: '内容分析',
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-    isSystem: true
-  }
+  { id: 'document', name: '文档', icon: 'Document', description: '处理当前文档', hasSubCommands: true, createdAt: Date.now(), updatedAt: Date.now() },
+  { id: 'rewrite', name: '重写', icon: 'MagicStick', description: '重写选中的文本', prompt: '请重写以下文本：\n{selectedText}', createdAt: Date.now(), updatedAt: Date.now() },
+  { id: 'summary', name: '总结', icon: 'Notebook', description: '总结选中的文本', prompt: '请总结以下文本：\n{selectedText}', createdAt: Date.now(), updatedAt: Date.now() },
+  { id: 'translate', name: '翻译', icon: 'Switch', description: '将选中的文本翻译成中文', prompt: '请将以下文本翻译成中文：\n{selectedText}', createdAt: Date.now(), updatedAt: Date.now() },
 ]
 
 // 模拟知识库列表
 const mockKnowledgeBases: KnowledgeBase[] = [
-  {
-    id: 'kb-docs',
-    name: '文档知识库',
-    description: '包含公司文档和产品手册',
-    icon: 'document',
-    apiEndpoint: '/api/knowledge/docs',
-    parameters: {
-      relevanceThreshold: 0.7,
-      maxResults: 5
-    }
-  },
-  {
-    id: 'kb-wiki',
-    name: '内部维基',
-    description: '包含公司内部维基百科内容',
-    icon: 'wiki',
-    apiEndpoint: '/api/knowledge/wiki',
-    parameters: {
-      relevanceThreshold: 0.7,
-      maxResults: 5
-    }
-  }
+  { id: 'kb-1', name: '产品设计规范文档', description: '包含所有产品线的设计原则和组件规范。', icon: 'Document' },
+  { id: 'kb-2', name: '研发项目管理知识库', description: '覆盖项目流程、代码规范和常见问题解答。', icon: 'FolderOpened' },
+  { id: 'kb-3', name: '市场与竞品分析报告', description: '最新的市场趋势和竞争对手动态分析。', icon: 'DataAnalysis' },
 ]
 
 // 生成AI回复的函数
@@ -159,10 +105,56 @@ function generateAIResponse(messages: Message[], options?: any): Message {
   }
 }
 
-interface RequestParams {
-  body?: any;
-  query?: any;
-}
+// // 模拟的私有命令数据
+// const mockPrivateCommands: Command[] = [
+//   {
+//     id: 'cmd-1',
+//     name: 'summarize',
+//     prompt: '请总结以下内容：',
+//     description: '对提供的文本进行总结',
+//     icon: 'Document',
+//     isSystem: true,
+//     shareType: 'private',
+//     createdAt: Date.now(),
+//     updatedAt: Date.now(),
+//   },
+//   {
+//     id: 'cmd-2',
+//     name: 'translate',
+//     prompt: '请将以下内容翻译成中文：',
+//     description: '将文本翻译成中文',
+//     icon: 'Switch',
+//     isSystem: true,
+//     shareType: 'private',
+//     createdAt: Date.now(),
+//     updatedAt: Date.now(),
+//   },
+// ]
+
+// 模拟的共享命令数据
+const mockSharedCommands: Command[] = [
+  {
+    id: 'shared-cmd-1',
+    name: 'code_review',
+    prompt: '请审查以下代码，并提供改进建议：',
+    description: '由 @张三 分享的代码审查模板',
+    icon: 'Monitor',
+    isSystem: false,
+    shareType: 'shared',
+    creator: '张三',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  },
+]
+
+const mockSubCommands: Record<string, SubCommand[]> = {
+  document: [
+    { id: 'doc_summary', name: '生成摘要', description: '为当前文档生成摘要内容', icon: 'DocumentText', template: '为当前文档生成一份摘要' },
+    { id: 'doc_outline', name: '提取大纲', description: '提取文档的章节结构', icon: 'List', template: '为当前文档提取大纲结构' },
+    { id: 'doc_qa', name: '问答', description: '根据文档内容回答问题', icon: 'Help', template: '根据文档内容回答我的问题：{input}' },
+    { id: 'doc_format', name: '格式转换', description: '将文档转换为不同格式', icon: 'Switch', template: '将当前文档转换为 Markdown 格式' },
+  ],
+};
 
 const mockApi: MockMethod[] = [
   // 获取AI模型列表
@@ -186,7 +178,7 @@ const mockApi: MockMethod[] = [
       return {
         code: 200,
         msg: '获取成功',
-        data: mockCommands
+        data: mockCommands.filter(c => !c.hasSubCommands)
       }
     }
   },
@@ -327,7 +319,130 @@ const mockApi: MockMethod[] = [
         }
       }
     }
-  }
+  },
+  
+  // 获取私有命令
+  {
+    url: '/api/commands',
+    method: 'get',
+    response: () => ({
+      code: 200,
+      msg: '获取成功',
+      data: mockCommands,
+    }),
+  },
+  // 获取共享命令
+  {
+    url: '/api/commands/shared',
+    method: 'get',
+    response: () => ({
+      code: 200,
+      msg: '获取成功',
+      data: mockSharedCommands,
+    }),
+  },
+  // 创建私有命令
+  {
+    url: '/api/commands',
+    method: 'post',
+    response: ({ body }: { body: any }) => {
+      const newCommand = {
+        ...body,
+        id: `cmd-${Date.now()}`,
+        isSystem: false,
+        shareType: 'private',
+      } as Command
+      mockCommands.push(newCommand)
+      return {
+        code: 200,
+        msg: '创建成功',
+        data: newCommand,
+      }
+    },
+  },
+  // 创建共享命令
+  {
+    url: '/api/commands/shared',
+    method: 'post',
+    response: ({ body }: { body: any }) => {
+      const newCommand = {
+        ...body,
+        id: `shared-cmd-${Date.now()}`,
+        isSystem: false,
+        shareType: 'shared',
+      } as Command
+      mockSharedCommands.push(newCommand)
+      return {
+        code: 200,
+        msg: '创建成功',
+        data: newCommand,
+      }
+    },
+  },
+  // 模拟对话历史
+  {
+    url: '/api/chat/history',
+    method: 'get',
+    response: () => ({
+      code: 200,
+      msg: '获取成功',
+      data: [], // 初始历史为空
+    }),
+  },
+  // 模拟发送消息
+  {
+    url: '/api/chat/send',
+    method: 'post',
+    response: ({ body }: { body: any }) => {
+      const { message } = body
+      const reply: Message = {
+        id: uuidv4(),
+        role: 'assistant',
+        content: `这是对"${message.substring(0, 20)}..."的模拟回复。`,
+        timestamp: Date.now(),
+      }
+      return {
+        code: 200,
+        msg: '发送成功',
+        data: reply,
+      }
+    },
+  },
+  // 获取子命令
+  {
+    url: '/api/commands/sub-commands',
+    method: 'get',
+    response: ({ query }: { query: any }) => {
+      const { commandId } = query
+      return {
+        code: 200,
+        msg: '获取成功',
+        data: mockSubCommands[commandId] || [],
+      }
+    },
+  },
+  {
+    url: '/api/knowledge-bases',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        msg: '操作成功',
+        data: mockKnowledgeBases,
+      };
+    },
+  },
+  {
+    url: '/api/quick-commands',
+    method: 'get',
+    response: () => {
+      return {
+        code: 200,
+        msg: '操作成功',
+        data: mockCommands,
+      };
+    },
+  },
 ]
 
 export default mockApi 

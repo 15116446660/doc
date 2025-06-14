@@ -123,6 +123,34 @@
         </div>
       </div>
       
+      <!-- 子命令面板 -->
+      <div v-if="showSubCommandPanel" class="sub-command-panel">
+        <div class="panel-title">
+          <el-icon><component :is="activeSubCommand?.icon || 'Operation'" /></el-icon>
+          <span>{{ activeSubCommand?.name }}</span>
+        </div>
+        <div v-if="isLoadingSubCommands" class="loading-spinner">
+          <el-icon class="is-loading"><Loading /></el-icon>
+          <span>加载中...</span>
+        </div>
+        <div v-else class="sub-command-list">
+          <div 
+            v-for="subCmd in currentSubCommands" 
+            :key="subCmd.id"
+            class="sub-command-item"
+            @click="selectSubCommand(subCmd)"
+          >
+            <div class="sub-command-icon">
+              <el-icon><component :is="subCmd.icon || 'Operation'" /></el-icon>
+            </div>
+            <div class="sub-command-info">
+              <div class="sub-command-name">{{ subCmd.name }}</div>
+              <div class="sub-command-desc">{{ subCmd.description }}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       <!-- 文本输入框 -->
       <el-input
         v-model="inputMessage"
@@ -237,10 +265,12 @@ import {
   FolderOpened,
   DataAnalysis,
   CircleClose,
+  Loading,
 } from '@element-plus/icons-vue';
-import type { AIModel } from '@/types/chat';
-import type { SubCommand, BaseCommand } from '@/types/command';
-import { useCommands } from '@/hooks/useCommands';
+import type { AIModel, SubCommand as SubCommandType, Command as BaseCommand, KnowledgeBase, QuickCommand } from '@/types/chat';
+import { usePromptCommands } from '@/components/ai-assistant-library/hooks/usePromptCommands';
+import { getSubCommands, getQuickCommands } from '@/api/command';
+import { getKnowledgeBases } from '@/api/knowledgeBase';
 
 // Icon mapping to resolve linter errors and for dynamic rendering
 const iconMap: Record<string, any> = {
@@ -249,13 +279,6 @@ const iconMap: Record<string, any> = {
   DataAnalysis,
   CircleClose,
 };
-
-interface KnowledgeBase {
-  id: string;
-  name: string;
-  description: string;
-  icon: string;
-}
 
 // #region --- Props & Emits Definition ---
 const props = withDefaults(
@@ -300,27 +323,24 @@ const attachments = ref<File[]>([]);
 const isInputActive = ref(false);
 const selectedText = ref('');
 
-const { commands, subCommands, clearActiveCommand } = useCommands();
+const { 
+  commands, 
+  loadCommands,
+} = usePromptCommands();
 
 const showCommandSuggestions = ref(false);
 const activeCommandIndex = ref(0);
 
+const showSubCommandPanel = ref(false);
+const activeSubCommand = ref<BaseCommand | null>(null);
+const currentSubCommands = ref<SubCommandType[]>([]);
+const isLoadingSubCommands = ref(false);
+
 const isKnowledgeBasePanelVisible = ref(false);
-const knowledgeBases = ref<KnowledgeBase[]>([
-  { id: 'kb-1', name: '产品设计规范文档', description: '包含所有产品线的设计原则和组件规范。', icon: 'Document' },
-  { id: 'kb-2', name: '研发项目管理知识库', description: '覆盖项目流程、代码规范和常见问题解答。', icon: 'FolderOpened' },
-  { id: 'kb-3', name: '市场与竞品分析报告', description: '最新的市场趋势和竞争对手动态分析。', icon: 'DataAnalysis' },
-]);
+const knowledgeBases = ref<KnowledgeBase[]>([]);
 const selectedKnowledgeBaseId = ref<string | null>(null);
 
-const quickCommands = ref([
-  { id: 'explain', name: '解释', prompt: '请解释以下内容：' },
-  { id: 'translate', name: '翻译', prompt: '请将以下内容翻译成中文：' },
-  { id: 'summary', name: '总结', prompt: '请总结以下内容：' },
-  { id: 'improve', name: '改善写作', prompt: '请润色并改善以下文本：' },
-  { id: 'fix', name: '纠正语法错误', prompt: '请纠正以下文本中的语法和拼写错误：' },
-  { id: 'code_review', name: '代码审查', prompt: '请审查以下代码，并提供改进建议：' },
-]);
+const quickCommands = ref<QuickCommand[]>([]);
 
 const maxVisibleQuickCommands = 5;
 // #endregion
@@ -358,8 +378,8 @@ const truncatedText = computed(() => {
 const visibleQuickCommands = computed(() => quickCommands.value.slice(0, maxVisibleQuickCommands));
 const hiddenQuickCommands = computed(() => quickCommands.value.slice(maxVisibleQuickCommands));
 
-const suggestionCommands = computed<Array<BaseCommand | SubCommand>>(() => {
-  return subCommands.value.length > 0 ? subCommands.value : commands.value;
+const suggestionCommands = computed<Array<BaseCommand>>(() => {
+  return commands.value;
 });
 
 const selectedKnowledgeBase = computed(() => {
@@ -445,8 +465,14 @@ const executeQuickCommand = (command: { prompt: string }) => {
 };
 
 const handleInput = (value: string) => {
-  if (value.trim().startsWith('/')) {
-    showCommandSuggestions.value = true;
+  const trimmedValue = value.trim();
+  if (trimmedValue.startsWith('/')) {
+    const exactMatch = suggestionCommands.value.find(c => `/${c.name}` === trimmedValue);
+    if (exactMatch) {
+      selectCommand(exactMatch);
+    } else {
+      showCommandSuggestions.value = true;
+    }
   } else {
     showCommandSuggestions.value = false;
   }
@@ -483,17 +509,40 @@ const handleKeydown = (e: KeyboardEvent) => {
   }
 };
 
-const selectCommand = (cmd: BaseCommand | SubCommand) => {
-  inputMessage.value = `/${cmd.name} `;
+const selectCommand = async (cmd: BaseCommand) => {
   showCommandSuggestions.value = false;
   activeCommandIndex.value = 0;
-  clearActiveCommand();
+
+  if (cmd.hasSubCommands) {
+    activeSubCommand.value = cmd;
+    showSubCommandPanel.value = true;
+    isLoadingSubCommands.value = true;
+    try {
+      currentSubCommands.value = await getSubCommands(cmd.id);
+    } catch (error) {
+      console.error('获取子命令失败:', error);
+      ElMessageBox.alert('获取子命令失败，请稍后再试。', '错误', { type: 'error' });
+      showSubCommandPanel.value = false; 
+    } finally {
+      isLoadingSubCommands.value = false;
+    }
+  } else {
+    inputMessage.value = `/${cmd.name} `;
+  }
+};
+
+const selectSubCommand = (subCmd: SubCommandType) => {
+  if (activeSubCommand.value) {
+    inputMessage.value = `/${activeSubCommand.value.name} ${subCmd.name} `;
+  }
+  showSubCommandPanel.value = false;
+  currentSubCommands.value = [];
+  activeSubCommand.value = null;
 };
 
 const handleMouseUp = () => {
   const text = window.getSelection()?.toString().trim() ?? '';
   if (text && text.length > 10) {
-    // Only trigger for reasonably long selections
     selectedText.value = text;
   }
 };
@@ -501,6 +550,16 @@ const handleMouseUp = () => {
 
 // #region --- Lifecycle Hooks ---
 onMounted(() => {
+  loadCommands();
+
+  getKnowledgeBases().then(data => {
+    knowledgeBases.value = data;
+  });
+
+  getQuickCommands().then(data => {
+    quickCommands.value = data;
+  });
+
   document.addEventListener('mouseup', handleMouseUp);
 });
 
@@ -850,6 +909,81 @@ onUnmounted(() => {
     font-weight: 500;
   }
 }
+
+.sub-command-panel {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-extra-light);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  z-index: 11; // 比命令面板高
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+
+  .panel-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px 12px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .loading-spinner {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 20px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .sub-command-list {
+    max-height: 250px;
+    overflow-y: auto;
+  }
+
+  .sub-command-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+
+    &:hover {
+      background-color: var(--el-fill-color-light);
+    }
+  }
+
+  .sub-command-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background-color: var(--el-color-primary-light-9);
+    color: var(--el-color-primary);
+    border-radius: 4px;
+    margin-right: 12px;
+  }
+
+  .sub-command-info {
+    .sub-command-name {
+      font-weight: 500;
+    }
+    .sub-command-desc {
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+    }
+  }
+}
 </style>
 
 <style lang="scss">
@@ -858,4 +992,4 @@ onUnmounted(() => {
   border: 1px solid var(--el-border-color-extra-light) !important;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
 }
-</style> 
+</style>

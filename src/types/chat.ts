@@ -79,22 +79,36 @@ export interface Command {
   name: string;
   icon?: string;
   description?: string;
-  prompt: string;
+  prompt?: string;
   category?: string;
   createdAt: number;
   updatedAt: number;
   isSystem?: boolean;
   parameters?: CommandParameter[];
-  shareType: 'private' | 'shared'; // 命令共享类型：private-本地私有，shared-服务端共享
+  shareType?: 'private' | 'shared'; // 命令共享类型
   creator?: string; // 创建者信息，仅共享命令有效
+  hasSubCommands?: boolean; // 是否有子命令
+  subCommandsEndpoint?: string; // 获取子命令的API端点
+  subCommands?: SubCommand[];
+}
+
+/**
+ * 子命令接口
+ */
+export interface SubCommand {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  template: string; // 提示词模板
 }
 
 // 知识库类型
 export interface KnowledgeBase {
   id: string;
   name: string;
-  description?: string;
-  icon?: string;
+  description: string;
+  icon: string;
   apiEndpoint?: string;
   parameters?: {
     relevanceThreshold?: number;
@@ -112,4 +126,10 @@ export interface ChatSettings {
   notificationEnabled?: boolean;
   keyboardShortcuts?: Record<string, string>;
   language?: string;
+}
+
+export interface QuickCommand {
+  id: string;
+  name: string;
+  prompt: string;
 } 
