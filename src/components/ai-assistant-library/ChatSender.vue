@@ -1,105 +1,12 @@
 <template>
-  <div class="chat-sender">
-    <!-- 输入框区域 -->
-    <div class="input-container">
-      <!-- 文本输入区域 -->
-      <div class="textarea-wrapper">
-        <el-input
-          v-model="inputMessage"
-          type="textarea"
-          :rows="inputRows"
-          placeholder="输入消息，按Enter发送，Shift+Enter换行..."
-          resize="none"
-          @keydown.enter.exact.prevent="sendMessage"
-          @keydown="handleKeydown"
-          ref="inputRef"
-          :disabled="isGenerating"
-        />
-        
-        <!-- 命令提示区域 -->
-        <div v-if="showCommandSuggestions && subCommands.length > 0" class="command-suggestions">
-          <div 
-            v-for="(cmd, index) in subCommands" 
-            :key="cmd.id"
-            :class="['command-item', { active: index === activeCommandIndex }]"
-            @click.stop="selectCommand(cmd)"
-            @mouseenter="activeCommandIndex = index"
-          >
-            <div class="command-icon">
-              <el-icon><component :is="cmd.icon || 'ChatLineRound'" /></el-icon>
-            </div>
-            <div class="command-info">
-              <div class="command-name">{{ cmd.name }}</div>
-              <div class="command-desc">{{ cmd.description || '无描述' }}</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- 发送按钮区域 -->
-      <div class="send-actions">
-        <!-- 附件按钮 -->
-        <el-tooltip content="上传附件" placement="top">
-          <el-button
-            class="action-btn"
-            :disabled="isGenerating"
-            @click="triggerFileUpload"
-          >
-            <el-icon><Paperclip /></el-icon>
-          </el-button>
-        </el-tooltip>
-        
-        <!-- 隐藏的文件上传输入 -->
-        <input
-          type="file"
-          ref="fileInputRef"
-          style="display: none"
-          @change="handleFileChange"
-          multiple
-        />
-        
-        <!-- 发送/停止按钮 -->
-        <el-button
-          type="primary"
-          :disabled="!canSend"
-          @click="isGenerating ? stopGenerating() : sendMessage()"
-        >
-          <el-icon v-if="isGenerating"><VideoPause /></el-icon>
-          <el-icon v-else><Position /></el-icon>
-          {{ isGenerating ? '停止' : '发送' }}
-        </el-button>
-      </div>
-    </div>
-    
-    <!-- 附件预览区域 -->
-    <div v-if="attachments.length > 0" class="attachments-preview">
-      <div 
-        v-for="(file, index) in attachments" 
-        :key="index"
-        class="attachment-preview-item"
-      >
-        <div class="attachment-info">
-          <el-icon><Document /></el-icon>
-          <span class="attachment-name">{{ file.name }}</span>
-          <span class="attachment-size">({{ formatFileSize(file.size) }})</span>
-        </div>
-        <el-button
-          type="text"
-          class="remove-attachment"
-          @click="removeAttachment(index)"
-        >
-          <el-icon><Delete /></el-icon>
-        </el-button>
-      </div>
-    </div>
-    
-    <!-- 底部工具栏 -->
-    <div class="toolbar">
-      <div class="left-tools">
+  <div class="chat-sender-container">
+    <!-- 顶部工具栏 -->
+    <div class="top-toolbar">
+      <div class="toolbar-left">
         <!-- 模型选择器 -->
         <el-dropdown trigger="click" @command="handleModelChange" :disabled="isGenerating">
           <div class="model-selector">
-            <el-icon><Connection /></el-icon>
+            <el-icon><Cpu /></el-icon>
             <span>{{ currentModelName }}</span>
             <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
           </div>
@@ -113,652 +20,596 @@
               >
                 {{ model.name }}
               </el-dropdown-item>
-              <el-dropdown-item divided>
-                <el-button type="text" @click.stop="openModelConfig">
-                  <el-icon><Setting /></el-icon>
-                  模型配置
-                </el-button>
+              <el-dropdown-item divided @click.stop="openModelConfig">
+                <el-icon><Setting /></el-icon>
+                <span>模型配置</span>
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
+        
+        <!-- 命令管理 -->
+        <el-tooltip content="命令管理" placement="top">
+          <el-button :icon="Operation" circle @click="handleCommand('commands')" />
+        </el-tooltip>
+        
+        <!-- 上传附件 -->
+        <el-tooltip content="上传附件" placement="top">
+          <el-button :icon="Paperclip" circle @click="triggerFileUpload" />
+        </el-tooltip>
+        <input type="file" ref="fileInputRef" style="display: none" @change="handleFileChange" multiple />
+      </div>
+      <div class="toolbar-right">
+        <!-- 新建会话 -->
+        <el-tooltip content="新建会话" placement="top">
+          <el-button :icon="Plus" circle @click="handleCommand('new')" />
+        </el-tooltip>
+        <!-- 历史会话 -->
+        <el-tooltip content="历史会话" placement="top">
+          <el-button :icon="List" circle @click="handleCommand('history')" />
+        </el-tooltip>
+        <!-- 清空当前会话 -->
+        <el-tooltip content="清空当前会话" placement="top">
+          <el-button :icon="Delete" circle @click="handleCommand('clear')" />
+        </el-tooltip>
+      </div>
+    </div>
+
+    <!-- 输入框容器 -->
+    <div class="input-area-container" :class="{ 'is-active': isInputActive }">
+      <!-- 已选中文本区域 -->
+      <div v-if="selectedText" class="selected-text-wrapper">
+        <div class="selected-text-content">
+          <div class="label">来自您选择的文本</div>
+          <div class="text" :title="selectedText">{{ truncatedText }}</div>
+          <el-button class="close-btn" :icon="Close" circle @click="clearSelectedText" />
+        </div>
+        <div class="quick-commands-bar">
+           <el-button 
+            v-for="cmd in visibleQuickCommands" 
+            :key="cmd.id"
+            class="quick-command-btn"
+            size="small"
+            @click="executeQuickCommand(cmd)"
+          >
+            {{ cmd.name }}
+          </el-button>
+
+          <el-dropdown v-if="hiddenQuickCommands.length > 0" trigger="click">
+            <el-button class="quick-command-btn" size="small">
+              更多<el-icon class="el-icon--right"><ArrowDown /></el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item 
+                  v-for="cmd in hiddenQuickCommands" 
+                  :key="cmd.id"
+                  @click="executeQuickCommand(cmd)"
+                >
+                  {{ cmd.name }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
+      </div>
+
+      <!-- 命令建议面板 -->
+      <div v-if="showCommandSuggestions" class="command-suggestions-panel">
+        <div 
+          v-for="(cmd, index) in suggestionCommands" 
+          :key="cmd.id"
+          :class="['command-item', { active: index === activeCommandIndex }]"
+          @click.stop="selectCommand(cmd)"
+          @mouseenter="activeCommandIndex = index"
+        >
+          <div class="command-icon">
+            <el-icon><component :is="cmd.icon || 'Operation'" /></el-icon>
+          </div>
+          <div class="command-info">
+            <div class="command-name">{{ cmd.name }}</div>
+            <div class="command-desc">{{ cmd.description }}</div>
+          </div>
+        </div>
       </div>
       
-      <div class="right-tools">
-        <!-- 深度思考模式开关 -->
-        <el-tooltip content="深度思考模式" placement="top">
-          <el-switch
-            v-model="isDeepThinkingMode"
-            :disabled="isGenerating"
-            @change="toggleDeepThinkingMode"
+      <!-- 文本输入框 -->
+      <el-input
+        v-model="inputMessage"
+        type="textarea"
+        :rows="inputRows"
+        placeholder="问任何问题, @ 模型, / 提示"
+        resize="none"
+        @keydown.enter.exact.prevent="sendMessage"
+        @keydown="handleKeydown"
+        @input="handleInput"
+        @focus="isInputActive = true"
+        @blur="isInputActive = false"
+        :disabled="isGenerating"
+        class="main-textarea"
+      />
+
+      <!-- 底部工具栏 -->
+      <div class="bottom-toolbar">
+        <div class="toolbar-left">
+          <el-tooltip content="深度思考" placement="top">
+            <el-button 
+              class="mode-btn"
+              :class="{ 'is-active': isDeepThinkingMode }"
+              @click="toggleDeepThinkingMode"
+              size="small"
+            >
+              <el-icon><Cpu /></el-icon>
+              思考 (R1)
+            </el-button>
+          </el-tooltip>
+          <el-tooltip content="知识库检索" placement="top">
+            <el-button 
+              class="mode-btn"
+              :class="{ 'is-active': isRAGMode }"
+              @click="toggleRAGMode"
+              size="small"
+            >
+              <el-icon><DataLine /></el-icon>
+              搜索
+            </el-button>
+          </el-tooltip>
+        </div>
+        <div class="toolbar-right">
+          <el-button
+            type="primary"
+            circle
+            :disabled="!canSend"
+            :icon="isGenerating ? VideoPause : Position"
+            @click="isGenerating ? stopGenerating() : sendMessage()"
           />
-        </el-tooltip>
-        
-        <!-- RAG知识库开关 -->
-        <el-tooltip content="RAG知识库检索" placement="top">
-          <el-switch
-            v-model="isRAGMode"
-            :disabled="isGenerating"
-            @change="toggleRAGMode"
-          />
-        </el-tooltip>
-        
-        <!-- 更多菜单 -->
-        <el-dropdown trigger="click" @command="handleCommand">
-          <el-button type="text">
-            <el-icon><MoreFilled /></el-icon>
-          </el-button>
-          <template #dropdown>
-            <el-dropdown-menu>
-              <el-dropdown-item command="new">
-                <el-icon><Plus /></el-icon>
-                新建会话
-              </el-dropdown-item>
-              <el-dropdown-item command="history">
-                <el-icon><List /></el-icon>
-                历史会话
-              </el-dropdown-item>
-              <el-dropdown-item command="commands">
-                <el-icon><Operation /></el-icon>
-                命令管理
-              </el-dropdown-item>
-              <el-dropdown-item command="settings">
-                <el-icon><Setting /></el-icon>
-                主题和头像设置
-              </el-dropdown-item>
-              <el-dropdown-item divided command="clear">
-                <el-icon><Delete /></el-icon>
-                清空当前会话
-              </el-dropdown-item>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted } from 'vue';
 import { ElMessageBox } from 'element-plus';
 import {
+  Cpu,
   Paperclip,
   Position,
   VideoPause,
-  Document,
   Delete,
-  Connection,
   ArrowDown,
   Setting,
-  MoreFilled,
   Plus,
   List,
-  Operation
+  Operation,
+  Close,
+  DataLine,
 } from '@element-plus/icons-vue';
 import type { AIModel } from '@/types/chat';
-import type { CommandContext, SubCommand } from '@/types/command';
+import type { SubCommand, BaseCommand } from '@/types/command';
 import { useCommands } from '@/hooks/useCommands';
 
-// 定义组件属性
-const props = withDefaults(defineProps<{
-  isGenerating?: boolean
-  isDeepThinkingMode?: boolean
-  isRAGMode?: boolean
-  currentModelId?: string
-  models?: AIModel[]
-}>(), {
-  isGenerating: false,
-  isDeepThinkingMode: false,
-  isRAGMode: false,
-  currentModelId: '',
-  models: () => []
-});
+// #region --- Props & Emits Definition ---
+const props = withDefaults(
+  defineProps<{
+    isGenerating?: boolean;
+    isDeepThinkingMode?: boolean;
+    isRAGMode?: boolean;
+    currentModelId?: string;
+    models?: AIModel[];
+  }>(),
+  {
+    isGenerating: false,
+    isDeepThinkingMode: false,
+    isRAGMode: false,
+    currentModelId: '',
+    models: () => [],
+  }
+);
 
-// 定义事件
 const emit = defineEmits<{
-  (e: 'send', content: string, attachments: File[]): void
-  (e: 'stop'): void
-  (e: 'modelChange', modelId: string): void
-  (e: 'command', command: string): void
-  (e: 'toggleDeepThinking'): void
-  (e: 'toggleRAG'): void
-  (e: 'openModelConfig'): void
+  (e: 'send', content: string, attachments: File[], context?: { selectedText?: string }): void;
+  (e: 'stop'): void;
+  (e: 'modelChange', modelId: string): void;
+  (e: 'command', command: string): void;
+  (e: 'toggleDeepThinking'): void;
+  (e: 'toggleRAG'): void;
+  (e: 'openModelConfig'): void;
+  (e: 'clearConversation'): void;
 }>();
+// #endregion
 
-// 使用命令系统
-const {
-  commands,
-  subCommands,
-  fetchSubCommands,
-  executeCommand,
-  clearActiveCommand
-} = useCommands();
-
-// 输入消息
+// #region --- State Management ---
 const inputMessage = ref('');
-// 输入框引用
-const inputRef = ref<any>(null);
-// 文件输入引用
 const fileInputRef = ref<HTMLInputElement | null>(null);
-// 附件列表
 const attachments = ref<File[]>([]);
-// 是否显示命令提示
+const isInputActive = ref(false);
+const selectedText = ref('');
+
+const { commands, subCommands, clearActiveCommand } = useCommands();
+
 const showCommandSuggestions = ref(false);
-// 当前激活的命令索引
 const activeCommandIndex = ref(0);
-// 深度思考模式
-const isDeepThinkingMode = ref(props.isDeepThinkingMode || false);
-// RAG模式
-const isRAGMode = ref(props.isRAGMode || false);
 
-// 计算属性：输入框行数
-const inputRows = computed(() => {
-  const lines = (inputMessage.value.match(/\n/g) || []).length + 1;
-  return Math.min(Math.max(lines, 1), 5);
-});
+const quickCommands = ref([
+  { id: 'explain', name: '解释', prompt: '请解释以下内容：' },
+  { id: 'translate', name: '翻译', prompt: '请将以下内容翻译成中文：' },
+  { id: 'summary', name: '总结', prompt: '请总结以下内容：' },
+  { id: 'improve', name: '改善写作', prompt: '请润色并改善以下文本：' },
+  { id: 'fix', name: '纠正语法错误', prompt: '请纠正以下文本中的语法和拼写错误：' },
+  { id: 'code_review', name: '代码审查', prompt: '请审查以下代码，并提供改进建议：' },
+]);
 
-// 计算属性：是否可以发送消息
-const canSend = computed(() => {
-  return !props.isGenerating && (inputMessage.value.trim() !== '' || attachments.value.length > 0);
-});
+const maxVisibleQuickCommands = 5;
+// #endregion
 
-// 计算属性：当前模型名称
+// #region --- Computed Properties ---
 const currentModelName = computed(() => {
-  const model = props.models.find(m => m.id === props.currentModelId);
-  return model ? model.name : '默认模型';
+  const model = props.models?.find(m => m.id === props.currentModelId);
+  return model ? model.name : '选择模型';
 });
 
-// 发送消息
-const sendMessage = async () => {
+const canSend = computed(() => {
+  return (
+    !props.isGenerating && (inputMessage.value.trim().length > 0 || attachments.value.length > 0)
+  );
+});
+
+const inputRows = computed(() => {
+  const lines = inputMessage.value.split('\n').length;
+  return Math.min(Math.max(1, lines), 5);
+});
+
+const truncatedText = computed(() => {
+  const maxLength = 100;
+  if (selectedText.value.length > maxLength) {
+    return selectedText.value.slice(0, maxLength) + '...';
+  }
+  return selectedText.value;
+});
+
+const visibleQuickCommands = computed(() => quickCommands.value.slice(0, maxVisibleQuickCommands));
+const hiddenQuickCommands = computed(() => quickCommands.value.slice(maxVisibleQuickCommands));
+
+const suggestionCommands = computed<Array<BaseCommand | SubCommand>>(() => {
+  return subCommands.value.length > 0 ? subCommands.value : commands.value;
+});
+// #endregion
+
+// #region --- Event Handlers & Methods ---
+const handleModelChange = (modelId: string) => emit('modelChange', modelId);
+const openModelConfig = () => emit('openModelConfig');
+const triggerFileUpload = () => fileInputRef.value?.click();
+const handleFileChange = (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  if (target.files) {
+    attachments.value.push(...Array.from(target.files));
+  }
+};
+
+const sendMessage = () => {
   if (!canSend.value) return;
+  const commandToSend = inputMessage.value;
   
-  // 检查是否是命令
-  const trimmedMessage = inputMessage.value.trim();
-  if (trimmedMessage.startsWith('/')) {
-    const commandText = trimmedMessage.substring(1).trim();
-    const commandParts = commandText.split(' ');
-    const commandName = commandParts[0];
-    
-    // 查找匹配的命令
-    const matchedBaseCommand = commands.value.find(cmd => 
-      cmd.name.toLowerCase() === commandName.toLowerCase()
-    );
-    
-    if (matchedBaseCommand) {
-      // 如果是基础命令，获取其子命令
-      if (matchedBaseCommand.hasSubCommands) {
-        const context: CommandContext = {
-          userId: 'current-user',
-          input: commandName.toLowerCase()
-        };
-        
-        await fetchSubCommands(matchedBaseCommand.id, context);
-        showCommandSuggestions.value = subCommands.value.length > 0;
-        activeCommandIndex.value = 0;
-        return;
-      }
-    }
-    
-    // 查找匹配的子命令
-    const selectedCommand = subCommands.value.find(cmd => 
-      cmd.name.toLowerCase() === commandName.toLowerCase()
-    );
-    
-    if (selectedCommand) {
-      const context: CommandContext = {
-        userId: 'current-user',
-        input: commandParts.slice(1).join(' '),
-        modelId: props.currentModelId,
-        parentCommandId: selectedCommand.parentId
-      };
-      
-      const result = await executeCommand(selectedCommand.id, context);
-      if (result.success) {
-        emit('command', selectedCommand.id);
-        resetInput();
-      } else {
-        ElMessageBox.alert(result.message || '命令执行失败', '错误', {
-          type: 'error'
-        });
-      }
-      return;
-    }
+  if(commandToSend.startsWith('/')) {
+     emit('send', commandToSend, attachments.value);
+  } else {
+    const context = selectedText.value ? { selectedText: selectedText.value } : undefined;
+    emit('send', inputMessage.value, attachments.value, context);
   }
   
-  // 普通消息发送
-  emit('send', inputMessage.value, [...attachments.value]);
-  resetInput();
-};
-
-// 停止生成
-const stopGenerating = () => {
-  emit('stop');
-};
-
-// 重置输入状态
-const resetInput = () => {
   inputMessage.value = '';
   attachments.value = [];
-  showCommandSuggestions.value = false;
-  clearActiveCommand();
-  
-  // 聚焦输入框
-  nextTick(() => {
-    if (inputRef.value) {
-      inputRef.value.focus();
-    }
-  });
+  clearSelectedText();
 };
 
-// 处理键盘事件
-const handleKeydown = (e: KeyboardEvent) => {
-  // 如果显示命令提示，处理上下键选择
-  if (showCommandSuggestions.value && subCommands.value.length > 0) {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      activeCommandIndex.value = (activeCommandIndex.value + 1) % subCommands.value.length;
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      activeCommandIndex.value = (activeCommandIndex.value - 1 + subCommands.value.length) % subCommands.value.length;
-    } else if (e.key === 'Tab' || e.key === 'Enter') {
-      e.preventDefault();
-      if (activeCommandIndex.value >= 0 && activeCommandIndex.value < subCommands.value.length) {
-        selectCommand(subCommands.value[activeCommandIndex.value]);
-      }
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      showCommandSuggestions.value = false;
-      clearActiveCommand();
-    }
-  } else {
-    // 正常输入模式下的快捷键
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  }
-};
+const stopGenerating = () => emit('stop');
 
-// 触发文件上传
-const triggerFileUpload = () => {
-  if (fileInputRef.value) {
-    fileInputRef.value.click();
-  }
-};
-
-// 处理文件选择
-const handleFileChange = (e: Event) => {
-  const input = e.target as HTMLInputElement;
-  if (input.files && input.files.length > 0) {
-    // 添加到附件列表
-    for (let i = 0; i < input.files.length; i++) {
-      attachments.value.push(input.files[i]);
-    }
-    
-    // 重置文件输入，以便可以再次选择相同的文件
-    input.value = '';
-  }
-};
-
-// 移除附件
-const removeAttachment = (index: number) => {
-  attachments.value.splice(index, 1);
-};
-
-// 格式化文件大小
-const formatFileSize = (bytes: number): string => {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-};
-
-// 处理模型切换
-const handleModelChange = (modelId: string) => {
-  emit('modelChange', modelId);
-};
-
-// 处理菜单命令
 const handleCommand = (command: string) => {
   if (command === 'clear') {
-    ElMessageBox.confirm('确定要清空当前会话吗？', '提示', {
+    ElMessageBox.confirm('确定要清空当前会话的所有消息吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      type: 'warning'
-    }).then(() => {
-      emit('command', 'clear');
-    }).catch(() => {});
+      type: 'warning',
+    })
+      .then(() => {
+        emit('clearConversation');
+      })
+      .catch(() => {});
   } else {
     emit('command', command);
   }
 };
 
-// 打开模型配置
-const openModelConfig = () => {
-  emit('openModelConfig');
+const toggleDeepThinkingMode = () => emit('toggleDeepThinking');
+const toggleRAGMode = () => emit('toggleRAG');
+
+const clearSelectedText = () => {
+  selectedText.value = '';
 };
 
-// 切换深度思考模式
-const toggleDeepThinkingMode = () => {
-  emit('toggleDeepThinking');
+const executeQuickCommand = (command: { prompt: string }) => {
+  const finalPrompt = `${command.prompt}\n\n---\n\n${selectedText.value}`;
+  const context = { selectedText: selectedText.value };
+  emit('send', finalPrompt, [], context);
+  clearSelectedText();
 };
 
-// 切换RAG模式
-const toggleRAGMode = () => {
-  emit('toggleRAG');
-};
-
-// 选择命令
-const selectCommand = async (command: SubCommand) => {
-  // 如果是基础命令（有 hasSubCommands 属性），则获取其子命令
-  if ('hasSubCommands' in command && command.hasSubCommands) {
-    inputMessage.value = `/${command.name} `;
-    
-    // 获取子命令
-    const context: CommandContext = {
-      userId: 'current-user',
-      input: command.name.toLowerCase()
-    };
-    
-    await fetchSubCommands(command.id, context);
-    showCommandSuggestions.value = subCommands.value.length > 0;
-    activeCommandIndex.value = 0;
-  } else {
-    // 普通子命令，直接填充到输入框
-    inputMessage.value = `/${command.name} `;
-    showCommandSuggestions.value = false;
-  }
-  
-  // 聚焦输入框并将光标移到末尾
-  nextTick(() => {
-    if (inputRef.value) {
-      inputRef.value.focus();
-      
-      const textarea = inputRef.value.$el.querySelector('textarea');
-      if (textarea) {
-        textarea.selectionStart = textarea.selectionEnd = inputMessage.value.length;
-      }
-    }
-  });
-};
-
-// 监听输入变化，处理命令提示
-watch(inputMessage, async (newValue) => {
-  if (newValue.startsWith('/')) {
-    const commandText = newValue.substring(1).toLowerCase().trim();
-    
-    // 获取命令列表
-    if (commandText === '') {
-      showCommandSuggestions.value = true;
-      activeCommandIndex.value = 0;
-      
-      // 当只输入 / 时，显示所有基础命令作为子命令
-      subCommands.value = commands.value.map(cmd => ({
-        ...cmd,
-        parentId: 'root'
-      }));
-      return;
-    }
-    
-    // 查找匹配的命令
-    const matchedCommand = commands.value.find(cmd => 
-      cmd.name.toLowerCase().startsWith(commandText) ||
-      cmd.description.toLowerCase().includes(commandText)
-    );
-    
-    if (matchedCommand) {
-      // 获取子命令
-      const context: CommandContext = {
-        userId: 'current-user', // 这里应该从用户状态获取
-        input: commandText
-      };
-      
-      await fetchSubCommands(matchedCommand.id, context);
-      showCommandSuggestions.value = subCommands.value.length > 0;
-      activeCommandIndex.value = 0;
-    } else {
-      showCommandSuggestions.value = false;
-      clearActiveCommand();
-    }
+const handleInput = (value: string) => {
+  if (value.trim().startsWith('/')) {
+    showCommandSuggestions.value = true;
   } else {
     showCommandSuggestions.value = false;
-    clearActiveCommand();
   }
-});
+};
 
-// 同步外部属性变化
-watch(() => props.isDeepThinkingMode, (newValue) => {
-  isDeepThinkingMode.value = newValue || false;
-});
+const handleKeydown = (e: KeyboardEvent) => {
+  const text = inputMessage.value.trim();
+  if (e.key === '/' && text === '') {
+     showCommandSuggestions.value = true;
+  }
 
-watch(() => props.isRAGMode, (newValue) => {
-  isRAGMode.value = newValue || false;
-});
-
-// 添加点击外部关闭命令面板的处理函数
-const handleClickOutside = (event: MouseEvent) => {
-  if (showCommandSuggestions.value) {
-    const commandPanel = document.querySelector('.command-suggestions');
-    if (commandPanel && !commandPanel.contains(event.target as Node)) {
-      showCommandSuggestions.value = false;
-      clearActiveCommand();
+  if (showCommandSuggestions.value && suggestionCommands.value.length > 0) {
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        activeCommandIndex.value = (activeCommandIndex.value + 1) % suggestionCommands.value.length;
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        activeCommandIndex.value = (activeCommandIndex.value - 1 + suggestionCommands.value.length) % suggestionCommands.value.length;
+        break;
+      case 'Enter':
+      case 'Tab':
+        if(text.startsWith('/')) {
+            e.preventDefault();
+            selectCommand(suggestionCommands.value[activeCommandIndex.value]);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        showCommandSuggestions.value = false;
+        break;
     }
   }
 };
 
-// 组件挂载后聚焦输入框
+const selectCommand = (cmd: BaseCommand | SubCommand) => {
+  inputMessage.value = `/${cmd.name} `;
+  showCommandSuggestions.value = false;
+  activeCommandIndex.value = 0;
+  clearActiveCommand();
+};
+
+const handleMouseUp = () => {
+  const text = window.getSelection()?.toString().trim() ?? '';
+  if (text && text.length > 10) {
+    // Only trigger for reasonably long selections
+    selectedText.value = text;
+  }
+};
+// #endregion
+
+// #region --- Lifecycle Hooks ---
 onMounted(() => {
-  nextTick(() => {
-    if (inputRef.value) {
-      inputRef.value.focus();
-    }
-  });
-  
-  // 添加点击事件监听
-  document.addEventListener('click', handleClickOutside);
+  document.addEventListener('mouseup', handleMouseUp);
 });
 
-// 组件卸载时移除事件监听
 onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
+  document.removeEventListener('mouseup', handleMouseUp);
 });
+// #endregion
 </script>
 
-<style scoped>
-.chat-sender {
-  width: 100%;
-  background-color: #fff;
-  border-top: 1px solid #ebeef5;
-  padding: 12px 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+<style lang="scss" scoped>
+.chat-sender-container {
+  padding: 8px;
+  background-color: var(--el-bg-color-page);
 }
 
-.input-container {
+.top-toolbar {
   display: flex;
-  gap: 12px;
-  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 0 4px;
+
+  .toolbar-left, .toolbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .model-selector {
+    display: flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    &:hover {
+      background-color: var(--el-fill-color-light);
+    }
+
+    .el-icon {
+      margin-right: 6px;
+    }
+    .dropdown-icon {
+      margin-left: 6px;
+      margin-right: 0;
+    }
+  }
+
+  .el-button--circle {
+    width: 32px;
+    height: 32px;
+  }
 }
 
-.textarea-wrapper {
-  flex: 1;
+.input-area-container {
   position: relative;
+  background-color: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
+  border-radius: 12px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 8px 12px;
+
+  &.is-active {
+    border-color: var(--el-color-primary);
+    box-shadow: 0 0 0 1px var(--el-color-primary);
+  }
 }
 
-.send-actions {
+.selected-text-wrapper {
+  background-color: var(--el-bg-color-page);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  animation: fadeIn 0.3s ease-out;
+
+  .selected-text-content {
+    padding: 8px 12px;
+    position: relative;
+    .label {
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+      margin-bottom: 4px;
+    }
+    .text {
+      font-size: 14px;
+      color: var(--el-text-color-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .close-btn {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+    }
+  }
+
+  .quick-commands-bar {
+    border-top: 1px solid var(--el-border-color-lighter);
+    padding: 8px 12px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .quick-command-btn {
+    background-color: var(--el-bg-color);
+    border-color: var(--el-border-color);
+    color: var(--el-text-color-regular);
+    
+    &:hover {
+      background-color: var(--el-color-primary-light-9);
+      border-color: var(--el-color-primary-light-5);
+      color: var(--el-color-primary);
+    }
+  }
+}
+
+.main-textarea {
+  :deep(.el-textarea__inner) {
+    box-shadow: none;
+    background-color: transparent;
+    padding: 6px 0;
+    border: none;
+    font-size: 15px;
+  }
+}
+
+.bottom-toolbar {
   display: flex;
-  align-items: flex-end;
-  gap: 8px;
-}
-
-.action-btn {
-  padding: 9px;
-  height: 40px;
-  width: 40px;
-}
-
-.attachments-preview {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.attachment-preview-item {
-  display: flex;
-  align-items: center;
   justify-content: space-between;
-  padding: 4px 8px;
-  background-color: #f5f7fa;
-  border-radius: 4px;
-  border: 1px solid #ebeef5;
-  max-width: 250px;
-}
-
-.attachment-info {
-  display: flex;
   align-items: center;
-  gap: 4px;
-  overflow: hidden;
+  margin-top: 4px;
+
+  .toolbar-left {
+    display: flex;
+    gap: 8px;
+  }
+  
+  .mode-btn {
+    border-radius: 16px;
+    background-color: var(--el-bg-color-page);
+    border: 1px solid var(--el-border-color-lighter);
+
+    &.is-active {
+      background-color: var(--el-color-primary-light-9);
+      color: var(--el-color-primary);
+      border-color: var(--el-color-primary-light-8);
+    }
+
+    .el-icon {
+      margin-right: 4px;
+    }
+  }
 }
 
-.attachment-name {
-  font-size: 12px;
-  color: #606266;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 150px;
-}
-
-.attachment-size {
-  font-size: 12px;
-  color: #909399;
-}
-
-.toolbar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 8px;
-}
-
-.left-tools, .right-tools {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.model-selector {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s;
-}
-
-.model-selector:hover {
-  background-color: #f5f7fa;
-}
-
-.dropdown-icon {
-  margin-left: 4px;
-  font-size: 12px;
-}
-
-.command-suggestions {
+.command-suggestions-panel {
   position: absolute;
-  bottom: 100%;
+  bottom: calc(100% + 4px);
   left: 0;
   right: 0;
-  background-color: #fff;
-  border: 1px solid #dcdfe6;
-  border-radius: 4px;
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+  background: var(--el-bg-color-overlay);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 8px;
+  box-shadow: var(--el-box-shadow-light);
   max-height: 300px;
   overflow-y: auto;
   z-index: 10;
-  margin-bottom: 4px;
-}
+  padding: 4px;
 
-.command-item {
-  display: flex;
-  align-items: center;
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
+  .command-item {
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
 
-.command-item:hover,
-.command-item.active {
-  background-color: #f5f7fa;
-}
+    &.active, &:hover {
+      background-color: var(--el-fill-color-light);
+    }
+    
+    .command-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background-color: var(--el-color-primary-light-9);
+      color: var(--el-color-primary);
+      border-radius: 4px;
+      margin-right: 12px;
+    }
 
-.command-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border-radius: 4px;
-  background-color: var(--el-color-primary-light-8);
-  margin-right: 12px;
-  color: var(--el-color-primary);
-}
-
-.command-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.command-name {
-  font-weight: 500;
-  margin-bottom: 2px;
-}
-
-.command-desc {
-  font-size: 12px;
-  color: #909399;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-/* 深色模式适配 */
-@media (prefers-color-scheme: dark) {
-  .chat-sender {
-    background-color: #1e1e1e;
-    border-top: 1px solid #333;
+    .command-info {
+      .command-name {
+        font-weight: 500;
+        color: var(--el-text-color-primary);
+      }
+      .command-desc {
+        font-size: 12px;
+        color: var(--el-text-color-secondary);
+      }
+    }
   }
-  
-  .attachment-preview-item {
-    background-color: #2d2d2d;
-    border: 1px solid #444;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
   }
-  
-  .attachment-name {
-    color: #ddd;
-  }
-  
-  .attachment-size {
-    color: #aaa;
-  }
-  
-  .model-selector:hover {
-    background-color: #2d2d2d;
-  }
-  
-  .command-suggestions {
-    background-color: #1e1e1e;
-    border: 1px solid #444;
-    box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.3);
-  }
-  
-  .command-item:hover,
-  .command-item.active {
-    background-color: #2d2d2d;
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 </style> 
