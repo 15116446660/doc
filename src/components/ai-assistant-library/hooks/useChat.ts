@@ -1,7 +1,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import { ElMessage } from 'element-plus'
-import { sendMessage, uploadAttachment } from '@/api/chat'
+import { streamMessage, uploadAttachment } from '@/api/chat'
 import type { Message, MessageRole, MessageStatus, Attachment, AIModel } from '@/types/chat'
 
 /**
@@ -136,19 +136,45 @@ export function useChat() {
       updateMessageStatus(aiMessage.id, 'generating')
       
       // 发送请求获取AI回复
-      const response = await sendMessage(messageHistory, currentModelId.value, {
+      const stream = await streamMessage(messageHistory, currentModelId.value, {
         deepThinking: isDeepThinkingMode.value,
-        knowledgeBaseId: isRAGMode.value ? currentKnowledgeBaseId.value || undefined : undefined
+        knowledgeBaseId: isRAGMode.value ? currentKnowledgeBaseId.value || undefined : undefined,
+        signal: abortController.value.signal
       })
-      
-      // 更新AI消息内容和状态
-      updateMessageContent(aiMessage.id, response.content)
-      updateMessageStatus(aiMessage.id, 'completed')
-      
-      // 如果有思考内容，添加到消息中
-      if (response.thinking) {
-        aiMessage.thinking = response.thinking
+
+      // 处理流式响应
+      const reader = stream.getReader();
+      const decoder = new TextDecoder();
+      let thinkingContent = '';
+      let isThinkingPhase = false;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        
+        // 简单的协议解析：检查思考和回答的分隔符
+        if (chunk.includes('<thinking>')) {
+          isThinkingPhase = true;
+        }
+        if (chunk.includes('</thinking>')) {
+          isThinkingPhase = false;
+          continue; // 跳过分隔符本身
+        }
+        
+        if (isThinkingPhase) {
+          thinkingContent += chunk.replace('<thinking>', '');
+          if(aiMessage.thinking !== thinkingContent) {
+            aiMessage.thinking = thinkingContent;
+          }
+        } else {
+          aiMessage.content += chunk;
+        }
       }
+      
+      updateMessageStatus(aiMessage.id, 'completed')
+
     } catch (error: any) {
       // 检查是否是用户取消
       if (error.name === 'AbortError') {

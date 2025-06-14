@@ -101,51 +101,60 @@
         </div>
       </div>
 
-      <!-- 命令建议面板 -->
-      <div v-if="showCommandSuggestions" class="command-suggestions-panel">
-        <div class="panel-title">可用命令</div>
-        <div class="command-list-wrapper">
-          <div
-            v-for="(cmd, index) in suggestionCommands"
-            :key="cmd.id"
-            :class="['command-item', { active: index === activeCommandIndex }]"
-            @click.stop="selectCommand(cmd)"
-            @mouseenter="activeCommandIndex = index"
-          >
-            <div class="command-icon">
-              <el-icon><component :is="cmd.icon || 'Operation'" /></el-icon>
-            </div>
-            <div class="command-info">
-              <div class="command-name">{{ cmd.name }}</div>
-              <div class="command-desc">{{ cmd.description }}</div>
+      <!-- 命令 & 子命令面板容器 -->
+      <div v-if="showCommandSuggestions" class="command-panels-wrapper">
+        <!-- 命令建议面板 -->
+        <div class="command-suggestions-panel">
+          <div class="panel-title">
+            <el-icon><Operation /></el-icon>
+            <span>可用命令</span>
+          </div>
+          <div class="command-list-wrapper">
+            <div
+              v-for="(cmd, index) in suggestionCommands"
+              :key="cmd.id"
+              :class="['command-item', { 
+                'active': index === activeCommandIndex,
+                'selected': cmd.id === selectedCommandId
+              }]"
+              @click.stop="selectCommand(cmd)"
+              @mouseenter="activeCommandIndex = index"
+            >
+              <div class="command-icon">
+                <el-icon><component :is="cmd.icon || 'Operation'" /></el-icon>
+              </div>
+              <div class="command-info">
+                <div class="command-name">{{ cmd.name }}</div>
+                <div class="command-desc">{{ cmd.description }}</div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-      
-      <!-- 子命令面板 -->
-      <div v-if="showSubCommandPanel" class="sub-command-panel">
-        <div class="panel-title">
-          <el-icon><component :is="activeSubCommand?.icon || 'Operation'" /></el-icon>
-          <span>{{ activeSubCommand?.name }}</span>
-        </div>
-        <div v-if="isLoadingSubCommands" class="loading-spinner">
-          <el-icon class="is-loading"><Loading /></el-icon>
-          <span>加载中...</span>
-        </div>
-        <div v-else class="sub-command-list">
-          <div 
-            v-for="subCmd in currentSubCommands" 
-            :key="subCmd.id"
-            class="sub-command-item"
-            @click="selectSubCommand(subCmd)"
-          >
-            <div class="sub-command-icon">
-              <el-icon><component :is="subCmd.icon || 'Operation'" /></el-icon>
-            </div>
-            <div class="sub-command-info">
-              <div class="sub-command-name">{{ subCmd.name }}</div>
-              <div class="sub-command-desc">{{ subCmd.description }}</div>
+        
+        <!-- 子命令面板 -->
+        <div v-if="selectedCommandId && activeSubCommand" class="sub-command-panel">
+          <div class="panel-title">
+            <el-icon><component :is="activeSubCommand.icon || 'Operation'" /></el-icon>
+            <span>{{ activeSubCommand.name }}</span>
+          </div>
+          <div v-if="isLoadingSubCommands" class="loading-spinner">
+            <el-icon class="is-loading"><Loading /></el-icon>
+            <span>加载中...</span>
+          </div>
+          <div v-else class="sub-command-list">
+            <div 
+              v-for="subCmd in currentSubCommands" 
+              :key="subCmd.id"
+              class="sub-command-item"
+              @click="selectSubCommand(subCmd)"
+            >
+              <div class="sub-command-icon">
+                <el-icon><component :is="subCmd.icon || 'Operation'" /></el-icon>
+              </div>
+              <div class="sub-command-info">
+                <div class="sub-command-name">{{ subCmd.name }}</div>
+                <div class="sub-command-desc">{{ subCmd.description }}</div>
+              </div>
             </div>
           </div>
         </div>
@@ -330,8 +339,8 @@ const {
 
 const showCommandSuggestions = ref(false);
 const activeCommandIndex = ref(0);
+const selectedCommandId = ref<string | null>(null);
 
-const showSubCommandPanel = ref(false);
 const activeSubCommand = ref<BaseCommand | null>(null);
 const currentSubCommands = ref<SubCommandType[]>([]);
 const isLoadingSubCommands = ref(false);
@@ -472,9 +481,13 @@ const handleInput = (value: string) => {
       selectCommand(exactMatch);
     } else {
       showCommandSuggestions.value = true;
+      selectedCommandId.value = null;
+      activeSubCommand.value = null;
     }
   } else {
     showCommandSuggestions.value = false;
+    selectedCommandId.value = null;
+    activeSubCommand.value = null;
   }
 };
 
@@ -504,30 +517,47 @@ const handleKeydown = (e: KeyboardEvent) => {
       case 'Escape':
         e.preventDefault();
         showCommandSuggestions.value = false;
+        selectedCommandId.value = null;
+        activeSubCommand.value = null;
         break;
     }
   }
 };
 
 const selectCommand = async (cmd: BaseCommand) => {
-  showCommandSuggestions.value = false;
-  activeCommandIndex.value = 0;
+  activeCommandIndex.value = suggestionCommands.value.findIndex(c => c.id === cmd.id);
 
-  if (cmd.hasSubCommands) {
-    activeSubCommand.value = cmd;
-    showSubCommandPanel.value = true;
-    isLoadingSubCommands.value = true;
+  if (!cmd.hasSubCommands) {
+    inputMessage.value = `/${cmd.name} `;
+    showCommandSuggestions.value = false;
+    selectedCommandId.value = null;
+    activeSubCommand.value = null;
+    return;
+  }
+
+  if (selectedCommandId.value === cmd.id) {
+    return;
+  }
+
+  selectedCommandId.value = cmd.id;
+  activeSubCommand.value = cmd;
+  currentSubCommands.value = [];
+  isLoadingSubCommands.value = true;
+  
+  if (cmd.subCommands && cmd.subCommands.length > 0) {
+    currentSubCommands.value = cmd.subCommands;
+    isLoadingSubCommands.value = false;
+  } else {
     try {
       currentSubCommands.value = await getSubCommands(cmd.id);
     } catch (error) {
       console.error('获取子命令失败:', error);
       ElMessageBox.alert('获取子命令失败，请稍后再试。', '错误', { type: 'error' });
-      showSubCommandPanel.value = false; 
+      selectedCommandId.value = null;
+      activeSubCommand.value = null;
     } finally {
       isLoadingSubCommands.value = false;
     }
-  } else {
-    inputMessage.value = `/${cmd.name} `;
   }
 };
 
@@ -535,9 +565,9 @@ const selectSubCommand = (subCmd: SubCommandType) => {
   if (activeSubCommand.value) {
     inputMessage.value = `/${activeSubCommand.value.name} ${subCmd.name} `;
   }
-  showSubCommandPanel.value = false;
-  currentSubCommands.value = [];
+  showCommandSuggestions.value = false;
   activeSubCommand.value = null;
+  selectedCommandId.value = null;
 };
 
 const handleMouseUp = () => {
@@ -718,17 +748,23 @@ onUnmounted(() => {
   }
 }
 
-.command-suggestions-panel {
+.command-panels-wrapper {
   position: absolute;
   bottom: calc(100% + 4px);
   left: 0;
-  right: 0;
+  display: flex;
+  gap: 4px;
+  z-index: 10;
+}
+
+.command-suggestions-panel {
+  width: 320px;
+  flex-shrink: 0;
   background: var(--el-bg-color-overlay);
   border: 1px solid var(--el-border-color-extra-light);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   max-height: 300px;
-  z-index: 10;
   display: flex;
   flex-direction: column;
 
@@ -747,6 +783,13 @@ onUnmounted(() => {
 
     &.active, &:hover {
       background-color: var(--el-fill-color-light);
+    }
+
+    &.selected {
+      background-color: var(--el-color-primary-light-9);
+      .command-name, .command-icon .el-icon {
+         color: var(--el-color-primary);
+      }
     }
     
     .command-icon {
@@ -911,29 +954,16 @@ onUnmounted(() => {
 }
 
 .sub-command-panel {
-  position: absolute;
-  bottom: calc(100% + 4px);
-  left: 0;
-  right: 0;
+  width: 320px;
+  flex-shrink: 0;
   background: var(--el-bg-color-overlay);
   border: 1px solid var(--el-border-color-extra-light);
   border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-  z-index: 11; // 比命令面板高
+  max-height: 300px;
   padding: 8px;
   display: flex;
   flex-direction: column;
-
-  .panel-title {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 4px 8px 12px;
-    border-bottom: 1px solid var(--el-border-color-lighter);
-    margin-bottom: 8px;
-    font-size: 14px;
-    font-weight: 500;
-  }
 
   .loading-spinner {
     display: flex;
@@ -983,6 +1013,19 @@ onUnmounted(() => {
       color: var(--el-text-color-secondary);
     }
   }
+}
+
+.command-suggestions-panel .panel-title,
+.sub-command-panel .panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
 }
 </style>
 
