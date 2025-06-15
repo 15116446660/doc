@@ -28,22 +28,37 @@ export function sendMessage(messages: Message[], modelId: string, options?: {
  * @param modelId 模型ID
  * @param options 其他选项
  */
-export function streamMessage(messages: Message[], modelId: string, options?: {
+export async function streamMessage(messages: Message[], modelId: string, options?: {
   systemPrompt?: string;
   temperature?: number;
   maxTokens?: number;
   deepThinking?: boolean;
   knowledgeBaseId?: string;
   signal?: AbortSignal;
-}) {
-  return post<ReadableStream>('/api/chat/completions/stream', {
-    messages,
-    modelId,
-    ...options
-  }, {
-    responseType: 'stream',
-    signal: options?.signal
-  })
+}): Promise<ReadableStream<Uint8Array>> {
+  const response = await fetch('/api/chat/completions/stream', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      messages,
+      modelId,
+      ...options,
+    }),
+    signal: options?.signal,
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.msg || '流式请求失败');
+  }
+
+  if (!response.body) {
+    throw new Error('响应体为空');
+  }
+
+  return response.body;
 }
 
 /**

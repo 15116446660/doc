@@ -72,7 +72,6 @@
               
               <!-- 已完成的AI消息 -->
               <MarkdownMessage 
-                v-if="message.content || message.status === 'completed'" 
                 :content="message.content" 
                 :thinking="message.thinking"
               />

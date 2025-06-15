@@ -156,6 +156,69 @@ const mockSubCommands: Record<string, SubCommand[]> = {
   ],
 };
 
+const fullMarkdownExample = `
+# 全场景Markdown响应示例
+
+这是一个模拟的AI回复，用于测试Markdown渲染的各种场景。
+
+## 1. 文本格式
+
+- **粗体文本**: **这是一个加粗的词语**
+- *斜体文本*: *这是一个倾斜的词语*
+- ***粗斜体文本***: ***这是一个既加粗又倾斜的词语***
+- ~~删除线文本~~: ~~这是一个带删除线的词语~~
+
+## 2. 列表
+
+### 无序列表
+- 列表项 A
+  - 嵌套列表项 A1
+  - 嵌套列表项 A2
+- 列表项 B
+- 列表项 C
+
+### 有序列表
+1. 第一项
+2. 第二项
+   1. 嵌套第一项
+   2. 嵌套第二项
+3. 第三项
+
+## 3. 代码块
+
+这里是一个JavaScript代码块的示例，带有语法高亮：
+
+\`\`\`javascript
+function greet(name) {
+  // 返回一个问候字符串
+  return \`Hello, \${name}! This is a test of code block rendering.\`;
+}
+
+console.log(greet('Developer'));
+\`\`\`
+
+## 4. 表格
+
+| 表头 1 | 表头 2 | 表头 3 |
+| :--- | :---: | ---: |
+| 左对齐 | 居中对齐 | 右对齐 |
+| 单元格 | 单元格 | 单元格 |
+| 单元格 | 单元格 | 单元格 |
+
+## 5. 引用块
+
+> "这是一个引用块。它通常用于引用他人的话语或突出显示特定段落。"
+> > 这是一个嵌套的引用块。
+
+## 6. 其他元素
+
+---
+
+这是一个水平分割线，用于分隔内容。
+
+链接示例: [访问 Element Plus 官网](https://element-plus.org)
+`;
+
 const mockApi: MockMethod[] = [
   // 获取AI模型列表
   {
@@ -285,13 +348,19 @@ const mockApi: MockMethod[] = [
   
   // 发送消息获取AI回复
   {
-    url: '/api/chat/completions',
+    url: '/api/chat/completions/stream',
     method: 'post',
     response: ({ body }: RequestParams) => {
-      const { messages, deepThinking } = body || {}
-      
-      // 模拟网络延迟
-      const response = generateAIResponse(messages as Message[], { deepThinking })
+      const { deepThinking } = body || {}
+
+      const response: Message = {
+        id: uuidv4(),
+        role: 'assistant',
+        content: fullMarkdownExample,
+        timestamp: Date.now(),
+        status: 'completed',
+        thinking: deepThinking ? '正在进行深度思考...' : undefined
+      }
       
       return {
         code: 200,
@@ -299,6 +368,28 @@ const mockApi: MockMethod[] = [
         data: response
       }
     }
+  },
+  
+  // 流式发送消息
+  {
+    url: '/api/chat/completions/stream',
+    method: 'post',
+    response: () => {
+      const stream = new ReadableStream({
+        start(controller) {
+          const encoder = new TextEncoder();
+          const encodedData = encoder.encode(fullMarkdownExample);
+          controller.enqueue(encodedData);
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+        },
+      });
+    },
   },
   
   // 上传文件附件
