@@ -82,28 +82,9 @@
           <el-input v-model="modelForm.baseUrl" placeholder="输入API基础URL" />
         </el-form-item>
         
-        <template v-if="currentProviderConfig.basicParams.modelName && modelForm.type !== 'azure'">
+        <template v-if="currentProviderConfig.basicParams?.modelName && modelForm.type !== 'azure'">
           <el-form-item label="模型版本">
-            <el-select 
-              v-model="modelForm.modelName" 
-              placeholder="选择模型版本" 
-              class="full-width-select"
-              filterable
-              v-if="modelOptions.length > 0"
-            >
-              <el-option
-                v-for="option in modelOptions"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              >
-                <div class="model-option-item">
-                  <div class="model-option-name">{{ option.label }}</div>
-                  <div class="model-option-desc" v-if="option.description">{{ option.description }}</div>
-                </div>
-              </el-option>
-            </el-select>
-            <el-input v-else v-model="modelForm.modelName" placeholder="输入模型名称，例如：gpt-4" />
+            <el-input v-model="modelForm.modelName" placeholder="输入模型名称，例如：gpt-4" />
           </el-form-item>
         </template>
         
@@ -142,7 +123,12 @@
                 <div class="control-wrapper">
                   <div class="slider-with-value">
                     <div class="slider-container">
-                      <el-slider v-model="modelForm.temperature" :min="currentProviderConfig.ranges.temperature[0]" :max="currentProviderConfig.ranges.temperature[1]" :step="0.1" />
+                      <el-slider 
+                        v-model="modelForm.temperature" 
+                        :min="currentProviderConfig.ranges?.temperature?.[0] || 0" 
+                        :max="currentProviderConfig.ranges?.temperature?.[1] || 1" 
+                        :step="0.1" 
+                      />
                     </div>
                     <div class="slider-value">{{ modelForm.temperature.toFixed(1) }}</div>
                   </div>
@@ -152,16 +138,26 @@
               
               <el-form-item label="最大输出">
                 <div class="control-wrapper">
-                  <el-input-number v-model="modelForm.maxTokens" :min="currentProviderConfig.ranges.maxTokens[0]" :max="currentProviderConfig.ranges.maxTokens[1]" controls-position="right" />
+                  <el-input-number 
+                    v-model="modelForm.maxTokens" 
+                    :min="currentProviderConfig.ranges?.maxTokens?.[0] || 1" 
+                    :max="currentProviderConfig.ranges?.maxTokens?.[1] || 4096" 
+                    controls-position="right" 
+                  />
                   <div class="field-hint">模型最大生成的Token数</div>
                 </div>
               </el-form-item>
               
-              <el-form-item label="Top P" v-if="currentProviderConfig.advancedParams.topP">
+              <el-form-item label="Top P" v-if="currentProviderConfig.advancedParams?.topP">
                 <div class="control-wrapper">
                   <div class="slider-with-value">
                     <div class="slider-container">
-                      <el-slider v-model="modelForm.topP" :min="currentProviderConfig.ranges.topP?.[0] || 0" :max="currentProviderConfig.ranges.topP?.[1] || 1" :step="0.05" />
+                      <el-slider 
+                        v-model="modelForm.topP" 
+                        :min="currentProviderConfig.ranges?.topP?.[0] || 0" 
+                        :max="currentProviderConfig.ranges?.topP?.[1] || 1" 
+                        :step="0.05" 
+                      />
                     </div>
                     <div class="slider-value">{{ modelForm.topP.toFixed(2) }}</div>
                   </div>
@@ -169,34 +165,43 @@
                 </div>
               </el-form-item>
               
-              <el-form-item label="Top K" v-if="currentProviderConfig.advancedParams.topK">
+              <el-form-item label="Top K" v-if="currentProviderConfig.advancedParams?.topK">
                 <div class="control-wrapper">
-                  <el-input-number v-model="modelForm.topK" :min="currentProviderConfig.ranges.topK?.[0] || 1" :max="currentProviderConfig.ranges.topK?.[1] || 100" controls-position="right" />
+                  <el-input-number 
+                    v-model="modelForm.topK" 
+                    :min="currentProviderConfig.ranges?.topK?.[0] || 1" 
+                    :max="currentProviderConfig.ranges?.topK?.[1] || 100" 
+                    controls-position="right" 
+                  />
                   <div class="field-hint">每一步考虑的最高概率Token数量</div>
                 </div>
               </el-form-item>
               
-              <el-form-item label="频率惩罚" v-if="currentProviderConfig.advancedParams.frequencyPenalty">
+              <el-form-item label="频率惩罚" v-if="currentProviderConfig.advancedParams?.frequencyPenalty">
                 <div class="control-wrapper">
                   <div class="slider-with-value">
-                    <div class="slider-container"><el-slider v-model="modelForm.frequencyPenalty" :min="-2" :max="2" :step="0.1" /></div>
+                    <div class="slider-container">
+                      <el-slider v-model="modelForm.frequencyPenalty" :min="-2" :max="2" :step="0.1" />
+                    </div>
                     <div class="slider-value">{{ modelForm.frequencyPenalty.toFixed(1) }}</div>
                   </div>
                   <div class="field-hint">减少对重复出现Token的使用</div>
                 </div>
               </el-form-item>
               
-              <el-form-item label="存在惩罚" v-if="currentProviderConfig.advancedParams.presencePenalty">
+              <el-form-item label="存在惩罚" v-if="currentProviderConfig.advancedParams?.presencePenalty">
                 <div class="control-wrapper">
                   <div class="slider-with-value">
-                    <div class="slider-container"><el-slider v-model="modelForm.presencePenalty" :min="-2" :max="2" :step="0.1" /></div>
+                    <div class="slider-container">
+                      <el-slider v-model="modelForm.presencePenalty" :min="-2" :max="2" :step="0.1" />
+                    </div>
                     <div class="slider-value">{{ modelForm.presencePenalty.toFixed(1) }}</div>
                   </div>
                   <div class="field-hint">减少对已出现主题的重复</div>
                 </div>
               </el-form-item>
               
-              <el-form-item label="流式响应" v-if="currentProviderConfig.advancedParams.stream">
+              <el-form-item label="流式响应" v-if="currentProviderConfig.advancedParams?.stream">
                 <div class="control-wrapper">
                   <el-switch v-model="modelForm.stream" />
                   <div class="field-hint">开启逐字生成响应</div>
@@ -237,8 +242,8 @@ import { ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
 import { ArrowDown, Close } from '@element-plus/icons-vue';
 import { v4 as uuidv4 } from 'uuid';
-import type { AIModel, AIModelConfig } from '@/types/chat';
-import { getProviderConfig, getModelOptions } from '@/components/ai-assistant-library/config/providerConfigs';
+import type { AIModel } from '@/types/chat';
+import { getProviderConfig } from '@/components/ai-assistant-library/config/providerConfigs';
 
 // 为表单创建一个专用的、扁平化的状态类型
 type ModelFormState = {
@@ -249,7 +254,7 @@ type ModelFormState = {
   level: 'basic' | 'advanced' | 'super';
   apiKey: string;
   baseUrl: string;
-  modelName: string; // Corresponds to modelVersion in config
+  modelName: string;
   temperature: number;
   maxTokens: number;
   topP: number;
@@ -257,10 +262,8 @@ type ModelFormState = {
   frequencyPenalty: number;
   presencePenalty: number;
   stream: boolean;
-  // Azure-specific
-  deploymentName: string; // Special handling for Azure's modelVersion
+  deploymentName: string;
   apiVersion: string;
-  // Mistral-specific
   randomSeed: number;
 };
 
@@ -307,20 +310,19 @@ function getModelTypeName(type: string): string {
 
 function createEmptyForm(): ModelFormState {
   const type = 'openai';
-  const config = getProviderConfig(type);
   return {
     id: '',
     name: '',
     type,
     apiKey: '',
-    baseUrl: config.defaults.baseUrl,
+    baseUrl: 'https://api.openai.com/v1',  // Default OpenAI URL
     modelName: '',
-    temperature: config.defaults.temperature,
-    maxTokens: config.defaults.maxTokens,
+    temperature: 0.7,  // Default temperature
+    maxTokens: 4096,   // Default max tokens
     level: 'basic',
     logo: '',
-    topP: config.defaults.topP || 1.0,
-    topK: config.defaults.topK || 50,
+    topP: 1.0,
+    topK: 50,
     frequencyPenalty: 0,
     presencePenalty: 0,
     stream: true,
@@ -344,29 +346,25 @@ function handleAdd() {
 
 function handleEdit(model: AIModel) {
   isEditing.value = true;
-
-  // 安全地处理可能不存在的 config 对象
-  const config = model.config || {};
-
   modelForm.value = {
     id: model.id,
     name: model.name,
     type: model.type,
     apiKey: model.apiKey,
     baseUrl: model.baseUrl || '',
-    modelName: config.modelVersion || '',
-    temperature: model.temperature || 0.7,
-    maxTokens: model.maxTokens || 2000,
+    modelName: model.modelVersion,
+    temperature: model.temperature,
+    maxTokens: model.maxTokens,
     level: model.level || 'basic',
     logo: model.logo || '',
-    topP: config.topP || 1.0,
-    topK: config.topK || 50,
-    frequencyPenalty: config.frequencyPenalty || 0,
-    presencePenalty: config.presencePenalty || 0,
-    stream: config.stream !== undefined ? config.stream : true,
-    deploymentName: config.apiVersion ? config.modelVersion : '',
-    apiVersion: config.apiVersion || '2023-05-15',
-    randomSeed: config.randomSeed || 42
+    topP: 1.0,
+    topK: 50,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    stream: true,
+    deploymentName: '',
+    apiVersion: '2023-05-15',
+    randomSeed: 42
   };
   isFormVisible.value = true;
 }
@@ -407,7 +405,9 @@ function saveModel() {
   if (!modelForm.value.apiKey.trim() && modelForm.value.type !== 'local') return ElMessage.error('请输入API密钥');
   
   const providerConfig = getProviderConfig(modelForm.value.type);
-  if (providerConfig.basicParams.modelName && !modelForm.value.modelName && modelForm.value.type !== 'azure') return ElMessage.error('请输入模型版本');
+  if (providerConfig.basicParams?.modelName && !modelForm.value.modelName && modelForm.value.type !== 'azure') {
+    return ElMessage.error('请输入模型版本');
+  }
   if (modelForm.value.type === 'azure') {
     if (!modelForm.value.deploymentName) return ElMessage.error('请输入Azure部署名称');
     if (!modelForm.value.apiVersion) return ElMessage.error('请输入API版本');
@@ -415,32 +415,18 @@ function saveModel() {
   
   const logo = modelForm.value.logo || '/logos/svg/custom.svg';
   
-  const modelConfig: AIModelConfig = {
-    apiKey: modelForm.value.apiKey,
-    apiEndpoint: modelForm.value.baseUrl,
-    modelVersion: modelForm.value.type === 'azure' ? modelForm.value.deploymentName : modelForm.value.modelName,
-    temperature: modelForm.value.temperature,
-    maxTokens: modelForm.value.maxTokens,
-    topP: modelForm.value.topP,
-    stream: modelForm.value.stream,
-    ...(providerConfig.advancedParams.topK && { topK: modelForm.value.topK }),
-    ...(providerConfig.advancedParams.frequencyPenalty && { frequencyPenalty: modelForm.value.frequencyPenalty }),
-    ...(providerConfig.advancedParams.presencePenalty && { presencePenalty: modelForm.value.presencePenalty }),
-    ...(modelForm.value.type === 'azure' && { apiVersion: modelForm.value.apiVersion }),
-    ...(modelForm.value.type === 'mistral' && providerConfig.specialParams?.randomSeed && { randomSeed: modelForm.value.randomSeed }),
-  };
-  
   const updatedModel: AIModel = {
     id: isEditing.value ? modelForm.value.id : uuidv4(),
     name: modelForm.value.name,
     type: modelForm.value.type,
+    provider: modelForm.value.type,
     apiKey: modelForm.value.apiKey,
     baseUrl: modelForm.value.baseUrl,
     temperature: modelForm.value.temperature,
     maxTokens: modelForm.value.maxTokens,
     level: modelForm.value.level,
     logo,
-    config: modelConfig,
+    modelVersion: modelForm.value.type === 'azure' ? modelForm.value.deploymentName : modelForm.value.modelName
   };
   
   let updatedModels: AIModel[];
@@ -461,17 +447,39 @@ function toggleAdvancedOptions() {
 }
 
 const currentProviderConfig = computed(() => getProviderConfig(modelForm.value.type));
-const modelOptions = computed(() => getModelOptions(modelForm.value.type));
 
 watch(() => modelForm.value.type, (newType) => {
-  const config = getProviderConfig(newType);
-  if (!isEditing.value || !modelForm.value.baseUrl) {
-    modelForm.value.baseUrl = config.defaults.baseUrl;
+  // 根据不同的提供商设置默认值
+  switch (newType) {
+    case 'openai':
+      modelForm.value.baseUrl = 'https://api.openai.com/v1';
+      modelForm.value.maxTokens = 4096;
+      break;
+    case 'anthropic':
+      modelForm.value.baseUrl = 'https://api.anthropic.com/v1';
+      modelForm.value.maxTokens = 200000;
+      break;
+    case 'google':
+      modelForm.value.baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+      modelForm.value.maxTokens = 32768;
+      break;
+    case 'deepseek':
+      modelForm.value.baseUrl = 'https://api.deepseek.com/v1';
+      modelForm.value.maxTokens = 8192;
+      break;
+    default:
+      if (!isEditing.value) {
+        modelForm.value.baseUrl = '';
+        modelForm.value.maxTokens = 4096;
+      }
   }
-  modelForm.value.temperature = config.defaults.temperature;
-  modelForm.value.maxTokens = config.defaults.maxTokens;
-  if (config.defaults.topP !== undefined) modelForm.value.topP = config.defaults.topP;
-  if (config.defaults.topK !== undefined) modelForm.value.topK = config.defaults.topK;
+  
+  // 保持通用默认值
+  if (!isEditing.value) {
+    modelForm.value.temperature = 0.7;
+    modelForm.value.topP = 1.0;
+    modelForm.value.topK = 50;
+  }
 });
 </script>
 

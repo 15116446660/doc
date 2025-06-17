@@ -62,27 +62,74 @@ export interface AIModelConfig {
   randomSeed?: number;
 }
 
-// AI模型类型
+// AI服务提供商配置
+export interface Provider {
+  name: string;
+  logo: string;
+  description: string;
+  configFields: string[];
+  
+  // 参数范围
+  ranges?: {
+    temperature: [number, number];
+    maxTokens: [number, number];
+    topP?: [number, number];
+    topK?: [number, number];
+  };
+  
+  // 基础参数配置
+  basicParams?: {
+    modelName: boolean;
+  };
+  
+  // 高级参数配置
+  advancedParams?: {
+    topP: boolean;
+    topK: boolean;
+    frequencyPenalty: boolean;
+    presencePenalty: boolean;
+    stream: boolean;
+  };
+  
+  // 特殊参数配置
+  specialParams?: {
+    randomSeed?: boolean;
+  };
+}
+
+// AI模型定义
+export interface AIModelDefinition {
+  id: string;
+  label: string;
+  provider: string;
+  type: string;
+  logo?: string;
+  description?: string;
+  level?: 'basic' | 'advanced' | 'super';
+  defaults: {
+    maxTokens: number;
+    temperature: number;
+    modelVersion: string;
+  }
+}
+
+// AI模型实例（运行时）
 export interface AIModel {
   id: string;
   name: string;
-  // 'openai', 'azure', 'anthropic', 'google', 'mistral', 'deepseek', 'other'
   type: string;
+  provider: string;
   logo?: string;
   description?: string;
   level?: 'basic' | 'advanced' | 'super';
   isDefault?: boolean;
   
-  // 核心配置
+  // 运行时配置
   apiKey: string;
   baseUrl?: string;
-  
-  // 完整配置对象
-  config: AIModelConfig;
-
-  // 简化访问的冗余字段（可选，为了方便表单绑定）
-  temperature?: number;
-  maxTokens?: number;
+  maxTokens: number;
+  temperature: number;
+  modelVersion: string;
 }
 
 // 命令参数类型

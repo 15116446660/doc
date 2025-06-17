@@ -2,16 +2,32 @@ import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getModels } from '@/api/chat'
 import type { AIModel } from '@/types/chat'
+import { modelDefinitions } from '../config/modelDefinitions'
 
 /**
  * AI模型管理的核心逻辑封装
  */
 export function useAIModels() {
-  // 模型列表
-  const models = ref<AIModel[]>([])
+  // 将模型定义转换为运行时模型实例
+  const models = ref<AIModel[]>(
+    Object.values(modelDefinitions).map(def => ({
+      id: def.id,
+      name: def.label,
+      type: def.type,
+      provider: def.provider,
+      logo: def.logo,
+      description: def.description,
+      level: def.level,
+      isDefault: false,
+      apiKey: '',
+      maxTokens: def.defaults.maxTokens,
+      temperature: def.defaults.temperature,
+      modelVersion: def.defaults.modelVersion
+    }))
+  )
   
   // 当前选择的模型ID
-  const currentModelId = ref<string>('')
+  const currentModelId = ref<string>('gpt-4-turbo')
   
   // 是否正在加载
   const loading = ref<boolean>(false)
@@ -35,8 +51,8 @@ export function useAIModels() {
     loading.value = true
     
     try {
-      const response = await getModels()
-      models.value = response
+      // const response = await getModels()
+      // models.value = response
       
       // 检查从 localStorage 加载的 ID 是否有效
       const savedModelId = localStorage.getItem('currentModelId');
@@ -60,13 +76,9 @@ export function useAIModels() {
    */
   function selectModel(modelId: string): void {
     const model = models.value.find(m => m.id === modelId)
-    if (!model) {
-      ElMessage.error('模型不存在')
-      return
+    if (model) {
+      currentModelId.value = modelId
     }
-    
-    currentModelId.value = modelId
-    saveCurrentModelId()
   }
   
   /**
@@ -214,6 +226,34 @@ export function useAIModels() {
     loadModels()
   })
   
+  // 获取模型定义
+  function getModelDefinition(modelId: string) {
+    return modelDefinitions[modelId]
+  }
+  
+  // 更新模型配置
+  function updateModelConfig(modelId: string, config: Partial<AIModel>) {
+    const index = models.value.findIndex(m => m.id === modelId)
+    if (index !== -1) {
+      models.value[index] = {
+        ...models.value[index],
+        ...config
+      }
+    }
+  }
+  
+  // 重置模型配置
+  function resetModelConfig(modelId: string) {
+    const def = modelDefinitions[modelId]
+    if (def) {
+      updateModelConfig(modelId, {
+        maxTokens: def.defaults.maxTokens,
+        temperature: def.defaults.temperature,
+        modelVersion: def.defaults.modelVersion
+      })
+    }
+  }
+  
   return {
     // 状态
     models,
@@ -231,6 +271,9 @@ export function useAIModels() {
     updateModel,
     updateModels,
     deleteModel,
-    setDefaultModel
+    setDefaultModel,
+    getModelDefinition,
+    updateModelConfig,
+    resetModelConfig
   }
 } 

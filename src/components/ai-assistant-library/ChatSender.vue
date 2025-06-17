@@ -3,38 +3,13 @@
     <!-- 顶部工具栏 -->
     <div class="top-toolbar">
       <div class="toolbar-left">
-        <!-- 模型选择器 -->
-        <el-dropdown trigger="click" @command="handleModelChange" :disabled="isGenerating" popper-class="beautiful-popper">
-          <div class="model-selector">
-            <img v-if="currentModelLogo" :src="currentModelLogo" class="model-logo" alt="logo" />
-            <el-icon v-else class="model-logo-default"><Cpu /></el-icon>
-            <span>{{ currentModelName }}</span>
-            <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
-          </div>
-          <template #dropdown>
-            <el-dropdown-menu placement="top">
-              <div class="panel-title">选择模型</div>
-              <div class="model-list-wrapper">
-                <el-dropdown-item
-                  v-for="model in models"
-                  :key="model.id"
-                  :command="model.id"
-                  :class="{ 'is-active': model.id === currentModelId }"
-                  class="model-dropdown-item"
-                >
-                  <img v-if="model.logo" :src="model.logo" class="model-logo" alt="logo" />
-                  <el-icon v-else class="model-logo-default"><Cpu /></el-icon>
-                  <span>{{ model.name }}</span>
-                </el-dropdown-item>
-              </div>
-              <div class="divider"></div>
-              <div class="config-item" @click="openModelConfig">
-                <el-icon><Setting /></el-icon>
-                <span>模型配置</span>
-              </div>
-            </el-dropdown-menu>
-          </template>
-        </el-dropdown>
+        <ModelSelector
+          :current-model-id="currentModelId"
+          :models="models"
+          :disabled="isGenerating"
+          @select-model="handleModelChange"
+          @open-config="openModelConfig"
+        />
         
         <!-- 命令管理 -->
         <el-tooltip content="命令管理" placement="top">
@@ -306,6 +281,7 @@ import type { AIModel, SubCommand as SubCommandType, Command as BaseCommand, Kno
 import { usePromptCommands } from '@/components/ai-assistant-library/hooks/usePromptCommands';
 import { getSubCommands, getQuickCommands } from '@/api/command';
 import { getKnowledgeBases } from '@/api/knowledgeBase';
+import ModelSelector from './ModelSelector.vue';
 
 // Icon mapping to resolve linter errors and for dynamic rendering
 const iconMap: Record<string, any> = {
@@ -316,42 +292,28 @@ const iconMap: Record<string, any> = {
 };
 
 // #region --- Props & Emits Definition ---
-const props = withDefaults(
-  defineProps<{
-    isGenerating?: boolean;
-    isDeepThinkingMode?: boolean;
-    isRAGMode?: boolean;
-    isFullTextReferenceMode?: boolean;
-    currentModelId?: string;
-    models?: AIModel[];
-    commands: BaseCommand[];
-  }>(),
-  {
-    isGenerating: false,
-    isDeepThinkingMode: false,
-    isRAGMode: false,
-    isFullTextReferenceMode: false,
-    currentModelId: 'gpt-4',
-    models: () => [
-      { id: 'gpt-4-mini', name: 'GPT-4 mini', logo: 'https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/openai.png' },
-      { id: 'gpt-4', name: 'GPT-4', logo: 'https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/openai.png' },
-      { id: 'claude-3', name: 'Claude 3', logo: 'https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/anthropic.png' },
-      { id: 'gemini-pro', name: 'Gemini Pro', logo: 'https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/google-gemini.png' },
-      { id: 'custom-model', name: '自定义模型' },
-    ],
-  }
-);
+const props = defineProps<{
+  currentModelId: string;
+  models: AIModel[];
+  isGenerating?: boolean;
+  isDeepThinkingMode?: boolean;
+  isRAGMode?: boolean;
+  isFullTextReferenceMode?: boolean;
+  commands: BaseCommand[];
+}>();
 
 const emit = defineEmits<{
   (e: 'send', content: string, files: File[]): void
   (e: 'stop'): void
-  (e: 'modelChange', modelId: string): void
+  (e: 'select-model', modelId: string): void
   (e: 'toggleDeepThinking'): void
   (e: 'toggleRAG'): void
   (e: 'toggleFullTextReference'): void
   (e: 'openModelConfig'): void
   (e: 'executeCommand', command: BaseCommand | QuickCommand, context: string): void
   (e: 'command', command: string): void
+  (e: 'selectKnowledgeBase', kbId: string): void
+  (e: 'clearSelectedKnowledgeBase'): void
 }>();
 // #endregion
 
@@ -385,14 +347,16 @@ const maxVisibleQuickCommands = 5;
 // #endregion
 
 // #region --- Computed Properties ---
-const currentModelName = computed(() => {
-  const model = props.models?.find(m => m.id === props.currentModelId);
-  return model ? model.name : '选择模型';
+const currentModel = computed(() => {
+  return props.models.find(model => model.id === props.currentModelId) || null;
 });
 
 const currentModelLogo = computed(() => {
-  const model = props.models?.find(m => m.id === props.currentModelId);
-  return model ? model.logo : null;
+  return currentModel.value?.logo || '';
+});
+
+const currentModelName = computed(() => {
+  return currentModel.value?.name || '选择模型';
 });
 
 const canSend = computed(() => {
@@ -427,7 +391,7 @@ const selectedKnowledgeBase = computed(() => {
 // #endregion
 
 // #region --- Event Handlers & Methods ---
-const handleModelChange = (modelId: string) => emit('modelChange', modelId);
+const handleModelChange = (modelId: string) => emit('select-model', modelId);
 const openModelConfig = () => emit('openModelConfig');
 const triggerFileUpload = () => fileInputRef.value?.click();
 
@@ -602,6 +566,19 @@ const handleMouseUp = () => {
     selectedText.value = text;
   }
 };
+
+// 处理logo加载错误
+const handleLogoError = (event: Event) => {
+  const imgElement = event.target as HTMLImageElement;
+  imgElement.style.display = 'none';
+  const parentElement = imgElement.parentElement;
+  if (parentElement) {
+    const iconElement = document.createElement('i');
+    iconElement.className = 'el-icon model-logo-default';
+    iconElement.innerHTML = '<Cpu />';
+    parentElement.insertBefore(iconElement, imgElement.nextSibling);
+  }
+};
 // #endregion
 
 // #region --- Lifecycle Hooks ---
@@ -666,6 +643,15 @@ onUnmounted(() => {
       height: 18px;
       margin-right: 8px;
       border-radius: 4px;
+      object-fit: contain;
+    }
+
+    .model-logo-default {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: var(--el-fill-color-light);
+      color: var(--el-text-color-secondary);
     }
 
     span {
@@ -1054,26 +1040,22 @@ onUnmounted(() => {
 .model-dropdown-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-
-  .model-logo {
-    width: 20px;
-    height: 20px;
+  padding: 8px 12px;
+  
+  .model-logo, .model-logo-default {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
+    border-radius: 4px;
     object-fit: contain;
   }
 
   .model-logo-default {
-    width: 20px;
-    height: 20px;
-    font-size: 20px;
-  }
-
-  &.is-active,
-  &.is-active:hover,
-  &.is-active:focus {
-    background-color: var(--el-color-primary-light-8) !important;
-    color: var(--el-color-primary) !important;
-    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--el-fill-color-light);
+    color: var(--el-text-color-secondary);
   }
 }
 

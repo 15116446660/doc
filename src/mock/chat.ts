@@ -13,44 +13,41 @@ const mockModels: AIModel[] = [
     id: 'gpt-4',
     name: 'GPT-4',
     description: '最强大的AI模型，适合复杂任务',
-    icon: 'https://cdn-icons-png.flaticon.com/512/2111/2111615.png',
-    systemPrompt: '你是一个智能AI助手，乐于解答各种问题。',
-    parameters: {
-      temperature: 0.7,
-      maxTokens: 4096,
-      topP: 1,
-      frequencyPenalty: 0,
-      presencePenalty: 0
-    },
-    isDefault: true
+    type: 'openai',
+    provider: 'openai',
+    logo: 'https://cdn-icons-png.flaticon.com/512/2111/2111615.png',
+    level: 'super',
+    isDefault: true,
+    apiKey: '',
+    maxTokens: 4096,
+    temperature: 0.7,
+    modelVersion: 'gpt-4'
   },
   {
     id: 'gpt-3.5-turbo',
     name: 'GPT-3.5 Turbo',
     description: '快速高效的AI模型，适合一般任务',
-    icon: 'https://cdn-icons-png.flaticon.com/512/2111/2111432.png',
-    systemPrompt: '你是一个智能AI助手，乐于解答各种问题。',
-    parameters: {
-      temperature: 0.7,
-      maxTokens: 2048,
-      topP: 1,
-      frequencyPenalty: 0,
-      presencePenalty: 0
-    }
+    type: 'openai',
+    provider: 'openai',
+    logo: 'https://cdn-icons-png.flaticon.com/512/2111/2111432.png',
+    level: 'basic',
+    apiKey: '',
+    maxTokens: 2048,
+    temperature: 0.7,
+    modelVersion: 'gpt-3.5-turbo'
   },
   {
     id: 'claude-3',
     name: 'Claude 3',
     description: '理解能力强的AI模型，适合文本分析',
-    icon: 'https://cdn-icons-png.flaticon.com/512/2111/2111795.png',
-    systemPrompt: '你是Claude，一个由Anthropic开发的AI助手。',
-    parameters: {
-      temperature: 0.7,
-      maxTokens: 4096,
-      topP: 1,
-      frequencyPenalty: 0,
-      presencePenalty: 0
-    }
+    type: 'anthropic',
+    provider: 'anthropic',
+    logo: 'https://cdn-icons-png.flaticon.com/512/2111/2111795.png',
+    level: 'advanced',
+    apiKey: '',
+    maxTokens: 4096,
+    temperature: 0.7,
+    modelVersion: 'claude-3'
   }
 ]
 
