@@ -12,7 +12,7 @@
             <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
           </div>
           <template #dropdown>
-            <el-dropdown-menu>
+            <el-dropdown-menu placement="top">
               <div class="panel-title">选择模型</div>
               <div class="model-list-wrapper">
                 <el-dropdown-item
@@ -27,10 +27,11 @@
                   <span>{{ model.name }}</span>
                 </el-dropdown-item>
               </div>
-              <el-dropdown-item divided @click.stop="openModelConfig">
+              <div class="divider"></div>
+              <div class="config-item" @click="openModelConfig">
                 <el-icon><Setting /></el-icon>
                 <span>模型配置</span>
-              </el-dropdown-item>
+              </div>
             </el-dropdown-menu>
           </template>
         </el-dropdown>
@@ -906,6 +907,32 @@ onUnmounted(() => {
   max-height: 250px;
   overflow-y: auto;
   padding: 6px;
+}
+
+.divider {
+  margin: 4px 0;
+  height: 1px;
+  background-color: var(--el-border-color-lighter);
+}
+
+.config-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  font-size: 14px;
+  color: var(--el-text-color-regular);
+  cursor: pointer;
+  transition: background-color 0.3s;
+  
+  &:hover {
+    background-color: var(--el-dropdown-menuItem-hover-fill);
+    color: var(--el-dropdown-menuItem-hover-color);
+  }
+  
+  .el-icon {
+    margin-right: 8px;
+    font-size: 16px;
+  }
 }
 
 .kb-trigger-wrapper {

@@ -556,6 +556,7 @@ h3 {
 }
 
 .model-list {
+  min-width: 200px;
   flex-grow: 1;
   overflow-y: auto;
   padding-right: 8px; /* For scrollbar */
