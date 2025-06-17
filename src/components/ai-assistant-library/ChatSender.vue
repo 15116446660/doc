@@ -45,6 +45,16 @@
           <el-button :icon="Paperclip" circle @click="triggerFileUpload" />
         </el-tooltip>
         <input type="file" ref="fileInputRef" style="display: none" @change="handleFileChange" multiple />
+        
+        <!-- 全文引用开关 -->
+        <el-tooltip content="全文引用" placement="top">
+          <el-button 
+            :icon="Link" 
+            circle 
+            :class="{ 'is-active': isFullTextReferenceMode }"
+            @click="emit('toggleFullTextReference')" 
+          />
+        </el-tooltip>
       </div>
       <div class="toolbar-right">
         <!-- 新建会话 -->
@@ -289,6 +299,7 @@ import {
   DataAnalysis,
   CircleClose,
   Loading,
+  Link,
 } from '@element-plus/icons-vue';
 import type { AIModel, SubCommand as SubCommandType, Command as BaseCommand, KnowledgeBase, QuickCommand } from '@/types/chat';
 import { usePromptCommands } from '@/components/ai-assistant-library/hooks/usePromptCommands';
@@ -309,6 +320,7 @@ const props = withDefaults(
     isGenerating?: boolean;
     isDeepThinkingMode?: boolean;
     isRAGMode?: boolean;
+    isFullTextReferenceMode?: boolean;
     currentModelId?: string;
     models?: AIModel[];
     commands: BaseCommand[];
@@ -317,6 +329,7 @@ const props = withDefaults(
     isGenerating: false,
     isDeepThinkingMode: false,
     isRAGMode: false,
+    isFullTextReferenceMode: false,
     currentModelId: 'gpt-4',
     models: () => [
       { id: 'gpt-4-mini', name: 'GPT-4 mini', logo: 'https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/openai.png' },
@@ -334,6 +347,7 @@ const emit = defineEmits<{
   (e: 'modelChange', modelId: string): void
   (e: 'toggleDeepThinking'): void
   (e: 'toggleRAG'): void
+  (e: 'toggleFullTextReference'): void
   (e: 'openModelConfig'): void
   (e: 'executeCommand', command: BaseCommand | QuickCommand, context: string): void
   (e: 'command', command: string): void
@@ -653,6 +667,12 @@ onUnmounted(() => {
     width: 32px;
     height: 32px;
   }
+}
+
+.el-button.is-active {
+  color: var(--el-color-primary);
+  border-color: var(--el-color-primary-light-3);
+  background-color: var(--el-color-primary-light-9);
 }
 
 .input-area-container {

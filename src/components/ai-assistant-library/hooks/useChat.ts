@@ -20,6 +20,9 @@ export function useChat() {
   // RAG模式（检索增强生成）
   const isRAGMode = ref<boolean>(false)
   
+  // 全文引用模式
+  const isFullTextReferenceMode = ref<boolean>(false)
+  
   // 当前使用的知识库ID
   const currentKnowledgeBaseId = ref<string | null>(null)
   
@@ -139,6 +142,7 @@ export function useChat() {
       const stream = await streamMessage(messageHistory, currentModelId.value, {
         deepThinking: isDeepThinkingMode.value,
         knowledgeBaseId: isRAGMode.value ? currentKnowledgeBaseId.value || undefined : undefined,
+        fullTextReference: isFullTextReferenceMode.value,
         signal: abortController.value.signal
       })
 
@@ -287,6 +291,13 @@ export function useChat() {
   }
   
   /**
+   * 切换全文引用模式
+   */
+  function toggleFullTextReferenceMode(): void {
+    isFullTextReferenceMode.value = !isFullTextReferenceMode.value
+  }
+  
+  /**
    * 设置当前使用的AI模型
    */
   function setCurrentModel(modelId: string): void {
@@ -311,6 +322,7 @@ export function useChat() {
     currentModelId,
     isDeepThinkingMode,
     isRAGMode,
+    isFullTextReferenceMode,
     currentKnowledgeBaseId,
     isGenerating,
     
@@ -327,6 +339,7 @@ export function useChat() {
     uploadFile,
     toggleDeepThinkingMode,
     toggleRAGMode,
+    toggleFullTextReferenceMode,
     setCurrentModel,
     setCurrentKnowledgeBase
   }

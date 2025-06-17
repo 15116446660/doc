@@ -34,6 +34,7 @@ export async function streamMessage(messages: Message[], modelId: string, option
   maxTokens?: number;
   deepThinking?: boolean;
   knowledgeBaseId?: string;
+  fullTextReference?: boolean;
   signal?: AbortSignal;
 }): Promise<ReadableStream<Uint8Array>> {
   const response = await fetch('/api/chat/completions/stream', {

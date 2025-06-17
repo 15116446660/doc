@@ -21,12 +21,14 @@
       :commands="commands"
       :isDeepThinkingMode="isDeepThinkingMode"
       :isRAGMode="isRAGMode"
+      :isFullTextReferenceMode="isFullTextReferenceMode"
       @send="handleSendMessage"
       @stop="stopGenerating"
       @modelChange="handleModelChange"
       @command="handleCommand"
       @toggleDeepThinking="toggleDeepThinkingMode"
       @toggleRAG="toggleRAGMode"
+      @toggleFullTextReference="toggleFullTextReferenceMode"
       @openModelConfig="openModelConfig"
       @executeCommand="handleExecuteCommand"
     />
@@ -119,6 +121,7 @@ const {
   isGenerating,
   isDeepThinkingMode,
   isRAGMode,
+  isFullTextReferenceMode,
   sendUserMessage,
   stopGenerating,
   regenerateMessage,
@@ -127,7 +130,8 @@ const {
   currentModelId,
   setCurrentModel,
   toggleDeepThinkingMode,
-  toggleRAGMode
+  toggleRAGMode,
+  toggleFullTextReferenceMode
 } = useChat()
 
 const {
