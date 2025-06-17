@@ -647,20 +647,44 @@ onUnmounted(() => {
   .model-selector {
     display: flex;
     align-items: center;
-    padding: 4px 8px;
-    border-radius: 6px;
+    padding: 5px 12px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.2s;
+    background-color: var(--el-bg-color);
+    border: 1px solid var(--el-border-color);
+    transition: all 0.3s ease;
+    height: 32px;
+    
     &:hover {
-      background-color: var(--el-fill-color-light);
+      border-color: var(--el-color-primary);
+      background-color: var(--el-color-primary-light-9);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
     }
 
-    .el-icon {
-      margin-right: 6px;
+    .model-logo, .model-logo-default {
+      width: 18px;
+      height: 18px;
+      margin-right: 8px;
+      border-radius: 4px;
     }
+
+    span {
+      font-size: 14px;
+      color: var(--el-text-color-regular);
+      font-weight: 500;
+    }
+
     .dropdown-icon {
-      margin-left: 6px;
+      margin-left: 8px;
       margin-right: 0;
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+      transition: transform 0.3s ease;
+    }
+
+    &:hover .dropdown-icon {
+      transform: rotate(180deg);
+      color: var(--el-color-primary);
     }
   }
 
