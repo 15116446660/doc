@@ -14,7 +14,15 @@
           :class="{ 'is-active': currentModelId === model.id }"
         >
           <div class="model-info">
-            <img :src="model.logo" class="model-logo" alt="Model Logo" />
+            <template v-if="model.logo">
+              <img 
+                :src="model.logo" 
+                class="model-logo" 
+                alt="Model Logo" 
+                @error="handleLogoError"
+              />
+            </template>
+            <el-icon v-else class="model-logo-default"><Cpu /></el-icon>
             <div class="model-details">
               <div class="model-name">{{ model.name }}</div>
               <div class="model-type">{{ getModelTypeName(model.type) }}</div>
@@ -240,7 +248,7 @@
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue';
 import { ElMessage } from 'element-plus';
-import { ArrowDown, Close } from '@element-plus/icons-vue';
+import { ArrowDown, Close, Cpu } from '@element-plus/icons-vue';
 import { v4 as uuidv4 } from 'uuid';
 import type { AIModel } from '@/types/chat';
 import { getProviderConfig } from '@/components/ai-assistant-library/config/providerConfigs';
@@ -481,6 +489,19 @@ watch(() => modelForm.value.type, (newType) => {
     modelForm.value.topK = 50;
   }
 });
+
+// 处理logo加载错误
+const handleLogoError = (event: Event) => {
+  const imgElement = event.target as HTMLImageElement;
+  imgElement.style.display = 'none';
+  const parentElement = imgElement.parentElement;
+  if (parentElement) {
+    const iconWrapper = document.createElement('div');
+    iconWrapper.className = 'el-icon model-logo-default';
+    iconWrapper.innerHTML = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;"><path fill="currentColor" d="M544 805.888V168a32 32 0 0 0-32-32H384a32 32 0 0 0-32 32v637.888L246.656 608a32 32 0 0 0-45.248 45.248l288 288a32 32 0 0 0 45.248 0l288-288a32 32 0 0 0-45.248-45.248L544 805.824zM192 192h640v128H192V192z"/></svg>';
+    parentElement.insertBefore(iconWrapper, imgElement.nextSibling);
+  }
+};
 </script>
 
 <style scoped>
@@ -600,6 +621,24 @@ h3 {
   object-fit: contain;
   background: #fff;
   border: 1px solid var(--el-border-color-lighter);
+}
+
+.model-logo-default {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+  border: 1px solid var(--el-border-color-lighter);
+  color: var(--el-text-color-secondary);
+  font-size: 18px;
+  
+  :deep(svg) {
+    width: 18px;
+    height: 18px;
+  }
 }
 
 .model-details {
