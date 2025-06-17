@@ -35,7 +35,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import { ArrowDown, ArrowRight, DocumentCopy, Check } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
@@ -104,41 +103,91 @@ const toggleThinking = () => {
 // 监听内容变化，重置复制状态
 watch(() => props.content, () => {
   copied.value = false
+  // 异步更新DOM后执行
+  setTimeout(() => {
+    addCopyButtonToCodeBlocks()
+    addCopyButtonToTables()
+  }, 100)
 })
 
-// 组件挂载后处理代码块
-onMounted(() => {
-  // 为代码块添加复制按钮
-  setTimeout(() => {
-    const codeBlocks = document.querySelectorAll('.markdown-content pre.hljs')
-    codeBlocks.forEach(block => {
-      // 如果已经有复制按钮，则不再添加
-      if (block.querySelector('.code-copy-button')) return
+const addCopyButtonToCodeBlocks = () => {
+  const codeBlocks = document.querySelectorAll('.markdown-content pre.hljs')
+  codeBlocks.forEach(block => {
+    if (block.querySelector('.code-copy-button')) return
       
-      const copyBtn = document.createElement('button')
-      copyBtn.className = 'code-copy-button'
-      copyBtn.innerHTML = '复制'
-      copyBtn.addEventListener('click', (e) => {
-        e.stopPropagation()
-        const code = block.querySelector('code')
-        if (code) {
-          navigator.clipboard.writeText(code.textContent || '')
-            .then(() => {
-              copyBtn.innerHTML = '已复制'
-              ElMessage.success('代码已复制')
-              setTimeout(() => {
-                copyBtn.innerHTML = '复制'
-              }, 2000)
-            })
-            .catch(err => {
-              console.error('复制代码失败:', err)
-              ElMessage.error('复制代码失败')
-            })
-        }
-      })
-      
-      block.appendChild(copyBtn)
+    const copyBtn = document.createElement('button')
+    copyBtn.className = 'code-copy-button'
+    copyBtn.innerHTML = '复制'
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const code = block.querySelector('code')
+      if (code) {
+        navigator.clipboard.writeText(code.textContent || '')
+          .then(() => {
+            copyBtn.innerHTML = '已复制'
+            ElMessage.success('代码已复制')
+            setTimeout(() => {
+              copyBtn.innerHTML = '复制'
+            }, 2000)
+          })
+          .catch(err => {
+            console.error('复制代码失败:', err)
+            ElMessage.error('复制代码失败')
+          })
+      }
     })
+    
+    block.appendChild(copyBtn)
+  })
+}
+
+const addCopyButtonToTables = () => {
+  const tables = document.querySelectorAll('.markdown-content table')
+  tables.forEach(table => {
+    // 如果表格已经在容器里，说明已经处理过
+    if (table.parentElement?.classList.contains('table-container')) return
+
+    const container = document.createElement('div')
+    container.className = 'table-container'
+    
+    // 将表格移动到新容器中
+    table.parentNode?.insertBefore(container, table)
+    container.appendChild(table)
+    
+    const copyBtn = document.createElement('button')
+    copyBtn.className = 'table-copy-button'
+    copyBtn.innerHTML = '复制表格'
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      const rows = table.querySelectorAll('tr')
+      const tsv = Array.from(rows).map(row => {
+        const cells = row.querySelectorAll('th, td')
+        return Array.from(cells).map(cell => cell.textContent?.trim() || '').join('\t')
+      }).join('\n')
+      
+      navigator.clipboard.writeText(tsv)
+        .then(() => {
+          copyBtn.innerHTML = '已复制'
+          ElMessage.success('表格内容已复制 (TSV格式)')
+          setTimeout(() => {
+            copyBtn.innerHTML = '复制表格'
+          }, 2000)
+        })
+        .catch(err => {
+          console.error('复制表格失败:', err)
+          ElMessage.error('复制表格失败')
+        })
+    })
+    
+    container.appendChild(copyBtn)
+  })
+}
+
+// 组件挂载后处理
+onMounted(() => {
+  setTimeout(() => {
+    addCopyButtonToCodeBlocks()
+    addCopyButtonToTables()
   }, 100)
 })
 </script>
@@ -382,5 +431,59 @@ onMounted(() => {
   :deep(.code-copy-button:hover) {
     background-color: #4a4a4a;
   }
+}
+</style>
+
+<style>
+/* 全局样式，用于动态添加的元素 */
+.table-container {
+  position: relative;
+  margin: 1em 0;
+}
+
+.table-container:hover .table-copy-button {
+  opacity: 1;
+}
+
+.table-copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.table-copy-button:hover {
+  background-color: #e0e0e0;
+}
+
+.code-copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s;
+  background-color: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 2px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.markdown-content pre.hljs {
+  position: relative;
+}
+
+.markdown-content pre.hljs:hover .code-copy-button {
+  opacity: 1;
 }
 </style> 

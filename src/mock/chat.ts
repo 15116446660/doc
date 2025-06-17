@@ -384,11 +384,13 @@ const mockApi: MockMethod[] = [
         },
       });
 
-      return new Response(stream, {
+      return {
+        code: 200,
+        body: stream,
         headers: {
-          'Content-Type': 'text/plain; charset=utf-8',
+          'Content-Type': 'text/event-stream',
         },
-      });
+      };
     },
   },
   

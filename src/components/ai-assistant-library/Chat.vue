@@ -28,6 +28,7 @@
       @toggleDeepThinking="toggleDeepThinkingMode"
       @toggleRAG="toggleRAGMode"
       @openModelConfig="openModelConfig"
+      @executeCommand="handleExecuteCommand"
     />
     
     <!-- 历史会话对话框 -->
@@ -85,7 +86,7 @@ import { useChat } from './hooks/useChat'
 import { useConversations } from './hooks/useConversations'
 import { useAIModels } from './hooks/useAIModels'
 import { usePromptCommands } from './hooks/usePromptCommands'
-import type { Message, Attachment, Command } from '@/types/chat'
+import type { Attachment, Command } from '@/types/chat'
 
 // 组件属性定义
 const props = defineProps<{
@@ -131,7 +132,6 @@ const {
 
 const {
   conversations,
-  currentConversationId,
   activeConversationId,
   createConversation,
   loadConversation,
@@ -150,7 +150,6 @@ const {
 const {
   commands,
   loadCommands,
-  executeCommand,
   findCommand,
   addCommand,
   updateCommandById,
@@ -173,12 +172,9 @@ const quickCommands = computed(() => {
 
 // 处理发送消息
 const handleSendMessage = async (content: string, files: File[]) => {
-  // 处理附件上传
   let attachments: Attachment[] = []
   if (files.length > 0) {
     try {
-      // 这里应该有上传文件的逻辑
-      // 简化处理，实际应该调用API上传
       attachments = files.map(file => ({
         id: Date.now().toString(),
         name: file.name,
@@ -191,11 +187,7 @@ const handleSendMessage = async (content: string, files: File[]) => {
       return
     }
   }
-  
-  // 发送消息
   await sendUserMessage(content, attachments)
-  
-  // 保存当前会话
   saveCurrentConversation()
 }
 
@@ -211,20 +203,34 @@ const handleMessageFeedback = (messageId: string, feedback: 'like' | 'dislike') 
   saveCurrentConversation()
 }
 
-// 处理快捷命令
+// 处理来自 ChatBubbleList 的快捷命令
 const handleQuickCommand = (commandId: string) => {
   try {
-    const prompt = executeCommand(commandId)
     const command = findCommand(commandId)
-    if (command) {
-      sendUserMessage(prompt, undefined, commandId, command.name)
+    if (command && command.prompt) {
+      sendUserMessage(command.prompt, undefined, command.id, command.name)
+      saveCurrentConversation()
+    } else if (command) {
+      // 如果命令没有预设prompt，可以执行其他操作
+      ElMessage.info(`执行了命令: ${command.name}`)
     }
   } catch (error) {
     ElMessage.error('执行命令失败')
   }
 }
 
-// 处理命令菜单操作
+// 处理来自 ChatSender 的带上下文的命令执行
+const handleExecuteCommand = async (command: Command, context: string) => {
+  if (command.prompt) {
+    const finalPrompt = command.prompt.replace('{selectedText}', context)
+    await sendUserMessage(finalPrompt, [], command.id, command.name)
+    saveCurrentConversation()
+  } else {
+    ElMessage.info(`执行了命令: ${command.name}`)
+  }
+}
+
+// 处理其他命令菜单操作
 const handleCommand = (command: string) => {
   switch (command) {
     case 'new':

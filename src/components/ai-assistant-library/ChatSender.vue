@@ -77,7 +77,7 @@
             :key="cmd.id"
             class="quick-command-btn"
             size="small"
-            @click="executeQuickCommand(cmd)"
+            @click="emit('executeCommand', cmd, selectedText || '')"
           >
             {{ cmd.name }}
           </el-button>
@@ -91,13 +91,27 @@
                 <el-dropdown-item 
                   v-for="cmd in hiddenQuickCommands" 
                   :key="cmd.id"
-                  @click="executeQuickCommand(cmd)"
+                  @click="emit('executeCommand', cmd, selectedText || '')"
                 >
                   {{ cmd.name }}
                 </el-dropdown-item>
               </el-dropdown-menu>
             </template>
           </el-dropdown>
+        </div>
+      </div>
+
+      <!-- 附件预览区域 -->
+      <div v-if="attachedFiles.length > 0" class="attachments-preview-wrapper">
+        <div 
+          v-for="(file, index) in attachedFiles" 
+          :key="file.name + index" 
+          class="attachment-item"
+          :title="file.name"
+        >
+          <el-icon class="attachment-icon"><Document /></el-icon>
+          <span class="attachment-name">{{ file.name }}</span>
+          <el-icon class="remove-btn" @click.stop="removeFile(index)"><CircleClose /></el-icon>
         </div>
       </div>
 
@@ -167,7 +181,7 @@
         :rows="inputRows"
         placeholder="问任何问题, @ 模型, / 提示"
         resize="none"
-        @keydown.enter.exact.prevent="sendMessage"
+        @keydown.enter.exact.prevent="handleSendMessage"
         @keydown="handleKeydown"
         @input="handleInput"
         @focus="isInputActive = true"
@@ -246,7 +260,7 @@
             circle
             :disabled="!canSend"
             :icon="isGenerating ? VideoPause : Position"
-            @click="isGenerating ? stopGenerating() : sendMessage()"
+            @click="isGenerating ? emit('stop') : handleSendMessage()"
           />
         </div>
       </div>
@@ -297,6 +311,7 @@ const props = withDefaults(
     isRAGMode?: boolean;
     currentModelId?: string;
     models?: AIModel[];
+    commands: BaseCommand[];
   }>(),
   {
     isGenerating: false,
@@ -314,21 +329,21 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
-  (e: 'send', content: string, attachments: File[], context?: { selectedText?: string }): void;
-  (e: 'stop'): void;
-  (e: 'modelChange', modelId: string): void;
-  (e: 'command', command: string): void;
-  (e: 'toggleDeepThinking'): void;
-  (e: 'toggleRAG'): void;
-  (e: 'openModelConfig'): void;
-  (e: 'clearConversation'): void;
+  (e: 'send', content: string, files: File[]): void
+  (e: 'stop'): void
+  (e: 'modelChange', modelId: string): void
+  (e: 'toggleDeepThinking'): void
+  (e: 'toggleRAG'): void
+  (e: 'openModelConfig'): void
+  (e: 'executeCommand', command: BaseCommand | QuickCommand, context: string): void
+  (e: 'command', command: string): void
 }>();
 // #endregion
 
 // #region --- State Management ---
 const inputMessage = ref('');
 const fileInputRef = ref<HTMLInputElement | null>(null);
-const attachments = ref<File[]>([]);
+const attachedFiles = ref<File[]>([]);
 const isInputActive = ref(false);
 const selectedText = ref('');
 
@@ -367,7 +382,7 @@ const currentModelLogo = computed(() => {
 
 const canSend = computed(() => {
   return (
-    !props.isGenerating && (inputMessage.value.trim().length > 0 || attachments.value.length > 0)
+    !props.isGenerating && (inputMessage.value.trim().length > 0 || attachedFiles.value.length > 0)
   );
 });
 
@@ -400,30 +415,31 @@ const selectedKnowledgeBase = computed(() => {
 const handleModelChange = (modelId: string) => emit('modelChange', modelId);
 const openModelConfig = () => emit('openModelConfig');
 const triggerFileUpload = () => fileInputRef.value?.click();
+
 const handleFileChange = (event: Event) => {
   const target = event.target as HTMLInputElement;
   if (target.files) {
-    attachments.value.push(...Array.from(target.files));
+    attachedFiles.value.push(...Array.from(target.files));
   }
+  // 清空，以便再次选择相同文件时仍能触发 change 事件
+  target.value = '';
 };
 
-const sendMessage = () => {
+const removeFile = (index: number) => {
+  attachedFiles.value.splice(index, 1);
+};
+
+const handleSendMessage = () => {
   if (!canSend.value) return;
-  const commandToSend = inputMessage.value;
 
-  if (commandToSend.startsWith('/')) {
-    emit('send', commandToSend, attachments.value);
-  } else {
-    const context = selectedText.value ? { selectedText: selectedText.value } : undefined;
-    emit('send', inputMessage.value, attachments.value, context);
-  }
+  // 所有在输入框里通过"发送"按钮或回车提交的内容，都通过 'send' 事件发出。
+  emit('send', inputMessage.value, attachedFiles.value);
 
+  // 清理工作
   inputMessage.value = '';
-  attachments.value = [];
+  attachedFiles.value = [];
   clearSelectedText();
 };
-
-const stopGenerating = () => emit('stop');
 
 const handleCommand = (command: string) => {
   if (command === 'clear') {
@@ -433,9 +449,11 @@ const handleCommand = (command: string) => {
       type: 'warning',
     })
       .then(() => {
-        emit('clearConversation');
+        emit('command', 'clear');
       })
-      .catch(() => {});
+      .catch(() => {
+        // 用户取消，无需操作
+      });
   } else {
     emit('command', command);
   }
@@ -464,13 +482,6 @@ const clearSelectedKnowledgeBase = () => {
 
 const clearSelectedText = () => {
   selectedText.value = '';
-};
-
-const executeQuickCommand = (command: QuickCommand) => {
-  const finalPrompt = command.prompt.replace('{selectedText}', selectedText.value);
-  const context = { selectedText: selectedText.value };
-  emit('send', finalPrompt, [], context);
-  clearSelectedText();
 };
 
 const handleInput = (value: string) => {
@@ -706,6 +717,48 @@ onUnmounted(() => {
       background-color: var(--el-color-primary-light-9);
       border-color: var(--el-color-primary-light-5);
       color: var(--el-color-primary);
+    }
+  }
+}
+
+.attachments-preview-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 4px 8px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+.attachment-item {
+  display: flex;
+  align-items: center;
+  background-color: var(--el-bg-color-page);
+  border: 1px solid var(--el-border-color-lighter);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 13px;
+  max-width: 200px;
+  
+  .attachment-icon {
+    margin-right: 6px;
+    color: var(--el-text-color-secondary);
+  }
+
+  .attachment-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: var(--el-text-color-regular);
+  }
+
+  .remove-btn {
+    margin-left: 8px;
+    cursor: pointer;
+    color: var(--el-text-color-placeholder);
+    transition: color 0.2s;
+    
+    &:hover {
+      color: var(--el-color-danger);
     }
   }
 }

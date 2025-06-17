@@ -205,25 +205,29 @@ export function useChat() {
   /**
    * 重新生成回复
    */
-  async function regenerateMessage(): Promise<void> {
-    if (isGenerating.value) return
+  async function regenerateMessage(aiMessageToRegenerate: Message): Promise<void> {
+    if (isGenerating.value) return;
+
+    const messageIndex = messages.value.findIndex(msg => msg.id === aiMessageToRegenerate.id);
     
-    // 获取最后一条AI消息和它之前的用户消息
-    const lastAiMessage = [...messages.value].reverse().find(msg => msg.role === 'assistant')
-    const lastUserMessage = [...messages.value].reverse().find(msg => msg.role === 'user')
-    
-    if (!lastAiMessage || !lastUserMessage) return
-    
-    // 移除最后一条AI消息
-    messages.value = messages.value.filter(msg => msg.id !== lastAiMessage.id)
-    
-    // 重新发送用户消息
+    // 确保找到了AI消息，并且它不是第一条消息（前面必须有用户消息）
+    if (messageIndex < 1) return;
+
+    const userMessageToResend = messages.value[messageIndex - 1];
+
+    // 确保前一条消息是用户消息
+    if (userMessageToResend.role !== 'user') return;
+
+    // 从当前消息列表中移除这对用户-AI消息以及之后的所有消息
+    messages.value.splice(messageIndex - 1);
+
+    // 重新发送原始用户消息
     await sendUserMessage(
-      lastUserMessage.content, 
-      lastUserMessage.attachments,
-      lastUserMessage.commandId,
-      lastUserMessage.commandName
-    )
+      userMessageToResend.content,
+      userMessageToResend.attachments,
+      userMessageToResend.commandId,
+      userMessageToResend.commandName
+    );
   }
   
   /**
