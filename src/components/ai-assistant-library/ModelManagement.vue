@@ -1,0 +1,641 @@
+<template>
+  <div class="model-management-wrapper" :class="{ 'show-form': isFormVisible }">
+    <!-- 左侧模型列表 -->
+    <div class="list-panel">
+      <div class="section-header">
+        <h3>已添加模型</h3>
+        <el-button type="primary" size="small" @click="handleAdd">添加模型</el-button>
+      </div>
+      <div class="model-list">
+        <div 
+          v-for="model in models" 
+          :key="model.id"
+          class="model-item"
+          :class="{ 'is-active': currentModelId === model.id }"
+        >
+          <div class="model-info">
+            <img :src="model.logo" class="model-logo" alt="Model Logo" />
+            <div class="model-details">
+              <div class="model-name">{{ model.name }}</div>
+              <div class="model-type">{{ getModelTypeName(model.type) }}</div>
+            </div>
+          </div>
+          <div class="model-actions">
+            <el-button 
+              type="primary" 
+              size="small" 
+              plain 
+              @click="selectModel(model.id)"
+              v-if="currentModelId !== model.id"
+            >
+              使用
+            </el-button>
+            <el-button 
+              type="info" 
+              size="small" 
+              plain 
+              @click="handleEdit(model)"
+            >
+              编辑
+            </el-button>
+            <el-button 
+              type="danger" 
+              size="small" 
+              plain 
+              @click="confirmDelete(model)"
+              v-if="models.length > 1"
+            >
+              删除
+            </el-button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右侧模型表单 -->
+    <div v-if="isFormVisible" class="form-panel">
+       <div class="form-header">
+        <h3>{{ isEditing ? '编辑模型' : '添加模型' }}</h3>
+        <el-button :icon="Close" circle text @click="closeForm"></el-button>
+      </div>
+       <el-form :model="modelForm" label-width="80px" class="model-form">
+        <el-form-item label="模型类型">
+          <el-select v-model="modelForm.type" placeholder="选择模型类型">
+            <el-option
+              v-for="option in modelTypeOptions"
+              :key="option.value"
+              :label="option.label"
+              :value="option.value"
+            />
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item label="模型名称">
+          <el-input v-model="modelForm.name" placeholder="输入模型名称" />
+        </el-form-item>
+        
+        <el-form-item label="API密钥">
+          <el-input v-model="modelForm.apiKey" placeholder="输入API密钥" show-password />
+        </el-form-item>
+        
+        <el-form-item label="API URL" v-if="modelForm.type !== 'local'">
+          <el-input v-model="modelForm.baseUrl" placeholder="输入API基础URL" />
+        </el-form-item>
+        
+        <template v-if="currentProviderConfig.basicParams.modelName && modelForm.type !== 'azure'">
+          <el-form-item label="模型版本">
+            <el-select 
+              v-model="modelForm.modelName" 
+              placeholder="选择模型版本" 
+              class="full-width-select"
+              filterable
+              v-if="modelOptions.length > 0"
+            >
+              <el-option
+                v-for="option in modelOptions"
+                :key="option.value"
+                :label="option.label"
+                :value="option.value"
+              >
+                <div class="model-option-item">
+                  <div class="model-option-name">{{ option.label }}</div>
+                  <div class="model-option-desc" v-if="option.description">{{ option.description }}</div>
+                </div>
+              </el-option>
+            </el-select>
+            <el-input v-else v-model="modelForm.modelName" placeholder="输入模型名称，例如：gpt-4" />
+          </el-form-item>
+        </template>
+        
+        <template v-if="modelForm.type === 'azure'">
+          <el-form-item label="部署名称">
+            <el-input v-model="modelForm.deploymentName" placeholder="输入Azure部署名称" />
+            <div class="field-hint">Azure OpenAI资源中的部署名称</div>
+          </el-form-item>
+          
+          <el-form-item label="API版本">
+            <el-input v-model="modelForm.apiVersion" placeholder="输入API版本，例如：2023-05-15" />
+          </el-form-item>
+        </template>
+        
+        <template v-if="modelForm.type === 'mistral' && currentProviderConfig.specialParams?.randomSeed">
+          <el-form-item label="随机性种子">
+            <el-input-number v-model="modelForm.randomSeed" :min="0" :max="9999" controls-position="right" />
+            <div class="field-hint">用于可重复结果生成的随机性种子</div>
+          </el-form-item>
+        </template>
+        
+        <div class="advanced-options-section">
+          <div class="advanced-options-header" @click="toggleAdvancedOptions">
+            <span class="advanced-label">高级选项</span>
+            <div class="advanced-toggle">
+              <span>高级设置</span>
+              <el-icon :class="{ 'is-active': showAdvancedOptions }">
+                <arrow-down />
+              </el-icon>
+            </div>
+          </div>
+          
+          <el-collapse-transition>
+            <div class="advanced-options-content" v-show="showAdvancedOptions">
+              <el-form-item label="温度">
+                <div class="slider-with-value">
+                  <div class="slider-container">
+                    <el-slider v-model="modelForm.temperature" :min="currentProviderConfig.ranges.temperature[0]" :max="currentProviderConfig.ranges.temperature[1]" :step="0.1" />
+                  </div>
+                  <div class="slider-value">{{ modelForm.temperature.toFixed(1) }}</div>
+                </div>
+                <div class="field-hint">控制响应的随机性，较高的值会产生更多样化的回答</div>
+              </el-form-item>
+              
+              <el-form-item label="最大输出">
+                <el-input-number v-model="modelForm.maxTokens" :min="currentProviderConfig.ranges.maxTokens[0]" :max="currentProviderConfig.ranges.maxTokens[1]" controls-position="right" />
+                <div class="field-hint">模型最大生成的Token数</div>
+              </el-form-item>
+              
+              <el-form-item label="Top P" v-if="currentProviderConfig.advancedParams.topP">
+                <div class="slider-with-value">
+                  <div class="slider-container">
+                    <el-slider v-model="modelForm.topP" :min="currentProviderConfig.ranges.topP?.[0] || 0" :max="currentProviderConfig.ranges.topP?.[1] || 1" :step="0.05" />
+                  </div>
+                  <div class="slider-value">{{ modelForm.topP.toFixed(2) }}</div>
+                </div>
+                <div class="field-hint">控制生成多样性的核采样阈值</div>
+              </el-form-item>
+              
+              <el-form-item label="Top K" v-if="currentProviderConfig.advancedParams.topK">
+                <el-input-number v-model="modelForm.topK" :min="currentProviderConfig.ranges.topK?.[0] || 1" :max="currentProviderConfig.ranges.topK?.[1] || 100" controls-position="right" />
+                <div class="field-hint">每一步考虑的最高概率Token数量</div>
+              </el-form-item>
+              
+              <el-form-item label="频率惩罚" v-if="currentProviderConfig.advancedParams.frequencyPenalty">
+                <div class="slider-with-value">
+                  <div class="slider-container"><el-slider v-model="modelForm.frequencyPenalty" :min="-2" :max="2" :step="0.1" /></div>
+                  <div class="slider-value">{{ modelForm.frequencyPenalty.toFixed(1) }}</div>
+                </div>
+                <div class="field-hint">减少对重复出现Token的使用</div>
+              </el-form-item>
+              
+              <el-form-item label="存在惩罚" v-if="currentProviderConfig.advancedParams.presencePenalty">
+                <div class="slider-with-value">
+                  <div class="slider-container"><el-slider v-model="modelForm.presencePenalty" :min="-2" :max="2" :step="0.1" /></div>
+                  <div class="slider-value">{{ modelForm.presencePenalty.toFixed(1) }}</div>
+                </div>
+                <div class="field-hint">减少对已出现主题的重复</div>
+              </el-form-item>
+              
+              <el-form-item label="流式响应" v-if="currentProviderConfig.advancedParams.stream">
+                <el-switch v-model="modelForm.stream" />
+                <div class="field-hint">开启逐字生成响应</div>
+              </el-form-item>
+              
+              <el-form-item label="能力级别">
+                <el-select v-model="modelForm.level" class="full-width-select">
+                  <el-option label="基础" value="basic" />
+                  <el-option label="高级" value="advanced" />
+                  <el-option label="超级高级" value="super" />
+                </el-select>
+              </el-form-item>
+            </div>
+          </el-collapse-transition>
+        </div>
+      </el-form>
+       <div class="form-footer">
+          <el-button @click="closeForm">取消</el-button>
+          <el-button type="primary" @click="saveModel">
+            {{ isEditing ? '保存更新' : '确认添加' }}
+          </el-button>
+        </div>
+    </div>
+
+    <el-dialog v-model="showDeleteConfirm" title="确认删除" width="300px" append-to-body>
+      <span>确定要删除模型 "{{ modelToDelete?.name }}" 吗？此操作不可恢复。</span>
+      <template #footer>
+        <el-button @click="showDeleteConfirm = false">取消</el-button>
+        <el-button type="danger" @click="deleteModel">确认删除</el-button>
+      </template>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import { ElMessage } from 'element-plus';
+import { ArrowDown, Close } from '@element-plus/icons-vue';
+import { v4 as uuidv4 } from 'uuid';
+import type { AIModel, AIModelConfig } from '@/types/chat';
+import { getProviderConfig, getModelOptions } from '@/components/ai-assistant-library/config/providerConfigs';
+
+const props = defineProps<{
+  currentModelId: string;
+  models: AIModel[];
+}>();
+
+const emit = defineEmits<{
+  (e: 'select-model', modelId: string): void;
+  (e: 'models-updated', models: AIModel[]): void;
+  (e: 'form-visibility-change', isVisible: boolean): void;
+}>();
+
+const localModels = ref<AIModel[]>([]);
+const showAdvancedOptions = ref(false);
+const isFormVisible = ref(false);
+const isEditing = ref(false);
+const modelForm = ref(createEmptyForm());
+const showDeleteConfirm = ref(false);
+const modelToDelete = ref<AIModel | null>(null);
+
+watch(() => props.models, (newModels) => {
+  localModels.value = [...newModels];
+}, { immediate: true, deep: true });
+
+watch(isFormVisible, (newValue) => {
+  emit('form-visibility-change', newValue);
+});
+
+const modelTypeOptions = [
+  { label: 'OpenAI', value: 'openai' },
+  { label: 'Azure OpenAI', value: 'azure' },
+  { label: 'Anthropic (Claude)', value: 'anthropic' },
+  { label: 'Google (Gemini)', value: 'google' },
+  { label: 'Mistral AI', value: 'mistral' },
+  { label: 'DeepSeek', value: 'deepseek' },
+  { label: '其他', value: 'other' }
+];
+
+function getModelTypeName(type: string): string {
+  return modelTypeOptions.find(opt => opt.value === type)?.label || type;
+}
+
+function createEmptyForm() {
+  const type = 'openai';
+  const config = getProviderConfig(type);
+  return {
+    id: '',
+    name: '',
+    type,
+    apiKey: '',
+    baseUrl: config.defaults.baseUrl,
+    modelName: '',
+    temperature: config.defaults.temperature,
+    maxTokens: config.defaults.maxTokens,
+    level: 'basic' as const,
+    logo: '',
+    topP: config.defaults.topP || 1.0,
+    topK: config.defaults.topK || 50,
+    frequencyPenalty: 0,
+    presencePenalty: 0,
+    stream: true,
+    deploymentName: '',
+    apiVersion: '2023-05-15',
+    randomSeed: 42
+  };
+}
+
+function closeForm() {
+  isFormVisible.value = false;
+  isEditing.value = false;
+  modelForm.value = createEmptyForm();
+}
+
+function handleAdd() {
+  isEditing.value = false;
+  modelForm.value = createEmptyForm();
+  isFormVisible.value = true;
+}
+
+function handleEdit(model: AIModel) {
+  isEditing.value = true;
+
+  // 安全地处理可能不存在的 config 对象
+  const config = model.config || {};
+
+  modelForm.value = {
+    id: model.id,
+    name: model.name,
+    type: model.type,
+    apiKey: model.apiKey,
+    baseUrl: model.baseUrl || '',
+    modelName: config.modelVersion || '',
+    temperature: model.temperature || 0.7,
+    maxTokens: model.maxTokens || 2000,
+    level: model.level || 'basic',
+    logo: model.logo || '',
+    topP: config.topP || 1.0,
+    topK: config.topK || 50,
+    frequencyPenalty: config.frequencyPenalty || 0,
+    presencePenalty: config.presencePenalty || 0,
+    stream: config.stream !== undefined ? config.stream : true,
+    deploymentName: config.apiVersion ? config.modelVersion : '',
+    apiVersion: config.apiVersion || '2023-05-15',
+    randomSeed: config.randomSeed || 42
+  };
+  isFormVisible.value = true;
+}
+
+function selectModel(modelId: string) {
+  emit('select-model', modelId);
+  ElMessage.success('已切换模型');
+}
+
+function confirmDelete(model: AIModel) {
+  modelToDelete.value = model;
+  showDeleteConfirm.value = true;
+}
+
+function deleteModel() {
+  if (!modelToDelete.value) return;
+  
+  if (modelToDelete.value.id === props.currentModelId) {
+    const otherModel = localModels.value.find(m => m.id !== props.currentModelId);
+    if (otherModel) {
+      emit('select-model', otherModel.id);
+    }
+  }
+  
+  const updatedModels = localModels.value.filter(m => m.id !== modelToDelete.value?.id);
+  emit('models-updated', updatedModels);
+  
+  showDeleteConfirm.value = false;
+  ElMessage.success('模型已删除');
+  
+  if(isEditing.value && modelToDelete.value.id === modelForm.value.id) {
+    closeForm();
+  }
+}
+
+function saveModel() {
+  if (!modelForm.value.name.trim()) return ElMessage.error('请输入模型名称');
+  if (!modelForm.value.apiKey.trim() && modelForm.value.type !== 'local') return ElMessage.error('请输入API密钥');
+  
+  const providerConfig = getProviderConfig(modelForm.value.type);
+  if (providerConfig.basicParams.modelName && !modelForm.value.modelName && modelForm.value.type !== 'azure') return ElMessage.error('请输入模型版本');
+  if (modelForm.value.type === 'azure') {
+    if (!modelForm.value.deploymentName) return ElMessage.error('请输入Azure部署名称');
+    if (!modelForm.value.apiVersion) return ElMessage.error('请输入API版本');
+  }
+  
+  const logo = modelForm.value.logo || providerConfig.defaults.logo || '/logos/svg/custom.svg';
+  
+  const modelConfig: AIModelConfig = {
+    apiKey: modelForm.value.apiKey,
+    apiEndpoint: modelForm.value.baseUrl,
+    modelVersion: modelForm.value.type === 'azure' ? modelForm.value.deploymentName : modelForm.value.modelName,
+    temperature: modelForm.value.temperature,
+    maxTokens: modelForm.value.maxTokens,
+    topP: modelForm.value.topP,
+    stream: modelForm.value.stream,
+    ...(providerConfig.advancedParams.topK && { topK: modelForm.value.topK }),
+    ...(providerConfig.advancedParams.frequencyPenalty && { frequencyPenalty: modelForm.value.frequencyPenalty }),
+    ...(providerConfig.advancedParams.presencePenalty && { presencePenalty: modelForm.value.presencePenalty }),
+    ...(modelForm.value.type === 'azure' && { apiVersion: modelForm.value.apiVersion }),
+    ...(modelForm.value.type === 'mistral' && providerConfig.specialParams?.randomSeed && { randomSeed: modelForm.value.randomSeed }),
+  };
+  
+  const updatedModel: AIModel = {
+    id: isEditing.value ? modelForm.value.id : uuidv4(),
+    name: modelForm.value.name,
+    type: modelForm.value.type,
+    apiKey: modelForm.value.apiKey,
+    baseUrl: modelForm.value.baseUrl,
+    temperature: modelForm.value.temperature,
+    maxTokens: modelForm.value.maxTokens,
+    level: modelForm.value.level,
+    logo,
+    config: modelConfig,
+  };
+  
+  let updatedModels: AIModel[];
+  if (isEditing.value) {
+    updatedModels = localModels.value.map(m => m.id === updatedModel.id ? updatedModel : m);
+    ElMessage.success('模型已更新');
+  } else {
+    updatedModels = [...localModels.value, updatedModel];
+    ElMessage.success('模型已添加');
+  }
+  
+  emit('models-updated', updatedModels);
+  closeForm();
+}
+
+function toggleAdvancedOptions() {
+  showAdvancedOptions.value = !showAdvancedOptions.value;
+}
+
+const currentProviderConfig = computed(() => getProviderConfig(modelForm.value.type));
+const modelOptions = computed(() => getModelOptions(modelForm.value.type));
+
+watch(() => modelForm.value.type, (newType) => {
+  const config = getProviderConfig(newType);
+  if (!isEditing.value || !modelForm.value.baseUrl) {
+    modelForm.value.baseUrl = config.defaults.baseUrl;
+  }
+  modelForm.value.temperature = config.defaults.temperature;
+  modelForm.value.maxTokens = config.defaults.maxTokens;
+  if (config.defaults.topP !== undefined) modelForm.value.topP = config.defaults.topP;
+  if (config.defaults.topK !== undefined) modelForm.value.topK = config.defaults.topK;
+});
+</script>
+
+<style scoped>
+.model-management-wrapper {
+  display: flex;
+  gap: 16px;
+  transition: all 0.3s ease-in-out;
+}
+
+.list-panel {
+  flex: 1;
+  min-width: 400px;
+  max-width: 500px;
+  transition: all 0.3s ease-in-out;
+}
+
+.form-panel {
+  flex: 1.2;
+  min-width: 450px;
+  padding-left: 16px;
+  border-left: 1px solid #e5e7eb;
+  animation: slideInFromRight 0.4s ease-out;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.form-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.model-form {
+  height: calc(100% - 80px); /* Adjust based on footer height */
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+.form-footer {
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: flex-end;
+}
+
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.section-header h3 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.model-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.model-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s;
+}
+
+.model-item:hover {
+  background-color: #f9fafb;
+}
+
+.model-item.is-active {
+  border-color: #409EFF;
+  background-color: #ecf5ff;
+}
+
+.model-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.model-logo {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: contain;
+  background-color: #fff;
+  padding: 2px;
+}
+
+.model-details {
+  display: flex;
+  flex-direction: column;
+}
+
+.model-name {
+  font-weight: 500;
+  font-size: 15px;
+}
+
+.model-type {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.model-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.advanced-options-section {
+  margin-top: 16px;
+  border-top: 1px solid #eee;
+  padding-top: 16px;
+}
+
+.advanced-options-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  cursor: pointer;
+}
+
+.advanced-options-header .advanced-label {
+  font-weight: 500;
+  color: #606266;
+}
+
+.advanced-options-header .advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #909399;
+}
+
+.advanced-options-header .el-icon {
+  transition: transform 0.2s;
+}
+
+.advanced-options-header .el-icon.is-active {
+  transform: rotate(180deg);
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 4px;
+}
+
+.slider-with-value {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.slider-container {
+  flex: 1;
+}
+
+.slider-value {
+  min-width: 45px;
+  text-align: center;
+  font-weight: 500;
+  color: #409EFF;
+  background-color: #ecf5ff;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.full-width-select {
+  width: 100%;
+}
+
+.model-option-item {
+  display: flex;
+  flex-direction: column;
+}
+</style> 

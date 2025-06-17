@@ -176,6 +176,13 @@ export function useAIModels() {
   }
   
   /**
+   * 更新整个模型列表
+   */
+  function updateModels(newModels: AIModel[]): void {
+    models.value = newModels;
+  }
+  
+  /**
    * 从本地存储加载模型列表
    */
   function loadLocalModels(): void {
@@ -219,6 +226,7 @@ export function useAIModels() {
     selectModel,
     addCustomModel,
     updateModel,
+    updateModels,
     deleteModel,
     setDefaultModel
   }

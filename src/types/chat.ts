@@ -44,24 +44,45 @@ export interface Conversation {
   favorite?: boolean;
 }
 
+// AI模型配置（详细参数）
+export interface AIModelConfig {
+  modelVersion: string;
+  apiKey: string;
+  apiEndpoint?: string;
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  topK?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
+  stream?: boolean;
+  // Azure特有
+  apiVersion?: string;
+  // Mistral特有
+  randomSeed?: number;
+}
+
 // AI模型类型
 export interface AIModel {
   id: string;
   name: string;
+  // 'openai', 'azure', 'anthropic', 'google', 'mistral', 'deepseek', 'other'
+  type: string;
   logo?: string;
   description?: string;
-  icon?: string;
-  apiEndpoint?: string;
-  systemPrompt?: string;
-  parameters?: {
-    temperature?: number;
-    maxTokens?: number;
-    topP?: number;
-    frequencyPenalty?: number;
-    presencePenalty?: number;
-    [key: string]: any;
-  };
+  level?: 'basic' | 'advanced' | 'super';
   isDefault?: boolean;
+  
+  // 核心配置
+  apiKey: string;
+  baseUrl?: string;
+  
+  // 完整配置对象
+  config: AIModelConfig;
+
+  // 简化访问的冗余字段（可选，为了方便表单绑定）
+  temperature?: number;
+  maxTokens?: number;
 }
 
 // 命令参数类型

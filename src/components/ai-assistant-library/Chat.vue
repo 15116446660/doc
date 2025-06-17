@@ -37,7 +37,7 @@
     <HistoryDialog
       v-if="showHistoryDialog"
       :conversations="conversations"
-      :currentConversationId="activeConversationId"
+      :currentConversationId="activeConversationId || undefined"
       @select="handleSelectConversation"
       @delete="handleDeleteConversation"
       @rename="handleRenameConversation"
@@ -149,8 +149,7 @@ const {
 const {
   models,
   loadModels,
-  addCustomModel,
-  updateModel
+  updateModels
 } = useAIModels()
 
 const {
@@ -205,9 +204,7 @@ const handleModelChange = (modelId: string) => {
 
 // 处理模型列表更新
 const handleModelsUpdated = (updatedModels: any[]) => {
-  models.value = updatedModels
-  // 这里可能还需要调用 useAIModels 中的方法来持久化存储
-  // E.g., saveModels(updatedModels)
+  updateModels(updatedModels)
 }
 
 // 处理消息反馈
