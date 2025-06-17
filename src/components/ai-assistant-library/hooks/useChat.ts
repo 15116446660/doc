@@ -1,18 +1,21 @@
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, effectScope, onUnmounted } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import { ElMessage } from 'element-plus'
 import { streamMessage, uploadAttachment } from '@/api/chat'
 import type { Message, MessageRole, MessageStatus, Attachment, AIModel } from '@/types/chat'
+import { useAIModels } from './useAIModels'
 
 /**
  * 聊天功能的核心逻辑封装
  */
 export function useChat() {
+  const scope = effectScope()
+  
   // 消息列表状态
   const messages = ref<Message[]>([])
   
-  // 当前使用的AI模型
-  const currentModelId = ref<string>('gpt-4')
+  // 集成 AI 模型管理，确保在同一个作用域内
+  const { currentModelId, selectModel: selectAIModel } = scope.run(() => useAIModels()) || { currentModelId: ref(''), selectModel: () => {} }
   
   // 深度思考模式
   const isDeepThinkingMode = ref<boolean>(false)
@@ -301,7 +304,7 @@ export function useChat() {
    * 设置当前使用的AI模型
    */
   function setCurrentModel(modelId: string): void {
-    currentModelId.value = modelId
+    selectAIModel(modelId)
   }
   
   /**

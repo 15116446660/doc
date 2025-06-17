@@ -38,11 +38,14 @@ export function useAIModels() {
       const response = await getModels()
       models.value = response
       
-      // 如果当前没有选择模型，或者选择的模型不在列表中，则选择默认模型
-      if (!currentModelId.value || !models.value.some(model => model.id === currentModelId.value)) {
-        if (defaultModel.value) {
-          currentModelId.value = defaultModel.value.id
-        }
+      // 检查从 localStorage 加载的 ID 是否有效
+      const savedModelId = localStorage.getItem('currentModelId');
+      if (savedModelId && models.value.some(model => model.id === savedModelId)) {
+        currentModelId.value = savedModelId;
+      } else if (defaultModel.value) {
+        // 否则，回退到默认模型
+        currentModelId.value = defaultModel.value.id
+        saveCurrentModelId(); // 如果回退到默认模型，也保存一下
       }
     } catch (error: any) {
       console.error('加载模型列表失败:', error)
