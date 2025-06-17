@@ -139,54 +139,68 @@
           <el-collapse-transition>
             <div class="advanced-options-content" v-show="showAdvancedOptions">
               <el-form-item label="温度">
-                <div class="slider-with-value">
-                  <div class="slider-container">
-                    <el-slider v-model="modelForm.temperature" :min="currentProviderConfig.ranges.temperature[0]" :max="currentProviderConfig.ranges.temperature[1]" :step="0.1" />
+                <div class="control-wrapper">
+                  <div class="slider-with-value">
+                    <div class="slider-container">
+                      <el-slider v-model="modelForm.temperature" :min="currentProviderConfig.ranges.temperature[0]" :max="currentProviderConfig.ranges.temperature[1]" :step="0.1" />
+                    </div>
+                    <div class="slider-value">{{ modelForm.temperature.toFixed(1) }}</div>
                   </div>
-                  <div class="slider-value">{{ modelForm.temperature.toFixed(1) }}</div>
+                  <div class="field-hint">控制响应的随机性，较高的值会产生更多样化的回答</div>
                 </div>
-                <div class="field-hint">控制响应的随机性，较高的值会产生更多样化的回答</div>
               </el-form-item>
               
               <el-form-item label="最大输出">
-                <el-input-number v-model="modelForm.maxTokens" :min="currentProviderConfig.ranges.maxTokens[0]" :max="currentProviderConfig.ranges.maxTokens[1]" controls-position="right" />
-                <div class="field-hint">模型最大生成的Token数</div>
+                <div class="control-wrapper">
+                  <el-input-number v-model="modelForm.maxTokens" :min="currentProviderConfig.ranges.maxTokens[0]" :max="currentProviderConfig.ranges.maxTokens[1]" controls-position="right" />
+                  <div class="field-hint">模型最大生成的Token数</div>
+                </div>
               </el-form-item>
               
               <el-form-item label="Top P" v-if="currentProviderConfig.advancedParams.topP">
-                <div class="slider-with-value">
-                  <div class="slider-container">
-                    <el-slider v-model="modelForm.topP" :min="currentProviderConfig.ranges.topP?.[0] || 0" :max="currentProviderConfig.ranges.topP?.[1] || 1" :step="0.05" />
+                <div class="control-wrapper">
+                  <div class="slider-with-value">
+                    <div class="slider-container">
+                      <el-slider v-model="modelForm.topP" :min="currentProviderConfig.ranges.topP?.[0] || 0" :max="currentProviderConfig.ranges.topP?.[1] || 1" :step="0.05" />
+                    </div>
+                    <div class="slider-value">{{ modelForm.topP.toFixed(2) }}</div>
                   </div>
-                  <div class="slider-value">{{ modelForm.topP.toFixed(2) }}</div>
+                  <div class="field-hint">控制生成多样性的核采样阈值</div>
                 </div>
-                <div class="field-hint">控制生成多样性的核采样阈值</div>
               </el-form-item>
               
               <el-form-item label="Top K" v-if="currentProviderConfig.advancedParams.topK">
-                <el-input-number v-model="modelForm.topK" :min="currentProviderConfig.ranges.topK?.[0] || 1" :max="currentProviderConfig.ranges.topK?.[1] || 100" controls-position="right" />
-                <div class="field-hint">每一步考虑的最高概率Token数量</div>
+                <div class="control-wrapper">
+                  <el-input-number v-model="modelForm.topK" :min="currentProviderConfig.ranges.topK?.[0] || 1" :max="currentProviderConfig.ranges.topK?.[1] || 100" controls-position="right" />
+                  <div class="field-hint">每一步考虑的最高概率Token数量</div>
+                </div>
               </el-form-item>
               
               <el-form-item label="频率惩罚" v-if="currentProviderConfig.advancedParams.frequencyPenalty">
-                <div class="slider-with-value">
-                  <div class="slider-container"><el-slider v-model="modelForm.frequencyPenalty" :min="-2" :max="2" :step="0.1" /></div>
-                  <div class="slider-value">{{ modelForm.frequencyPenalty.toFixed(1) }}</div>
+                <div class="control-wrapper">
+                  <div class="slider-with-value">
+                    <div class="slider-container"><el-slider v-model="modelForm.frequencyPenalty" :min="-2" :max="2" :step="0.1" /></div>
+                    <div class="slider-value">{{ modelForm.frequencyPenalty.toFixed(1) }}</div>
+                  </div>
+                  <div class="field-hint">减少对重复出现Token的使用</div>
                 </div>
-                <div class="field-hint">减少对重复出现Token的使用</div>
               </el-form-item>
               
               <el-form-item label="存在惩罚" v-if="currentProviderConfig.advancedParams.presencePenalty">
-                <div class="slider-with-value">
-                  <div class="slider-container"><el-slider v-model="modelForm.presencePenalty" :min="-2" :max="2" :step="0.1" /></div>
-                  <div class="slider-value">{{ modelForm.presencePenalty.toFixed(1) }}</div>
+                <div class="control-wrapper">
+                  <div class="slider-with-value">
+                    <div class="slider-container"><el-slider v-model="modelForm.presencePenalty" :min="-2" :max="2" :step="0.1" /></div>
+                    <div class="slider-value">{{ modelForm.presencePenalty.toFixed(1) }}</div>
+                  </div>
+                  <div class="field-hint">减少对已出现主题的重复</div>
                 </div>
-                <div class="field-hint">减少对已出现主题的重复</div>
               </el-form-item>
               
               <el-form-item label="流式响应" v-if="currentProviderConfig.advancedParams.stream">
-                <el-switch v-model="modelForm.stream" />
-                <div class="field-hint">开启逐字生成响应</div>
+                <div class="control-wrapper">
+                  <el-switch v-model="modelForm.stream" />
+                  <div class="field-hint">开启逐字生成响应</div>
+                </div>
               </el-form-item>
               
               <el-form-item label="能力级别">
@@ -690,5 +704,9 @@ h3 {
   background-color: var(--el-bg-color);
   text-align: right;
   flex-shrink: 0;
+}
+
+.control-wrapper {
+  width: 100%;
 }
 </style> 
