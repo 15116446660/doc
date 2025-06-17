@@ -4,7 +4,7 @@
     <div v-if="thinking" class="thinking-container">
       <div class="thinking-header" @click="toggleThinking">
         <el-icon :class="{ 'is-active': showThinking }">
-          <component :is="showThinking ? 'ArrowDown' : 'ArrowRight'" />
+          <component :is="showThinking ? ArrowDown : ArrowRight" />
         </el-icon>
         <span>思考过程</span>
       </div>
@@ -15,26 +15,13 @@
     
     <!-- 主要内容区域 -->
     <div class="markdown-content" v-html="renderedContent"></div>
-    
-    <!-- 复制按钮 -->
-    <div class="copy-button" v-if="content && content.trim().length > 0">
-      <el-button
-        size="small"
-        type="text"
-        @click="copyContent"
-        :title="copied ? '已复制' : '复制内容'"
-      >
-        <el-icon>
-          <component :is="copied ? 'Check' : 'DocumentCopy'" />
-        </el-icon>
-      </el-button>
-    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
+import { ArrowDown, ArrowRight } from '@element-plus/icons-vue'
 import MarkdownIt from 'markdown-it'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/github.css'
@@ -46,7 +33,6 @@ const props = defineProps<{
 }>()
 
 // 状态
-const copied = ref(false)
 const showThinking = ref(false)
 
 // 创建Markdown渲染器
@@ -79,22 +65,6 @@ const renderedThinking = computed(() => {
   return md.render(props.thinking)
 })
 
-// 复制内容到剪贴板
-const copyContent = () => {
-  navigator.clipboard.writeText(props.content).then(() => {
-    copied.value = true
-    ElMessage.success('内容已复制到剪贴板')
-    
-    // 3秒后重置状态
-    setTimeout(() => {
-      copied.value = false
-    }, 3000)
-  }).catch(err => {
-    console.error('复制失败:', err)
-    ElMessage.error('复制失败')
-  })
-}
-
 // 切换思考内容显示状态
 const toggleThinking = () => {
   showThinking.value = !showThinking.value
@@ -102,7 +72,6 @@ const toggleThinking = () => {
 
 // 监听内容变化，重置复制状态
 watch(() => props.content, () => {
-  copied.value = false
   // 异步更新DOM后执行
   setTimeout(() => {
     addCopyButtonToCodeBlocks()
