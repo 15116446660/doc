@@ -4,7 +4,7 @@ import ChatBubbleList from './ChatBubbleList.vue'
 import ChatSender from './ChatSender.vue'
 import MarkdownMessage from './MarkdownMessage.vue'
 import HistoryDialog from './HistoryDialog.vue'
-import ModelConfigModal from './ModelConfigModal.vue'
+import ModelManagementDialog from './ModelManagementDialog.vue'
 import CommandManagementModal from './CommandManagementModal.vue'
 import SettingsModal from './SettingsModal.vue'
 
@@ -35,7 +35,7 @@ export {
   ChatSender,
   MarkdownMessage,
   HistoryDialog,
-  ModelConfigModal,
+  ModelManagementDialog,
   CommandManagementModal,
   SettingsModal
 }
@@ -70,7 +70,7 @@ export default {
     app.component('ChatSender', ChatSender)
     app.component('MarkdownMessage', MarkdownMessage)
     app.component('HistoryDialog', HistoryDialog)
-    app.component('ModelConfigModal', ModelConfigModal)
+    app.component('ModelManagementDialog', ModelManagementDialog)
     app.component('CommandManagementModal', CommandManagementModal)
     app.component('SettingsModal', SettingsModal)
   }

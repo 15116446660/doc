@@ -45,12 +45,14 @@
     />
     
     <!-- 模型配置对话框 -->
-    <ModelConfigModal
+    <ModelManagementDialog
       v-if="showModelConfigModal"
+      :show="showModelConfigModal"
       :models="models"
-      :currentModelId="currentModelId"
-      @save="handleSaveModel"
-      @close="showModelConfigModal = false"
+      :current-model-id="currentModelId"
+      @update:show="showModelConfigModal = false"
+      @select-model="handleModelChange"
+      @models-updated="handleModelsUpdated"
     />
     
     <!-- 命令管理对话框 -->
@@ -81,7 +83,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import ChatBubbleList from './ChatBubbleList.vue'
 import ChatSender from './ChatSender.vue'
 import HistoryDialog from './HistoryDialog.vue'
-import ModelConfigModal from './ModelConfigModal.vue'
+import ModelManagementDialog from './ModelManagementDialog.vue'
 import CommandManagementModal from './CommandManagementModal.vue'
 import SettingsModal from './SettingsModal.vue'
 import { useChat } from './hooks/useChat'
@@ -199,6 +201,13 @@ const handleSendMessage = async (content: string, files: File[]) => {
 const handleModelChange = (modelId: string) => {
   setCurrentModel(modelId)
   saveCurrentConversation()
+}
+
+// 处理模型列表更新
+const handleModelsUpdated = (updatedModels: any[]) => {
+  models.value = updatedModels
+  // 这里可能还需要调用 useAIModels 中的方法来持久化存储
+  // E.g., saveModels(updatedModels)
 }
 
 // 处理消息反馈
