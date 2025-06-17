@@ -226,6 +226,30 @@ import { v4 as uuidv4 } from 'uuid';
 import type { AIModel, AIModelConfig } from '@/types/chat';
 import { getProviderConfig, getModelOptions } from '@/components/ai-assistant-library/config/providerConfigs';
 
+// 为表单创建一个专用的、扁平化的状态类型
+type ModelFormState = {
+  id: string;
+  name: string;
+  type: string;
+  logo: string;
+  level: 'basic' | 'advanced' | 'super';
+  apiKey: string;
+  baseUrl: string;
+  modelName: string; // Corresponds to modelVersion in config
+  temperature: number;
+  maxTokens: number;
+  topP: number;
+  topK: number;
+  frequencyPenalty: number;
+  presencePenalty: number;
+  stream: boolean;
+  // Azure-specific
+  deploymentName: string; // Special handling for Azure's modelVersion
+  apiVersion: string;
+  // Mistral-specific
+  randomSeed: number;
+};
+
 const props = defineProps<{
   currentModelId: string;
   models: AIModel[];
@@ -241,7 +265,7 @@ const localModels = ref<AIModel[]>([]);
 const showAdvancedOptions = ref(false);
 const isFormVisible = ref(false);
 const isEditing = ref(false);
-const modelForm = ref(createEmptyForm());
+const modelForm = ref<ModelFormState>(createEmptyForm());
 const showDeleteConfirm = ref(false);
 const modelToDelete = ref<AIModel | null>(null);
 
@@ -267,7 +291,7 @@ function getModelTypeName(type: string): string {
   return modelTypeOptions.find(opt => opt.value === type)?.label || type;
 }
 
-function createEmptyForm() {
+function createEmptyForm(): ModelFormState {
   const type = 'openai';
   const config = getProviderConfig(type);
   return {
@@ -279,7 +303,7 @@ function createEmptyForm() {
     modelName: '',
     temperature: config.defaults.temperature,
     maxTokens: config.defaults.maxTokens,
-    level: 'basic' as const,
+    level: 'basic',
     logo: '',
     topP: config.defaults.topP || 1.0,
     topK: config.defaults.topK || 50,
@@ -375,7 +399,7 @@ function saveModel() {
     if (!modelForm.value.apiVersion) return ElMessage.error('请输入API版本');
   }
   
-  const logo = modelForm.value.logo || providerConfig.defaults.logo || '/logos/svg/custom.svg';
+  const logo = modelForm.value.logo || '/logos/svg/custom.svg';
   
   const modelConfig: AIModelConfig = {
     apiKey: modelForm.value.apiKey,
@@ -440,98 +464,104 @@ watch(() => modelForm.value.type, (newType) => {
 <style scoped>
 .model-management-wrapper {
   display: flex;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
   gap: 16px;
-  transition: all 0.3s ease-in-out;
+  background-color: var(--el-bg-color-page);
+  padding: 16px;
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .list-panel {
   flex: 1;
-  min-width: 400px;
-  max-width: 500px;
-  transition: all 0.3s ease-in-out;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 300px;
+  transition: all 0.3s ease;
 }
 
 .form-panel {
-  flex: 1.2;
-  min-width: 450px;
-  padding-left: 16px;
-  border-left: 1px solid #e5e7eb;
-  animation: slideInFromRight 0.4s ease-out;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background-color: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  min-width: 350px;
+}
+
+.model-management-wrapper.show-form .list-panel {
+  flex-basis: 50%;
+}
+
+.model-management-wrapper.show-form .form-panel {
+  flex-basis: 50%;
+}
+
+/* 响应式布局 */
+@media (max-width: 992px) {
+  .model-management-wrapper {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .list-panel,
+  .form-panel {
+    flex: 1;
+    min-height: 400px; /* 保证在小屏幕上有最小高度 */
+  }
+
+  .model-management-wrapper.show-form .list-panel,
+  .model-management-wrapper.show-form .form-panel {
+     flex-basis: auto; /* 重置 basis 以适应垂直布局 */
+  }
+}
+
+.section-header, .form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 8px 12px;
+  flex-shrink: 0;
 }
 
 .form-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  padding: 8px 8px 8px 24px;
+  border-bottom: 1px solid var(--el-border-color);
 }
 
-.form-header h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.model-form {
-  height: calc(100% - 80px); /* Adjust based on footer height */
-  overflow-y: auto;
-  padding-right: 10px;
-}
-
-.form-footer {
-  padding-top: 16px;
-  border-top: 1px solid #e5e7eb;
-  display: flex;
-  justify-content: flex-end;
-}
-
-@keyframes slideInFromRight {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-}
-
-.section-header h3 {
+h3 {
   margin: 0;
   font-size: 16px;
   font-weight: 600;
 }
 
 .model-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  flex-grow: 1;
+  overflow-y: auto;
+  padding-right: 8px; /* For scrollbar */
 }
 
 .model-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 16px;
+  padding: 12px;
+  border: 1px solid var(--el-border-color-light);
   border-radius: 8px;
-  border: 1px solid #e5e7eb;
-  transition: all 0.2s;
-}
-
-.model-item:hover {
-  background-color: #f9fafb;
+  margin-bottom: 12px;
+  background-color: var(--el-bg-color);
+  transition: all 0.2s ease;
 }
 
 .model-item.is-active {
-  border-color: #409EFF;
-  background-color: #ecf5ff;
+  border-color: var(--el-color-primary);
+  box-shadow: 0 0 10px rgba(var(--el-color-primary-rgb), 0.1);
 }
 
 .model-info {
@@ -541,12 +571,12 @@ watch(() => modelForm.value.type, (newType) => {
 }
 
 .model-logo {
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
   object-fit: contain;
-  background-color: #fff;
-  padding: 2px;
+  background: #fff;
+  border: 1px solid var(--el-border-color-lighter);
 }
 
 .model-details {
@@ -556,12 +586,12 @@ watch(() => modelForm.value.type, (newType) => {
 
 .model-name {
   font-weight: 500;
-  font-size: 15px;
+  font-size: 14px;
 }
 
 .model-type {
-  font-size: 13px;
-  color: #6b7280;
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 .model-actions {
@@ -569,73 +599,96 @@ watch(() => modelForm.value.type, (newType) => {
   gap: 8px;
 }
 
-.advanced-options-section {
-  margin-top: 16px;
-  border-top: 1px solid #eee;
-  padding-top: 16px;
-}
-
-.advanced-options-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  cursor: pointer;
-}
-
-.advanced-options-header .advanced-label {
-  font-weight: 500;
-  color: #606266;
-}
-
-.advanced-options-header .advanced-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #909399;
-}
-
-.advanced-options-header .el-icon {
-  transition: transform 0.2s;
-}
-
-.advanced-options-header .el-icon.is-active {
-  transform: rotate(180deg);
-}
-
-.field-hint {
-  font-size: 12px;
-  color: #909399;
-  margin-top: 4px;
-}
-
-.slider-with-value {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-}
-
-.slider-container {
-  flex: 1;
-}
-
-.slider-value {
-  min-width: 45px;
-  text-align: center;
-  font-weight: 500;
-  color: #409EFF;
-  background-color: #ecf5ff;
-  padding: 4px 8px;
-  border-radius: 4px;
+.model-form {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 24px;
 }
 
 .full-width-select {
   width: 100%;
 }
 
+.field-hint {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.advanced-options-section {
+  border: 1px solid var(--el-border-color-light);
+  border-radius: 8px;
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+.advanced-options-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  cursor: pointer;
+  background-color: var(--el-bg-color-page);
+}
+
+.advanced-label {
+  font-weight: 500;
+}
+
+.advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+}
+
+.advanced-toggle .el-icon {
+  transition: transform 0.3s;
+}
+
+.advanced-toggle .el-icon.is-active {
+  transform: rotate(180deg);
+}
+
+.advanced-options-content {
+  padding: 16px;
+}
+
+.slider-with-value {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.slider-container {
+  flex-grow: 1;
+}
+
+.slider-value {
+  width: 40px;
+  text-align: right;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+}
+
 .model-option-item {
   display: flex;
-  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+.model-option-desc {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
+}
+
+.form-footer {
+  padding: 16px 24px;
+  border-top: 1px solid var(--el-border-color);
+  background-color: var(--el-bg-color);
+  text-align: right;
+  flex-shrink: 0;
 }
 </style> 
