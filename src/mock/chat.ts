@@ -1,5 +1,5 @@
 import type { MockMethod } from 'vite-plugin-mock'
-import type { AIModel, Command, KnowledgeBase, Message, SubCommand, QuickCommand } from '@/types/chat'
+import type { AIModel, Command, KnowledgeBase, Message, SubCommand, QuickCommand, RAGChatRequest, RAGChatResponse, NormalChatRequest, NormalChatResponse, Reference, DocumentAggregation } from '@/types/chat'
 import { v4 as uuidv4 } from 'uuid'
 
 interface RequestParams {
@@ -65,6 +65,30 @@ const mockKnowledgeBases: KnowledgeBase[] = [
   { id: 'kb-2', name: '研发项目管理知识库', description: '覆盖项目流程、代码规范和常见问题解答。', icon: 'FolderOpened' },
   { id: 'kb-3', name: '市场与竞品分析报告', description: '最新的市场趋势和竞争对手动态分析。', icon: 'DataAnalysis' },
 ]
+
+// 模拟知识库引用
+const mockReference: Reference = {
+  total: 1,
+  chunks: [
+    {
+      id: "cebaea2b7221cc02",
+      content: "这是一段来自知识库的引用内容",
+      document_id: "2982d73c3b9511f0af9e0242ac120003",
+      document_name: "示例文档.docx",
+      dataset_id: "d34e94b236b911f082200242ac120003",
+      positions: [1, 2, 3]
+    }
+  ]
+};
+
+// 模拟文档聚合
+const mockDocAggs: DocumentAggregation[] = [
+  {
+    doc_name: "示例文档.docx",
+    doc_id: "2982d73c3b9511f0af9e0242ac120003",
+    count: 1
+  }
+];
 
 // 生成AI回复的函数
 function generateAIResponse(messages: Message[], options?: any): Message {
@@ -215,6 +239,51 @@ console.log(greet('Developer'));
 
 链接示例: [访问 Element Plus 官网](https://element-plus.org)
 `;
+
+// 创建流式响应
+function createStreamResponse(content: string, delay = 100): ReadableStream {
+  const chunks = content.split('');
+  let index = 0;
+
+  return new ReadableStream({
+    start(controller) {
+      function push() {
+        if (index >= chunks.length) {
+          controller.close();
+          return;
+        }
+
+        const chunk = {
+          content: chunks[index],
+          id: uuidv4()
+        };
+
+        controller.enqueue(new TextEncoder().encode(JSON.stringify(chunk) + '\n'));
+        index++;
+
+        setTimeout(push, delay);
+      }
+
+      push();
+    }
+  });
+}
+
+// 生成思考内容
+function generateThinking(question: string): string {
+  return `让我思考一下这个问题...\n\n问题分析：\n${question}\n\n这个问题涉及到几个关键点：\n1. 背景信息\n2. 核心概念\n3. 实际应用\n\n开始组织回答...`;
+}
+
+// 生成回答内容
+function generateAnswer(question: string, withReference = false): string {
+  const baseAnswer = `关于"${question}"，我的回答是：\n\n这是一个很好的问题。根据我所了解的信息，这个问题可以从多个角度来分析...\n\n首先，我们需要考虑...\n\n其次，重要的一点是...\n\n最后，不要忘记...\n\n希望这个回答对你有所帮助！`;
+  
+  if (withReference) {
+    return `根据知识库内容，${baseAnswer}`;
+  }
+  
+  return baseAnswer;
+}
 
 const mockApi: MockMethod[] = [
   // 获取AI模型列表
@@ -533,6 +602,60 @@ const mockApi: MockMethod[] = [
       };
     },
   },
+  // RAG 流式对话
+  {
+    url: '/api/document-ai/ai/rag/streamChat',
+    method: 'post',
+    response: ({ body }: { body: RAGChatRequest }) => {
+      const content = generateAnswer(body.question, true);
+      return {
+        code: 200,
+        data: createStreamResponse(content)
+      };
+    }
+  },
+  // RAG 非流式对话
+  {
+    url: '/api/document-ai/ai/rag/chat',
+    method: 'post',
+    response: ({ body }: { body: RAGChatRequest }): RAGChatResponse => {
+      return {
+        code: 200,
+        data: {
+          answer: generateAnswer(body.question, true),
+          reference: mockReference,
+          doc_aggs: mockDocAggs,
+          prompt: body.deepthinking ? generateThinking(body.question) : undefined
+        }
+      };
+    }
+  },
+  // 普通流式对话
+  {
+    url: '/api/document-ai/ai/poststreamPolish',
+    method: 'post',
+    response: ({ body }: { body: NormalChatRequest }) => {
+      const content = generateAnswer(body.prompt);
+      return {
+        code: 200,
+        data: createStreamResponse(content)
+      };
+    }
+  },
+  // 普通非流式对话
+  {
+    url: '/api/document-ai/ai/postPolish',
+    method: 'post',
+    response: ({ body }: { body: NormalChatRequest }): NormalChatResponse => {
+      return {
+        code: 200,
+        data: {
+          content: generateAnswer(body.prompt),
+          thinking: body.deepthinking ? generateThinking(body.prompt) : undefined
+        }
+      };
+    }
+  }
 ]
 
 export default mockApi 

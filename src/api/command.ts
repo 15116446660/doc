@@ -16,3 +16,10 @@ export function getSubCommands(parentCommandId: string): Promise<SubCommand[]> {
 export function getQuickCommands(): Promise<QuickCommand[]> {
   return get<QuickCommand[]>('/api/quick-commands');
 } 
+ 
+ 
+ 
+ 
+ 
+ 
+ 

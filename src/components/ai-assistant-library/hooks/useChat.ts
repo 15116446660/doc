@@ -2,13 +2,23 @@ import { ref, reactive, computed, watch, effectScope, onUnmounted } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 import { ElMessage } from 'element-plus'
 import { streamMessage, uploadAttachment } from '@/api/chat'
-import type { Message, MessageRole, MessageStatus, Attachment, AIModel } from '@/types/chat'
+import type { Message, MessageRole, MessageStatus, Attachment, AIModel, ChatConfig, ChatContext, Reference, RAGChatRequest, NormalChatRequest, DocumentAggregation } from '@/types/chat'
 import { useAIModels } from './useAIModels'
+import {
+  streamNormalChat,
+  streamRAGChat,
+  normalChat,
+  ragChat
+} from '@/api/chat'
 
 /**
  * 聊天功能的核心逻辑封装
  */
-export function useChat() {
+export function useChat(initialConfig: ChatConfig = {
+  modelId: '',
+  deepthinking: false,
+  rag: false
+}) {
   const scope = effectScope()
   
   // 消息列表状态
@@ -44,6 +54,19 @@ export function useChat() {
   // 计算属性：是否有消息
   const hasMessages = computed<boolean>(() => messages.value.length > 0)
   
+  const config = ref<ChatConfig>(initialConfig)
+  const currentReferences = ref<Reference[]>([])
+  
+  // 计算属性：当前会话ID
+  const sessionId = computed(() => {
+    return uuidv4();
+  });
+
+  // 计算属性：当前聊天ID
+  const chatId = computed(() => {
+    return uuidv4();
+  });
+  
   /**
    * 创建新消息对象
    */
@@ -61,8 +84,20 @@ export function useChat() {
   /**
    * 添加消息到列表
    */
-  function addMessage(message: Message): void {
-    messages.value.push(message)
+  function addMessage(message: Partial<Message>): Message {
+    const newMessage: Message = {
+      id: message.id || uuidv4(),
+      role: message.role || 'user',
+      content: message.content || '',
+      timestamp: message.timestamp || Date.now(),
+      status: message.status || 'completed',
+      thinking: message.thinking,
+      commandId: message.commandId,
+      reference: message.reference,
+      docAggs: message.docAggs
+    };
+    messages.value.push(newMessage);
+    return newMessage;
   }
   
   /**
@@ -95,28 +130,28 @@ export function useChat() {
     }
     
     // 创建用户消息
-    const userMessage: Message = {
+    const userMessage = {
       id: uuidv4(),
-      role: 'user',
+      role: 'user' as const,
       content,
       timestamp: Date.now(),
-      status: 'completed',
+      status: 'completed' as const,
       attachments,
       commandId,
       commandName
-    }
+    } as Message;
     
     // 添加用户消息到列表
     addMessage(userMessage)
     
     // 创建AI回复消息（初始为空）
-    const aiMessage: Message = {
+    const aiMessage = {
       id: uuidv4(),
-      role: 'assistant',
+      role: 'assistant' as const,
       content: '',
       timestamp: Date.now(),
-      status: 'thinking'
-    }
+      status: 'thinking' as MessageStatus
+    } as unknown as Message;
     
     // 添加AI回复消息到列表
     addMessage(aiMessage)
@@ -128,60 +163,88 @@ export function useChat() {
     abortController.value = new AbortController()
     
     try {
-      // 准备消息历史
-      const messageHistory = messages.value
-        .filter(msg => msg.id !== aiMessage.id)
-        .map(msg => ({
-          id: msg.id,
-          role: msg.role,
-          content: msg.content,
-          timestamp: msg.timestamp
-        }))
-      
       // 更新AI消息状态为生成中
       updateMessageStatus(aiMessage.id, 'generating')
-      
-      // 发送请求获取AI回复
-      const stream = await streamMessage(messageHistory, currentModelId.value, {
-        deepThinking: isDeepThinkingMode.value,
-        knowledgeBaseId: isRAGMode.value ? currentKnowledgeBaseId.value || undefined : undefined,
-        fullTextReference: isFullTextReferenceMode.value,
-        signal: abortController.value.signal
-      })
+      debugger
+      if (isRAGMode.value && currentKnowledgeBaseId.value) {
+        // 使用RAG模式
+        const ragRequest: RAGChatRequest = {
+          chatId: uuidv4(),
+          sessionId: uuidv4(),
+          question: content,
+          deepthinking: isDeepThinkingMode.value,
+          knowledgeBaseId: currentKnowledgeBaseId.value // 确保传递知识库ID
+        };
 
-      // 处理流式响应
-      const reader = stream.getReader();
-      const decoder = new TextDecoder();
-      let thinkingContent = '';
-      let isThinkingPhase = false;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
+        await streamRAGChat(
+          ragRequest,
+          (content: string, id?: string) => {
+            aiMessage.content = content;
+          },
+          (error: Error) => {
+            console.error('RAG Chat Error:', error);
+            updateMessageStatus(aiMessage.id, 'error');
+            (aiMessage as any).error = error.message || '获取AI回复失败';
+            ElMessage.error('获取AI回复失败: ' + (error.message || '未知错误'));
+          },
+          () => {
+            updateMessageStatus(aiMessage.id, 'completed');
+            isGenerating.value = false;
+            abortController.value = null;
+          },
+          abortController.value
+        );
+      } else {
+        // 使用普通模式
+        // 准备消息历史
+        const messageHistory = messages.value
+          .filter(msg => msg.id !== aiMessage.id)
+          .map(msg => ({
+            id: msg.id,
+            role: msg.role,
+            content: msg.content,
+            timestamp: msg.timestamp
+          }))
         
-        // 简单的协议解析：检查思考和回答的分隔符
-        if (chunk.includes('<thinking>')) {
-          isThinkingPhase = true;
-        }
-        if (chunk.includes('</thinking>')) {
-          isThinkingPhase = false;
-          continue; // 跳过分隔符本身
-        }
-        
-        if (isThinkingPhase) {
-          thinkingContent += chunk.replace('<thinking>', '');
-          if(aiMessage.thinking !== thinkingContent) {
-            aiMessage.thinking = thinkingContent;
+        // 发送请求获取AI回复
+        const stream = await streamMessage(messageHistory, currentModelId.value, {
+          deepThinking: isDeepThinkingMode.value,
+          signal: abortController.value.signal
+        })
+
+        // 处理流式响应
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
+        let thinkingContent = '';
+        let isThinkingPhase = false;
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value, { stream: true });
+          
+          // 简单的协议解析：检查思考和回答的分隔符
+          if (chunk.includes('<thinking>')) {
+            isThinkingPhase = true;
           }
-        } else {
-          aiMessage.content += chunk;
+          if (chunk.includes('</thinking>')) {
+            isThinkingPhase = false;
+            continue; // 跳过分隔符本身
+          }
+          
+          if (isThinkingPhase) {
+            thinkingContent += chunk.replace('<thinking>', '');
+            if(aiMessage.thinking !== thinkingContent) {
+              aiMessage.thinking = thinkingContent;
+            }
+          } else {
+            aiMessage.content += chunk;
+          }
         }
+        
+        updateMessageStatus(aiMessage.id, 'completed')
       }
-      
-      updateMessageStatus(aiMessage.id, 'completed')
-
     } catch (error: any) {
       // 检查是否是用户取消
       if (error.name === 'AbortError') {
@@ -189,7 +252,7 @@ export function useChat() {
       } else {
         // 其他错误
         updateMessageStatus(aiMessage.id, 'error')
-        aiMessage.error = error.message || '获取AI回复失败'
+        (aiMessage as any).error = error.message || '获取AI回复失败';
         ElMessage.error('获取AI回复失败: ' + (error.message || '未知错误'))
       }
     } finally {
@@ -202,11 +265,15 @@ export function useChat() {
   /**
    * 停止生成回复
    */
-  function stopGenerating(): void {
+  function stopGeneration(): void {
     if (abortController.value) {
       abortController.value.abort()
       abortController.value = null
     }
+    if (lastMessage.value?.status === 'pending') {
+      updateMessageStatus(lastMessage.value.id, 'completed')
+    }
+    isGenerating.value = false
   }
   
   /**
@@ -242,6 +309,7 @@ export function useChat() {
    */
   function clearMessages(): void {
     messages.value = []
+    currentReferences.value = []
   }
   
   /**
@@ -287,6 +355,9 @@ export function useChat() {
   function toggleRAGMode(): void {
     isRAGMode.value = !isRAGMode.value
     
+    // 同步到配置
+    config.value.rag = isRAGMode.value;
+    
     // 如果关闭RAG模式，清空知识库ID
     if (!isRAGMode.value) {
       currentKnowledgeBaseId.value = null
@@ -316,9 +387,151 @@ export function useChat() {
     // 如果设置了知识库，自动开启RAG模式
     if (knowledgeBaseId) {
       isRAGMode.value = true
+      config.value.rag = true
     }
   }
   
+  // 添加用户消息
+  function addUserMessage(content: string): Message {
+    const message: Message = {
+      id: uuidv4(),
+      role: 'user' as MessageRole,
+      content,
+      timestamp: Date.now()
+    };
+    messages.value.push(message);
+    return message;
+  }
+
+  // 添加助手消息
+  function addAssistantMessage(content: string, thinking?: string): Message {
+    const message: Message = {
+      id: uuidv4(),
+      role: 'assistant' as MessageRole,
+      content,
+      timestamp: Date.now(),
+      status: 'pending' as MessageStatus,
+      thinking
+    };
+    messages.value.push(message);
+    return message;
+  }
+
+  // 更新消息内容
+  function updateMessage(id: string, content: string) {
+    const message = messages.value.find(m => m.id === id);
+    if (message) {
+      message.content = content;
+    }
+  }
+
+  // 发送消息
+  async function sendMessage(content: string) {
+    if (isGenerating.value) {
+      return;
+    }
+
+    // 添加用户消息
+    addUserMessage(content);
+
+    // 创建中止控制器
+    abortController.value = new AbortController();
+    isGenerating.value = true;
+
+    try {
+      if (config.value.rag) {
+        // 使用RAG模式
+        const assistantMessage = addAssistantMessage('', config.value.deepthinking ? '正在思考...' : undefined);
+        
+        const ragRequest: RAGChatRequest = {
+          chatId: config.value.chatId || uuidv4(),
+          sessionId: config.value.sessionId || uuidv4(),
+          question: content,
+          deepthinking: config.value.deepthinking
+        };
+
+        await streamRAGChat(
+          ragRequest,
+          (content, id) => {
+            updateMessage(assistantMessage.id, content);
+          },
+          (error) => {
+            console.error('RAG Chat Error:', error);
+            updateMessageStatus(assistantMessage.id, 'error');
+            if (assistantMessage) {
+              assistantMessage.error = error.message;
+            }
+          },
+          () => {
+            updateMessageStatus(assistantMessage.id, 'completed');
+            isGenerating.value = false;
+          },
+          abortController.value
+        );
+      } else {
+        // 使用普通对话模式
+        const assistantMessage = addAssistantMessage('', config.value.deepthinking ? '正在思考...' : undefined);
+        
+        const normalRequest: NormalChatRequest = {
+          prompt: content,
+          modelId: config.value.modelId,
+          deepthinking: config.value.deepthinking
+        };
+
+        await streamNormalChat(
+          normalRequest,
+          (content, id) => {
+            updateMessage(assistantMessage.id, content);
+          },
+          (error) => {
+            console.error('Normal Chat Error:', error);
+            updateMessageStatus(assistantMessage.id, 'error');
+            if (assistantMessage) {
+              assistantMessage.error = error.message;
+            }
+          },
+          () => {
+            updateMessageStatus(assistantMessage.id, 'completed');
+            isGenerating.value = false;
+          },
+          abortController.value
+        );
+      }
+    } catch (error) {
+      console.error('Chat Error:', error);
+      if (lastMessage.value?.status === 'pending') {
+        updateMessageStatus(lastMessage.value.id, 'error');
+        if (lastMessage.value && error instanceof Error) {
+          lastMessage.value.error = error.message;
+        }
+      }
+      isGenerating.value = false;
+    }
+  }
+
+  // 更新配置
+  function updateConfig(newConfig: Partial<ChatConfig>) {
+    config.value = {
+      ...config.value,
+      ...newConfig
+    };
+    
+    // 同步RAG模式
+    if (newConfig.rag !== undefined) {
+      isRAGMode.value = newConfig.rag;
+    }
+    
+    // 同步深度思考模式
+    if (newConfig.deepthinking !== undefined) {
+      isDeepThinkingMode.value = newConfig.deepthinking;
+    }
+  }
+  
+  // 清理副作用
+  scope.run(() => {
+    // 在这里注册需要自动清理的副作用
+  });
+
   return {
     // 状态
     messages,
@@ -335,7 +548,7 @@ export function useChat() {
     
     // 方法
     sendUserMessage,
-    stopGenerating,
+    stopGeneration,
     regenerateMessage,
     clearMessages,
     setMessageFeedback,
@@ -344,6 +557,8 @@ export function useChat() {
     toggleRAGMode,
     toggleFullTextReferenceMode,
     setCurrentModel,
-    setCurrentKnowledgeBase
+    setCurrentKnowledgeBase,
+    sendMessage,
+    updateConfig
   }
 } 

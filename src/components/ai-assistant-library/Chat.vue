@@ -31,6 +31,8 @@
       @toggleFullTextReference="toggleFullTextReferenceMode"
       @openModelConfig="openModelConfig"
       @executeCommand="handleExecuteCommand"
+      @selectKnowledgeBase="handleSelectKnowledgeBase"
+      @clearSelectedKnowledgeBase="handleClearSelectedKnowledgeBase"
     />
     
     <!-- 历史会话对话框 -->
@@ -133,7 +135,8 @@ const {
   setCurrentModel,
   toggleDeepThinkingMode,
   toggleRAGMode,
-  toggleFullTextReferenceMode
+  toggleFullTextReferenceMode,
+  setCurrentKnowledgeBase
 } = useChat()
 
 const {
@@ -192,7 +195,14 @@ const handleSendMessage = async (content: string, files: File[]) => {
       return
     }
   }
-  await sendUserMessage(content, attachments)
+  
+  // 如果启用了RAG模式，确保传递知识库ID
+  if (isRAGMode) {
+    await sendUserMessage(content, attachments, undefined, undefined)
+  } else {
+    await sendUserMessage(content, attachments)
+  }
+  
   saveCurrentConversation()
 }
 
@@ -443,6 +453,18 @@ watch(messages, () => {
 watch(currentModelId, () => {
   saveCurrentConversation()
 })
+
+// 处理选择知识库
+const handleSelectKnowledgeBase = (knowledgeBaseId: string) => {
+  setCurrentKnowledgeBase(knowledgeBaseId)
+  saveCurrentConversation()
+}
+
+// 处理清除选择的知识库
+const handleClearSelectedKnowledgeBase = () => {
+  setCurrentKnowledgeBase(null)
+  saveCurrentConversation()
+}
 </script>
 
 <style scoped>

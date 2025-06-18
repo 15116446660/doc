@@ -1,5 +1,5 @@
 import { get, post, put, del } from './request'
-import type { Message, Conversation, AIModel, Command, KnowledgeBase } from '@/types/chat'
+import type { Message, Conversation, AIModel, Command, KnowledgeBase, RAGChatRequest, RAGChatResponse, NormalChatRequest, NormalChatResponse, Reference } from '@/types/chat'
 
 /**
  * 发送消息并获取AI回复
@@ -34,7 +34,6 @@ export async function streamMessage(messages: Message[], modelId: string, option
   maxTokens?: number;
   deepThinking?: boolean;
   knowledgeBaseId?: string;
-  fullTextReference?: boolean;
   signal?: AbortSignal;
 }): Promise<ReadableStream<Uint8Array>> {
   const response = await fetch('/api/chat/completions/stream', {
@@ -144,4 +143,151 @@ export function uploadAttachment(file: File, onProgress?: (percent: number) => v
       }
     }
   })
+}
+
+const BASE_URL = '/api/chat';
+
+// 创建统一的请求头
+const createHeaders = (signal?: AbortSignal) => {
+  const headers = new Headers({
+    'Content-Type': 'application/json',
+  });
+  const token = localStorage.getItem('token');
+  if (token) {
+    headers.append('Authorization', token);
+  }
+  return headers;
+};
+
+// 流式对话基础函数
+async function streamChat<T>(
+  url: string,
+  data: T,
+  onMessage: (content: string, id?: string) => void,
+  onError: (error: Error) => void,
+  onComplete: () => void,
+  abortController?: AbortController
+) {
+  try {
+    const Authorization = localStorage.getItem('token') || '';
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization
+      },
+      body: JSON.stringify(data),
+      signal: abortController?.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Response body is null');
+    }
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      const text = new TextDecoder().decode(value);
+      const lines = text.split('\n');
+      
+      for (const line of lines) {
+        if (line.trim()) {
+          try {
+            const data = JSON.parse(line);
+            onMessage(data.content, data.id);
+          } catch (e) {
+            console.warn('Failed to parse line:', line);
+          }
+        }
+      }
+    }
+
+    onComplete();
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('Fetch aborted');
+      return;
+    }
+    onError(error instanceof Error ? error : new Error('Unknown error occurred'));
+  }
+}
+
+// RAG 流式对话
+export async function streamRAGChat(
+  request: RAGChatRequest,
+  onMessage: (content: string, id?: string) => void,
+  onError: (error: Error) => void,
+  onComplete: () => void,
+  abortController?: AbortController
+) {
+  return streamChat(
+    '/api/document-ai/ai/rag/streamChat',
+    request,
+    onMessage,
+    onError,
+    onComplete,
+    abortController
+  );
+}
+
+// 普通流式对话
+export async function streamNormalChat(
+  request: NormalChatRequest,
+  onMessage: (content: string, id?: string) => void,
+  onError: (error: Error) => void,
+  onComplete: () => void,
+  abortController?: AbortController
+) {
+  return streamChat(
+    '/api/document-ai/ai/poststreamPolish',
+    request,
+    onMessage,
+    onError,
+    onComplete,
+    abortController
+  );
+}
+
+// RAG 非流式对话
+export async function ragChat(request: RAGChatRequest): Promise<RAGChatResponse> {
+  const Authorization = localStorage.getItem('token') || '';
+  const response = await fetch('/api/document-ai/ai/rag/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization
+    },
+    body: JSON.stringify(request)
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+// 普通非流式对话
+export async function normalChat(request: NormalChatRequest): Promise<NormalChatResponse> {
+  const Authorization = localStorage.getItem('token') || '';
+  const response = await fetch('/api/document-ai/ai/postPolish', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization
+    },
+    body: JSON.stringify(request)
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
 } 

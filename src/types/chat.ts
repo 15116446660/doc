@@ -18,19 +18,95 @@ export interface Attachment {
   thumbnail?: string;
 }
 
-// 消息类型
+// 基础消息类型
 export interface Message {
   id: string;
-  role: MessageRole;
+  role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
-  status?: MessageStatus;
-  attachments?: Attachment[];
+  status?: 'sending' | 'completed' | 'error';
   thinking?: string;
-  error?: string;
-  feedback?: 'like' | 'dislike';
   commandId?: string;
-  commandName?: string;
+  reference?: Reference;
+  docAggs?: DocumentAggregation[];
+}
+
+// 知识库引用
+export interface Reference {
+  total: number;
+  chunks: ReferenceChunk[];
+}
+
+export interface ReferenceChunk {
+  id: string;
+  content: string;
+  document_id: string;
+  document_name: string;
+  dataset_id: string;
+  image_id?: string;
+  positions: number[];
+}
+
+// 文档聚合信息
+export interface DocumentAggregation {
+  doc_name: string;
+  doc_id: string;
+  count: number;
+}
+
+// RAG 对话请求
+export interface RAGChatRequest {
+  chatId: string;
+  sessionId: string;
+  question: string;
+  deepthinking?: boolean;
+  knowledgeBaseId?: string;
+}
+
+// RAG 对话响应
+export interface RAGChatResponse {
+  code: number;
+  data: {
+    answer: string;
+    reference?: Reference;
+    doc_aggs?: DocumentAggregation[];
+    prompt?: string;
+  };
+}
+
+// 普通对话请求
+export interface NormalChatRequest {
+  prompt: string;
+  modelId?: string;
+  deepthinking?: boolean;
+  rag?: boolean;
+  attachments?: any;
+}
+
+// 普通对话响应
+export interface NormalChatResponse {
+  code: number;
+  data: {
+    content: string;
+    thinking?: string;
+  };
+}
+
+// 统一的聊天配置
+export interface ChatConfig {
+  modelId: string;
+  deepthinking: boolean;
+  rag: boolean;
+  chatId?: string;
+  sessionId?: string;
+}
+
+// 聊天上下文
+export interface ChatContext {
+  config: ChatConfig;
+  messages: Message[];
+  currentMessage?: Message;
+  abortController?: AbortController;
 }
 
 // 会话类型
