@@ -6,7 +6,7 @@
 export type MessageRole = 'user' | 'assistant' | 'system';
 
 // 消息状态类型
-export type MessageStatus = 'sending' | 'thinking' | 'generating' | 'completed' | 'stopped' | 'error';
+export type MessageStatus = 'sending' | 'thinking' | 'generating' | 'completed' | 'stopped' | 'error' | 'editing';
 
 // 附件类型
 export interface Attachment {
@@ -24,11 +24,15 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
-  status?: 'sending' | 'completed' | 'error';
+  status?: MessageStatus;
   thinking?: string;
   commandId?: string;
   reference?: Reference;
   docAggs?: DocumentAggregation[];
+  attachments?: Attachment[];
+  feedback?: 'like' | 'dislike';
+  edited?: boolean;
+  originalContent?: string;
 }
 
 // 知识库引用

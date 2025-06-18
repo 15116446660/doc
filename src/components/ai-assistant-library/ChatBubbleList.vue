@@ -53,8 +53,29 @@
           <!-- 正常消息内容 -->
           <template v-else>
             <!-- 用户消息 -->
-            <div v-if="message.role === 'user'" class="user-message">
-              {{ message.content }}
+            <div v-if="message.role === 'user'">
+              <!-- 编辑模式 -->
+              <div v-if="message.status === 'editing'" class="edit-message-container">
+                <el-input
+                  type="textarea"
+                  v-model="editingContent"
+                  :rows="calculateRows(editingContent)"
+                  placeholder="编辑消息..."
+                  resize="none"
+                  autofocus
+                  :autosize="{ minRows: 1, maxRows: 10 }"
+                />
+                <div class="edit-actions">
+                  <el-button size="small" @click="cancelEdit(message)">取消</el-button>
+                  <el-button size="small" type="primary" @click="saveEdit(message)">发送</el-button>
+                </div>
+              </div>
+              
+              <!-- 显示模式 -->
+              <div v-else class="user-message">
+                {{ message.content }}
+                <span v-if="message.edited" class="edited-badge">(已编辑)</span>
+              </div>
             </div>
             
             <!-- AI消息 -->
@@ -72,7 +93,7 @@
               
               <!-- 已完成的AI消息 -->
               <MarkdownMessage 
-                :content="fullMarkdownExample" 
+                :content="message.content || fullMarkdownExample" 
                 :thinking="message.thinking"
               />
             </template>
@@ -143,6 +164,27 @@
             </div>
           </div>
           
+          <!-- 用户消息操作栏 -->
+          <div class="message-actions" v-if="message.role === 'user' && message.status !== 'editing'">
+            <el-button 
+              size="small" 
+              type="text" 
+              @click="copyMessage(message)"
+              :title="'复制内容'"
+            >
+              <el-icon><DocumentCopy /></el-icon>
+            </el-button>
+            
+            <el-button 
+              size="small" 
+              type="text" 
+              @click="startEdit(message)"
+              :title="'编辑消息'"
+            >
+              <el-icon><Edit /></el-icon>
+            </el-button>
+          </div>
+          
           <!-- 停止生成按钮 -->
           <div class="stop-button" v-if="message.role === 'assistant' && message.status === 'generating'">
             <el-button 
@@ -168,7 +210,8 @@ import {
   RefreshRight, 
   Star,
   Close,
-  WarningFilled
+  WarningFilled,
+  Edit
 } from '@element-plus/icons-vue'
 import MarkdownMessage from './MarkdownMessage.vue'
 import type { Message, Attachment, Command } from '@/types/chat'
@@ -188,6 +231,9 @@ const emit = defineEmits<{
   (e: 'stop'): void
   (e: 'feedback', messageId: string, feedback: 'like' | 'dislike'): void
   (e: 'command', commandId: string): void
+  (e: 'startEditing', messageId: string): void
+  (e: 'cancelEditing', messageId: string): void
+  (e: 'saveEditing', messageId: string, content: string): void
 }>()
 
 const fullMarkdownExample = `
@@ -260,6 +306,47 @@ const assistantAvatar = props.assistantAvatar || 'https://cube.elemecdn.com/3/7c
 // 聊天列表DOM引用
 const chatListRef = ref<HTMLElement | null>(null)
 
+// 编辑消息相关状态
+const editingContent = ref<string>('')
+const editingMessageId = ref<string | null>(null)
+
+// 计算文本区域的行数
+const calculateRows = (text: string): number => {
+  if (!text) return 1;
+  const lines = text.split('\n').length;
+  // 每行平均字符数
+  const charsPerLine = 50;
+  // 计算额外的换行
+  const extraLines = Math.floor(text.length / charsPerLine);
+  return Math.min(Math.max(1, lines + extraLines), 10); // 最少1行，最多10行
+}
+
+// 开始编辑消息
+const startEdit = (message: Message) => {
+  editingMessageId.value = message.id
+  editingContent.value = message.content
+  emit('startEditing', message.id)
+}
+
+// 取消编辑
+const cancelEdit = (message: Message) => {
+  editingMessageId.value = null
+  editingContent.value = ''
+  emit('cancelEditing', message.id)
+}
+
+// 保存编辑
+const saveEdit = (message: Message) => {
+  if (editingContent.value.trim() === '') {
+    ElMessage.warning('消息内容不能为空')
+    return
+  }
+  
+  emit('saveEditing', message.id, editingContent.value)
+  editingMessageId.value = null
+  editingContent.value = ''
+}
+
 // 判断附件是否为图片
 const isImageAttachment = (attachment: Attachment): boolean => {
   return attachment.type.startsWith('image/') || 
@@ -307,6 +394,13 @@ const scrollToBottom = () => {
   })
 }
 
+// 暴露给父组件的滚动方法
+const forceScrollToBottom = () => {
+  setTimeout(() => {
+    scrollToBottom();
+  }, 100); // 短暂延时确保DOM已更新
+}
+
 // 监听消息列表变化，自动滚动到底部
 watch(() => props.messages, () => {
   if (props.autoScroll !== false) {
@@ -317,6 +411,11 @@ watch(() => props.messages, () => {
 // 组件挂载后滚动到底部
 onMounted(() => {
   scrollToBottom()
+})
+
+// 暴露方法给父组件
+defineExpose({
+  scrollToBottom: forceScrollToBottom
 })
 </script>
 
@@ -598,6 +697,26 @@ onMounted(() => {
   display: flex;
   justify-content: center;
   margin-top: 8px;
+}
+
+/* 编辑消息样式 */
+.edit-message-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.edited-badge {
+  font-size: 12px;
+  color: #909399;
+  margin-left: 6px;
+  font-style: italic;
 }
 
 /* 深色模式适配 */

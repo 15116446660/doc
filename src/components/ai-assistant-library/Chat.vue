@@ -2,6 +2,7 @@
   <div class="chat-container" :class="{ 'dark-mode': isDarkMode }">
     <!-- 聊天气泡列表 -->
     <ChatBubbleList
+      ref="chatBubbleListRef"
       :messages="messages"
       :userAvatar="userAvatar"
       :assistantAvatar="assistantAvatar"
@@ -11,6 +12,9 @@
       @stop="stopGenerating"
       @feedback="handleMessageFeedback"
       @command="handleQuickCommand"
+      @startEditing="handleStartEditingMessage"
+      @cancelEditing="handleCancelEditingMessage"
+      @saveEditing="handleSaveEditingMessage"
     />
     
     <!-- 消息输入发送区域 -->
@@ -138,7 +142,10 @@ const {
   toggleRAGMode,
   toggleFullTextReferenceMode,
   setCurrentKnowledgeBase,
-  currentKnowledgeBaseId
+  currentKnowledgeBaseId,
+  editUserMessage,
+  startEditingMessage,
+  cancelEditingMessage
 } = useChat()
 
 const {
@@ -167,6 +174,9 @@ const {
   updateCommandById,
   removeCommand
 } = usePromptCommands()
+
+// 引用聊天气泡列表组件
+const chatBubbleListRef = ref(null);
 
 // 计算属性：是否为暗色模式
 const isDarkMode = computed(() => {
@@ -468,6 +478,27 @@ const handleSelectKnowledgeBase = (knowledgeBaseId: string) => {
 const handleClearSelectedKnowledgeBase = () => {
   setCurrentKnowledgeBase(null)
   saveCurrentConversation()
+}
+
+// 处理开始编辑消息
+const handleStartEditingMessage = (messageId: string) => {
+  startEditingMessage(messageId)
+}
+
+// 处理取消编辑消息
+const handleCancelEditingMessage = (messageId: string) => {
+  cancelEditingMessage(messageId)
+}
+
+// 处理保存编辑消息
+const handleSaveEditingMessage = (messageId: string, newContent: string) => {
+  editUserMessage(messageId, newContent, () => {
+    // 编辑完成后，确保滚动到底部
+    if (chatBubbleListRef.value) {
+      chatBubbleListRef.value.scrollToBottom();
+    }
+  });
+  saveCurrentConversation();
 }
 </script>
 
