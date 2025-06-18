@@ -22,6 +22,7 @@
       :isDeepThinkingMode="isDeepThinkingMode"
       :isRAGMode="isRAGMode"
       :isFullTextReferenceMode="isFullTextReferenceMode"
+      :currentKnowledgeBaseId="currentKnowledgeBaseId"
       @send="handleSendMessage"
       @stop="stopGenerating"
       @modelChange="handleModelChange"
@@ -136,7 +137,8 @@ const {
   toggleDeepThinkingMode,
   toggleRAGMode,
   toggleFullTextReferenceMode,
-  setCurrentKnowledgeBase
+  setCurrentKnowledgeBase,
+  currentKnowledgeBaseId
 } = useChat()
 
 const {

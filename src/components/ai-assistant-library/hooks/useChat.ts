@@ -358,10 +358,10 @@ export function useChat(initialConfig: ChatConfig = {
     // 同步到配置
     config.value.rag = isRAGMode.value;
     
-    // 如果关闭RAG模式，清空知识库ID
-    if (!isRAGMode.value) {
-      currentKnowledgeBaseId.value = null
-    }
+    // 不再自动清空知识库ID，让用户可以保留选择的知识库
+    // if (!isRAGMode.value) {
+    //   currentKnowledgeBaseId.value = null
+    // }
   }
   
   /**
@@ -389,6 +389,7 @@ export function useChat(initialConfig: ChatConfig = {
       isRAGMode.value = true
       config.value.rag = true
     }
+    // 当清除知识库ID时，不自动关闭RAG模式，让用户自行决定是否关闭
   }
   
   // 添加用户消息

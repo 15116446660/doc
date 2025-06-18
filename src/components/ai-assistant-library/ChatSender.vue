@@ -201,10 +201,10 @@
           >
             <template #reference>
               <div class="kb-trigger-wrapper">
-                <el-tooltip content="知识库检索" placement="top" v-if="!selectedKnowledgeBaseId">
+                <el-tooltip content="知识库检索" placement="top" v-if="!props.currentKnowledgeBaseId">
                   <el-button 
                     class="mode-btn"
-                    :class="{ 'is-active': isRAGMode }"
+                    :class="{ 'is-active': props.isRAGMode }"
                     @click.stop="handleKnowledgeBaseButtonClick"
                     size="small"
                   >
@@ -213,9 +213,9 @@
                   </el-button>
                 </el-tooltip>
 
-                <div class="selected-kb-display" v-else-if="selectedKnowledgeBase" @click.stop="handleKnowledgeBaseButtonClick">
-                   <el-icon class="kb-icon"><component :is="iconMap[selectedKnowledgeBase.icon] || Document" /></el-icon>
-                   <span class="kb-name">{{ selectedKnowledgeBase.name }}</span>
+                <div class="selected-kb-display" v-else @click.stop="handleKnowledgeBaseButtonClick">
+                   <el-icon class="kb-icon"><component :is="iconMap[selectedKnowledgeBase?.icon || 'Document'] || Document" /></el-icon>
+                   <span class="kb-name">{{ selectedKnowledgeBase?.name || props.currentKnowledgeBaseId }}</span>
                    <el-icon class="clear-icon" @click.stop="clearSelectedKnowledgeBase"><CircleClose /></el-icon>
                 </div>
               </div>
@@ -227,7 +227,7 @@
                   v-for="kb in knowledgeBases"
                   :key="kb.id"
                   class="kb-item"
-                  :class="{ active: selectedKnowledgeBaseId === kb.id }"
+                  :class="{ active: currentKnowledgeBaseId === kb.id }"
                   @click="selectKnowledgeBase(kb.id)"
                 >
                   <el-icon class="kb-icon"><component :is="iconMap[kb.icon] || Document" /></el-icon>
@@ -264,7 +264,6 @@ import {
   VideoPause,
   Delete,
   ArrowDown,
-  Setting,
   Plus,
   List,
   Operation,
@@ -300,6 +299,7 @@ const props = defineProps<{
   isRAGMode?: boolean;
   isFullTextReferenceMode?: boolean;
   commands: BaseCommand[];
+  currentKnowledgeBaseId?: string | null;
 }>();
 
 const emit = defineEmits<{
@@ -339,7 +339,6 @@ const isLoadingSubCommands = ref(false);
 
 const isKnowledgeBasePanelVisible = ref(false);
 const knowledgeBases = ref<KnowledgeBase[]>([]);
-const selectedKnowledgeBaseId = ref<string | null>(null);
 
 const quickCommands = ref<QuickCommand[]>([]);
 
@@ -347,18 +346,6 @@ const maxVisibleQuickCommands = 5;
 // #endregion
 
 // #region --- Computed Properties ---
-const currentModel = computed(() => {
-  return props.models.find(model => model.id === props.currentModelId) || null;
-});
-
-const currentModelLogo = computed(() => {
-  return currentModel.value?.logo || '';
-});
-
-const currentModelName = computed(() => {
-  return currentModel.value?.name || '选择模型';
-});
-
 const canSend = computed(() => {
   return (
     !props.isGenerating && (inputMessage.value.trim().length > 0 || attachedFiles.value.length > 0)
@@ -386,7 +373,7 @@ const suggestionCommands = computed<Array<BaseCommand>>(() => {
 });
 
 const selectedKnowledgeBase = computed(() => {
-  return knowledgeBases.value.find(kb => kb.id === selectedKnowledgeBaseId.value) || null;
+  return knowledgeBases.value.find(kb => kb.id === props.currentKnowledgeBaseId) || null;
 });
 // #endregion
 
@@ -445,18 +432,12 @@ const handleKnowledgeBaseButtonClick = () => {
 };
 
 const selectKnowledgeBase = (kbId: string) => {
-  selectedKnowledgeBaseId.value = kbId;
+  emit('selectKnowledgeBase', kbId);
   isKnowledgeBasePanelVisible.value = false;
-  if (!props.isRAGMode) {
-    emit('toggleRAG');
-  }
 };
 
 const clearSelectedKnowledgeBase = () => {
-  selectedKnowledgeBaseId.value = null;
-  if (props.isRAGMode) {
-    emit('toggleRAG');
-  }
+  emit('clearSelectedKnowledgeBase');
 };
 
 const clearSelectedText = () => {
@@ -567,18 +548,6 @@ const handleMouseUp = () => {
   }
 };
 
-// 处理logo加载错误
-const handleLogoError = (event: Event) => {
-  const imgElement = event.target as HTMLImageElement;
-  imgElement.style.display = 'none';
-  const parentElement = imgElement.parentElement;
-  if (parentElement) {
-    const iconElement = document.createElement('i');
-    iconElement.className = 'el-icon model-logo-default';
-    iconElement.innerHTML = '<Cpu />';
-    parentElement.insertBefore(iconElement, imgElement.nextSibling);
-  }
-};
 // #endregion
 
 // #region --- Lifecycle Hooks ---
