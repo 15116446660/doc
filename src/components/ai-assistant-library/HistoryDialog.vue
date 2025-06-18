@@ -6,14 +6,22 @@
     @close="$emit('close')"
   >
     <div class="history-dialog-content">
-      <!-- 搜索框 -->
-      <div class="search-container">
+      <!-- 搜索框和操作按钮 -->
+      <div class="header-container">
         <el-input
           v-model="searchQuery"
           placeholder="搜索会话..."
           prefix-icon="Search"
           clearable
+          class="search-input"
         />
+        <el-button 
+          type="danger" 
+          @click="confirmClearNonFavorites"
+          size="small"
+        >
+          清空非收藏会话
+        </el-button>
       </div>
       
       <!-- 会话列表 -->
@@ -104,6 +112,7 @@ const emit = defineEmits<{
   (e: 'delete', conversationId: string): void
   (e: 'rename', conversationId: string, newTitle: string): void
   (e: 'favorite', conversationId: string, favorite: boolean): void
+  (e: 'clearNonFavorites'): void
   (e: 'close'): void
 }>()
 
@@ -185,6 +194,17 @@ function toggleFavorite(conversation: Conversation): void {
   emit('favorite', conversation.id, !conversation.favorite)
 }
 
+// 确认清空非收藏会话
+function confirmClearNonFavorites(): void {
+  ElMessageBox.confirm('确定要清空所有非收藏的会话吗？此操作不可恢复。', '提示', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).then(() => {
+    emit('clearNonFavorites')
+  }).catch(() => {})
+}
+
 // 监听对话框关闭
 watch(dialogVisible, (newValue) => {
   if (!newValue) {
@@ -200,8 +220,16 @@ watch(dialogVisible, (newValue) => {
   flex-direction: column;
 }
 
-.search-container {
+.header-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
+}
+
+.search-input {
+  flex: 1;
+  margin-right: 10px;
 }
 
 .conversations-list {

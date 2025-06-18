@@ -60,9 +60,39 @@ export function useConversations() {
   }, { deep: true })
   
   /**
+   * 清空所有非收藏的历史会话
+   */
+  function clearNonFavoriteConversations(): void {
+    // 过滤出所有已收藏的会话
+    const favoritedConversations = conversations.value.filter(conv => conv.favorite === true);
+    
+    // 替换当前的会话列表
+    conversations.value = favoritedConversations;
+    
+    // 如果删除后没有会话，则当前活跃会话ID设为null
+    if (conversations.value.length === 0) {
+      activeConversationId.value = null;
+    } 
+    // 如果当前活跃会话不在保留的列表中，则切换到第一个会话
+    else if (!conversations.value.find(conv => conv.id === activeConversationId.value)) {
+      activeConversationId.value = conversations.value[0].id;
+    }
+  }
+  
+  /**
    * 创建新会话
    */
   function createConversation(modelId: string = 'gpt-4'): string {
+    // 检查最新会话是否为空，如果为空则不允许创建新会话
+    if (conversations.value.length > 0) {
+      const latestConversation = conversations.value[0]; // 假设列表是按时间倒序排列的
+      if (latestConversation.messages.length === 0) {
+        // 如果最新会话为空，直接返回该会话ID而不创建新会话
+        activeConversationId.value = latestConversation.id;
+        return latestConversation.id;
+      }
+    }
+
     const newConversation: Conversation = {
       id: uuidv4(),
       title: `新会话 ${new Date().toLocaleString()}`,
@@ -142,15 +172,26 @@ export function useConversations() {
   }
   
   /**
-   * 收藏/取消收藏会话
-   */
-  function toggleFavorite(conversationId: string): void {
-    const conversation = conversations.value.find(conv => conv.id === conversationId)
-    if (conversation) {
-      conversation.favorite = !conversation.favorite
-      conversation.updatedAt = Date.now()
+ * 收藏/取消收藏会话
+ */
+function toggleFavorite(conversationId: string): void {
+  const conversation = conversations.value.find(conv => conv.id === conversationId)
+  if (conversation) {
+    // 确保favorite字段存在，不存在则默认为false
+    if (conversation.favorite === undefined) {
+      conversation.favorite = false;
     }
+    
+    // 切换收藏状态
+    conversation.favorite = !conversation.favorite;
+    conversation.updatedAt = Date.now();
+    
+    // 立即保存更改到存储
+    saveConversations();
+    
+    console.log(`会话 ${conversationId} 收藏状态已更新为: ${conversation.favorite}`);
   }
+}
   
   /**
    * 更新会话中的消息列表
@@ -271,9 +312,11 @@ export function useConversations() {
     activeMessages,
     
     // 方法
+    init,
     createConversation,
     switchConversation,
     updateConversationTitle,
+    generateConversationTitle,
     deleteConversation,
     toggleFavorite,
     updateConversationMessages,
@@ -282,6 +325,7 @@ export function useConversations() {
     importConversation,
     loadConversation,
     saveConversation,
-    renameConversation
+    renameConversation,
+    clearNonFavoriteConversations
   }
 } 

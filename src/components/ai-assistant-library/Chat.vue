@@ -48,6 +48,8 @@
       @select="handleSelectConversation"
       @delete="handleDeleteConversation"
       @rename="handleRenameConversation"
+      @favorite="handleToggleFavorite"
+      @clearNonFavorites="handleClearNonFavorites"
       @close="showHistoryDialog = false"
     />
     
@@ -155,7 +157,9 @@ const {
   loadConversation,
   saveConversation,
   deleteConversation,
-  renameConversation
+  renameConversation,
+  toggleFavorite,
+  clearNonFavoriteConversations
 } = useConversations()
 
 const {
@@ -322,8 +326,16 @@ const handleRenameConversation = (conversationId: string, newTitle: string) => {
   renameConversation(conversationId, newTitle)
 }
 
-// 注意：这个函数现在由 ModelManagementDialog 组件内部处理
-// 不再需要这个函数
+// 处理切换收藏状态
+const handleToggleFavorite = (conversationId: string, favorite: boolean) => {
+  toggleFavorite(conversationId)
+}
+
+// 处理清空非收藏会话
+const handleClearNonFavorites = () => {
+  clearNonFavoriteConversations()
+  ElMessage.success('非收藏会话已清空')
+}
 
 // 处理保存命令
 const handleSaveCommand = async (command: Omit<Command, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => {
