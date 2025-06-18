@@ -62,7 +62,7 @@
       <div class="operate-btns">
         <el-button
           class="edit-btn"
-          type="text"
+          link
           size="small"
           @click="handleEdit(row)"
         >
@@ -70,7 +70,7 @@
         </el-button>
         <el-button
           class="delete-btn"
-          type="text"
+          link
           size="small"
           @click="handleDelete(row)"
         >

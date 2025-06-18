@@ -192,6 +192,9 @@ const quickCommands = computed(() => {
   return commands.value.slice(0, 5)
 })
 
+// 定义 stopGenerating 函数，关联到 stopGeneration
+const stopGenerating = stopGeneration;
+
 // 处理发送消息
 const handleSendMessage = async (content: string, files: File[]) => {
   let attachments: Attachment[] = []
@@ -319,17 +322,8 @@ const handleRenameConversation = (conversationId: string, newTitle: string) => {
   renameConversation(conversationId, newTitle)
 }
 
-// 处理保存模型
-const handleSaveModel = (model: any) => {
-  if (model.id && models.value.some(m => m.id === model.id)) {
-    // 更新现有模型
-    updateModel(model.id, model)
-  } else {
-    // 添加新模型
-    addCustomModel(model)
-  }
-  showModelConfigModal.value = false
-}
+// 注意：这个函数现在由 ModelManagementDialog 组件内部处理
+// 不再需要这个函数
 
 // 处理保存命令
 const handleSaveCommand = async (command: Omit<Command, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => {
@@ -482,12 +476,26 @@ const handleClearSelectedKnowledgeBase = () => {
 
 // 处理开始编辑消息
 const handleStartEditingMessage = (messageId: string) => {
-  startEditingMessage(messageId)
+  // 首先在消息对象上设置标记，防止在状态变化时触发自动滚动
+  const messageToEdit = messages.value.find(msg => msg.id === messageId);
+  if (messageToEdit) {
+    (messageToEdit as any).preventScrollOnNextUpdate = true;
+  }
+  
+  // 然后调用编辑函数
+  startEditingMessage(messageId);
 }
 
 // 处理取消编辑消息
 const handleCancelEditingMessage = (messageId: string) => {
-  cancelEditingMessage(messageId)
+  // 首先在消息对象上设置标记，防止在状态变化时触发自动滚动
+  const messageToCancel = messages.value.find(msg => msg.id === messageId);
+  if (messageToCancel) {
+    (messageToCancel as any).preventScrollOnNextUpdate = true;
+  }
+  
+  // 然后调用取消编辑函数
+  cancelEditingMessage(messageId);
 }
 
 // 处理保存编辑消息

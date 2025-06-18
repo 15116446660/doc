@@ -124,7 +124,7 @@
           <div class="message-actions" v-if="message.role === 'assistant' && message.status === 'completed'">
             <el-button 
               size="small" 
-              type="text" 
+              link
               @click="copyMessage(message)"
               :title="'复制内容'"
             >
@@ -133,7 +133,7 @@
             
             <el-button 
               size="small" 
-              type="text" 
+              link
               @click="$emit('regenerate', message)"
               v-if="index === messages.length - 1"
               :title="'重新生成'"
@@ -144,7 +144,7 @@
             <div class="feedback-buttons">
               <el-button 
                 size="small" 
-                type="text" 
+                link
                 @click="$emit('feedback', message.id, 'like')"
                 :class="{ active: message.feedback === 'like' }"
                 :title="'有帮助'"
@@ -154,7 +154,7 @@
               
               <el-button 
                 size="small" 
-                type="text" 
+                link
                 @click="$emit('feedback', message.id, 'dislike')"
                 :class="{ active: message.feedback === 'dislike' }"
                 :title="'没帮助'"
@@ -168,7 +168,7 @@
           <div class="message-actions" v-if="message.role === 'user' && message.status !== 'editing'">
             <el-button 
               size="small" 
-              type="text" 
+              link
               @click="copyMessage(message)"
               :title="'复制内容'"
             >
@@ -177,7 +177,7 @@
             
             <el-button 
               size="small" 
-              type="text" 
+              link
               @click="startEdit(message)"
               :title="'编辑消息'"
             >
@@ -323,28 +323,68 @@ const calculateRows = (text: string): number => {
 
 // 开始编辑消息
 const startEdit = (message: Message) => {
-  editingMessageId.value = message.id
-  editingContent.value = message.content
-  emit('startEditing', message.id)
+  try {
+    editingMessageId.value = message.id;
+    editingContent.value = typeof message.content === 'string' ? message.content : '';
+    
+    // 使用类型断言添加标记，防止自动滚动
+    (message as any).preventScrollOnNextUpdate = true;
+    emit('startEditing', message.id);
+  } catch (error) {
+    console.error('Error in startEdit:', error, message);
+    ElMessage.error('编辑消息时出错');
+  }
 }
 
 // 取消编辑
 const cancelEdit = (message: Message) => {
-  editingMessageId.value = null
-  editingContent.value = ''
-  emit('cancelEditing', message.id)
+  try {
+    if (!message || typeof message !== 'object') {
+      console.error('Invalid message object:', message);
+      return;
+    }
+    
+    editingMessageId.value = null;
+    editingContent.value = '';
+    
+    // 使用类型断言添加标记，确保操作前进行类型检查
+    if (message && typeof message === 'object') {
+      (message as any).preventScrollOnNextUpdate = true;
+    }
+    
+    if (message && message.id) {
+      emit('cancelEditing', message.id);
+    } else {
+      console.error('Message id is missing:', message);
+    }
+  } catch (error) {
+    console.error('Error in cancelEdit:', error, message);
+  }
 }
 
 // 保存编辑
 const saveEdit = (message: Message) => {
-  if (editingContent.value.trim() === '') {
-    ElMessage.warning('消息内容不能为空')
-    return
+  try {
+    if (!message || typeof message !== 'object') {
+      console.error('Invalid message object:', message);
+      return;
+    }
+    
+    if (editingContent.value.trim() === '') {
+      ElMessage.warning('消息内容不能为空');
+      return;
+    }
+    
+    if (message && message.id) {
+      emit('saveEditing', message.id, editingContent.value);
+      editingMessageId.value = null;
+      editingContent.value = '';
+    } else {
+      console.error('Message id is missing:', message);
+    }
+  } catch (error) {
+    console.error('Error in saveEdit:', error, message);
   }
-  
-  emit('saveEditing', message.id, editingContent.value)
-  editingMessageId.value = null
-  editingContent.value = ''
 }
 
 // 判断附件是否为图片
@@ -402,9 +442,47 @@ const forceScrollToBottom = () => {
 }
 
 // 监听消息列表变化，自动滚动到底部
-watch(() => props.messages, () => {
-  if (props.autoScroll !== false) {
-    scrollToBottom()
+watch(() => props.messages, (messages, oldMessages) => {
+  try {
+    // 检查是否有消息带有不滚动标记
+    const hasNoScrollFlag = messages.some(msg => {
+      try {
+        return !!(msg && (msg as any).preventScrollOnNextUpdate);
+      } catch (e) {
+        console.error('Error checking preventScrollOnNextUpdate:', e, msg);
+        return false;
+      }
+    });
+    
+    // 如果有标记，则移除标记但不滚动
+    if (hasNoScrollFlag) {
+      messages.forEach(msg => {
+        try {
+          if ((msg as any).preventScrollOnNextUpdate) {
+            delete (msg as any).preventScrollOnNextUpdate;
+          }
+        } catch (e) {
+          console.error('Error removing preventScrollOnNextUpdate:', e, msg);
+        }
+      });
+      return;
+    }
+    
+    // 只有在以下情况滚动到底部：
+    // 1. 消息数量增加了（新消息）
+    // 2. 最后一条消息的内容变化了（流式生成）
+    const shouldScroll = props.autoScroll !== false && (
+      !oldMessages || 
+      messages.length > oldMessages.length ||
+      (messages.length > 0 && oldMessages && oldMessages.length > 0 && 
+       messages[messages.length - 1].content !== oldMessages[oldMessages.length - 1].content)
+    );
+    
+    if (shouldScroll) {
+      scrollToBottom();
+    }
+  } catch (error) {
+    console.error('Error in messages watcher:', error);
   }
 }, { deep: true })
 

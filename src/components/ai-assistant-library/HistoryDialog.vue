@@ -36,7 +36,7 @@
             <div class="conversation-actions">
               <el-tooltip content="重命名" placement="top">
                 <el-button
-                  type="text"
+                  link
                   @click.stop="openRenameDialog(conversation)"
                 >
                   <el-icon><Edit /></el-icon>
@@ -45,7 +45,7 @@
               
               <el-tooltip content="收藏" placement="top">
                 <el-button
-                  type="text"
+                  link
                   @click.stop="toggleFavorite(conversation)"
                 >
                   <el-icon><Star :class="{ 'is-favorite': conversation.favorite }" /></el-icon>
@@ -54,7 +54,7 @@
               
               <el-tooltip content="删除" placement="top">
                 <el-button
-                  type="text"
+                  link
                   @click.stop="confirmDelete(conversation.id)"
                 >
                   <el-icon><Delete /></el-icon>

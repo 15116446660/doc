@@ -157,7 +157,7 @@
             <div class="parameters-section" v-if="!selectedCommand?.isSystem">
               <div class="parameters-header">
                 <h4>参数列表</h4>
-                <el-button type="text" @click="addParameter">
+                <el-button link @click="addParameter">
                   <el-icon><Plus /></el-icon>
                   添加参数
                 </el-button>
@@ -186,7 +186,7 @@
                   </el-col>
                   <el-col :span="2">
                     <el-button 
-                      type="text" 
+                      link 
                       @click="removeParameter(index)"
                     >
                       <el-icon><Delete /></el-icon>
