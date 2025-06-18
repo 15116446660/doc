@@ -92,13 +92,15 @@ export interface NormalChatResponse {
   };
 }
 
-// 统一的聊天配置
+// 聊天配置
 export interface ChatConfig {
   modelId: string;
   deepthinking: boolean;
   rag: boolean;
   chatId?: string;
   sessionId?: string;
+  knowledgeBaseId?: string | null;
+  fullTextReference?: boolean;
 }
 
 // 聊天上下文

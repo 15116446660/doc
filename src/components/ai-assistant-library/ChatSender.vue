@@ -227,7 +227,7 @@
                   v-for="kb in knowledgeBases"
                   :key="kb.id"
                   class="kb-item"
-                  :class="{ active: currentKnowledgeBaseId === kb.id }"
+                  :class="{ active: props.currentKnowledgeBaseId === kb.id }"
                   @click="selectKnowledgeBase(kb.id)"
                 >
                   <el-icon class="kb-icon"><component :is="iconMap[kb.icon] || Document" /></el-icon>

@@ -128,7 +128,7 @@ const {
   isRAGMode,
   isFullTextReferenceMode,
   sendUserMessage,
-  stopGenerating,
+  stopGeneration,
   regenerateMessage,
   clearMessages,
   setMessageFeedback,
@@ -154,7 +154,9 @@ const {
 const {
   models,
   loadModels,
-  updateModels
+  updateModels,
+  addCustomModel,
+  updateModel
 } = useAIModels()
 
 const {
@@ -199,7 +201,7 @@ const handleSendMessage = async (content: string, files: File[]) => {
   }
   
   // 如果启用了RAG模式，确保传递知识库ID
-  if (isRAGMode) {
+  if (isRAGMode.value) {
     await sendUserMessage(content, attachments, undefined, undefined)
   } else {
     await sendUserMessage(content, attachments)
