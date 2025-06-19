@@ -17,14 +17,16 @@
           >
             <el-icon class="command-logo"><component :is="cmd.icon || 'Document'" /></el-icon>
             <div class="command-info">
-              <div class="command-name">{{ cmd.name }}</div>
+              <div class="command-name">
+                {{ cmd.name }}
+                <el-tag 
+                  v-if="cmd.hasSubCommands" 
+                  type="info" 
+                  size="small" 
+                  class="sub-cmd-tag"
+                >有子命令</el-tag>
+              </div>
               <div class="command-desc">{{ cmd.description }}</div>
-              <el-tag 
-                v-if="cmd.hasSubCommands" 
-                type="info" 
-                size="small" 
-                class="sub-cmd-tag"
-              >有子命令</el-tag>
             </div>
           </el-dropdown-item>
         </div>
@@ -42,7 +44,7 @@
 import type { Command } from '@/types/chat';
 import { ArrowDown, Setting } from '@element-plus/icons-vue';
 
-const props = defineProps<{
+defineProps<{
   commands: Command[];
   disabled?: boolean;
 }>();
@@ -125,6 +127,8 @@ const openCommandConfig = () => {
   }
 
   .command-name {
+    display: flex;
+    align-items: center;
     font-weight: 500;
     font-size: 14px;
     margin-bottom: 4px;
@@ -137,7 +141,7 @@ const openCommandConfig = () => {
   }
 
   .sub-cmd-tag {
-    margin-top: 4px;
+    margin-left: 8px;
     font-size: 10px;
     padding: 0 6px;
     height: 18px;
