@@ -179,6 +179,7 @@
         @blur="isInputActive = false"
         :disabled="isGenerating"
         class="main-textarea"
+        ref="inputRef"
       />
 
       <!-- 底部工具栏 -->
@@ -267,7 +268,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue';
+import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue';
 import { ElMessageBox } from 'element-plus';
 import {
   Cpu,
@@ -337,6 +338,7 @@ const emit = defineEmits<{
 // #region --- State Management ---
 const inputMessage = ref('');
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const inputRef = ref<any>(null);
 const attachedFiles = ref<File[]>([]);
 const isInputActive = ref(false);
 const selectedText = ref('');
@@ -465,6 +467,15 @@ const clearSelectedText = () => {
 
 const handleInput = (value: string) => {
   const trimmedValue = value.trim();
+  
+  // 检查是否是已经选择了命令并输入了空格的情况
+  const commandPlusSpacePattern = /^\/\S+\s+/;
+  if (commandPlusSpacePattern.test(value)) {
+    // 已选择命令且有空格，不显示命令面板
+    showCommandSuggestions.value = false;
+    return;
+  }
+  
   if (trimmedValue.startsWith('/')) {
     const exactMatch = suggestionCommands.value.find(c => `/${c.name}` === trimmedValue);
     if (exactMatch) {
@@ -514,6 +525,39 @@ const handleKeydown = (e: KeyboardEvent) => {
   }
 };
 
+// 聚焦输入框并将光标定位到最后
+const focusInputAndSetCursorToEnd = () => {
+  // 使用nextTick确保DOM已更新
+  nextTick(() => {
+    if (inputRef.value) {
+      try {
+        // 先尝试调用Element Plus组件的focus方法
+        inputRef.value.focus();
+      } catch (e) {
+        console.log('直接调用focus方法失败，将通过DOM元素聚焦');
+      }
+      
+      // 使用Element Plus的方法获取真实的DOM元素
+      const textarea = inputRef.value.$el.querySelector('textarea');
+      if (textarea) {
+        // 聚焦输入框
+        textarea.focus();
+        // 将光标定位到最后
+        const length = inputMessage.value.length;
+        textarea.setSelectionRange(length, length);
+        
+        // 确保文本区域确实获得了焦点
+        if (document.activeElement !== textarea) {
+          setTimeout(() => {
+            textarea.focus();
+            textarea.setSelectionRange(length, length);
+          }, 50);
+        }
+      }
+    }
+  });
+};
+
 const selectCommand = async (cmd: BaseCommand) => {
   activeCommandIndex.value = suggestionCommands.value.findIndex(c => c.id === cmd.id);
 
@@ -522,6 +566,8 @@ const selectCommand = async (cmd: BaseCommand) => {
     showCommandSuggestions.value = false;
     selectedCommandId.value = null;
     activeSubCommand.value = null;
+    // 聚焦输入框并将光标定位到最后
+    focusInputAndSetCursorToEnd();
     return;
   }
 
@@ -552,12 +598,13 @@ const selectCommand = async (cmd: BaseCommand) => {
 };
 
 const selectSubCommand = (subCmd: SubCommandType) => {
-  if (activeSubCommand.value) {
-    inputMessage.value = `/${activeSubCommand.value.name} ${subCmd.name} `;
-  }
+  // 二级命令选择后，只显示"/二级命令名称 "，不需要显示一级命令名称
+  inputMessage.value = `/${subCmd.name} `;
   showCommandSuggestions.value = false;
   activeSubCommand.value = null;
   selectedCommandId.value = null;
+  // 聚焦输入框并将光标定位到最后
+  focusInputAndSetCursorToEnd();
 };
 
 const handleMouseUp = () => {
