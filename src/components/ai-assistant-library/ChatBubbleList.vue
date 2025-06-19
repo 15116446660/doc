@@ -53,173 +53,55 @@
           <!-- 正常消息内容 -->
           <template v-else>
             <!-- 用户消息 -->
-            <div v-if="message.role === 'user'">
-              <!-- 编辑模式 -->
-              <div v-if="message.status === 'editing'" class="edit-message-container">
-                <el-input
-                  type="textarea"
-                  v-model="editingContent"
-                  :rows="calculateRows(editingContent)"
-                  placeholder="编辑消息..."
-                  resize="none"
-                  autofocus
-                  :autosize="{ minRows: 1, maxRows: 10 }"
-                />
-                <div class="edit-actions">
-                  <el-button size="small" @click="cancelEdit(message)">取消</el-button>
-                  <el-button size="small" type="primary" @click="saveEdit(message)">发送</el-button>
-                </div>
-              </div>
-              
-              <!-- 显示模式 -->
-              <div v-else class="user-message">
-                {{ message.content }}
-                <span v-if="message.edited" class="edited-badge">(已编辑)</span>
-              </div>
-            </div>
+            <UserMessageBubble 
+              v-if="message.role === 'user'"
+              :message="message"
+              v-model:editing-content="editingContent"
+              @save-edit="saveEdit"
+              @cancel-edit="cancelEdit"
+              :calculate-rows="calculateRows"
+            />
             
             <!-- AI消息 -->
-            <template v-else>
-              <!-- 生成中状态 -->
-              <div v-if="message.status === 'generating' || message.status === 'thinking'" class="generating-indicator">
-                <div v-if="message.status === 'thinking'" class="thinking-text">思考中...</div>
-                <div v-else class="generating-text">生成中...</div>
-                <div class="typing-animation">
-                  <span></span>
-                  <span></span>
-                  <span></span>
-                </div>
-              </div>
-              
-              <!-- 已完成的AI消息 -->
-              <MarkdownMessage 
-                :content="message.content" 
-                :thinking="message.thinking"
-              />
-              
-              <!-- 子命令按钮区域 -->
-              <div 
-                v-if="message.subCommands && message.subCommands.length > 0" 
-                class="sub-commands-container"
-              >
-                <div class="sub-commands-list">
-                  <div 
-                    v-for="subCmd in message.subCommands" 
-                    :key="subCmd.id"
-                    class="sub-command-button"
-                    @click="handleSubCommandClick(findParentCommand(message.commandId), subCmd)"
-                  >
-                    <div class="sub-command-icon">
-                      <el-icon><component :is="subCmd.icon || 'Document'" /></el-icon>
-                    </div>
-                    <div class="sub-command-info">
-                      <div class="sub-command-name">{{ subCmd.name }}</div>
-                      <div class="sub-command-description" v-if="subCmd.description">
-                        {{ subCmd.description }}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </template>
+            <AssistantMessageBubble
+              v-else
+              :message="message"
+              @sub-command-click="handleSubCommandClick"
+              :find-parent-command="findParentCommand"
+            />
           </template>
           
           <!-- 附件列表 -->
-          <div v-if="message.attachments && message.attachments.length > 0" class="attachments-container">
-            <div 
-              v-for="attachment in message.attachments" 
-              :key="attachment.id" 
-              class="attachment-item"
-              @click="handleAttachmentClick(attachment)"
-            >
-              <!-- 图片附件 -->
-              <div v-if="isImageAttachment(attachment)" class="image-attachment">
-                <img :src="attachment.thumbnail || attachment.url" :alt="attachment.name" />
-              </div>
-              
-              <!-- 其他类型附件 -->
-              <div v-else class="file-attachment">
-                <el-icon><Document /></el-icon>
-                <span>{{ attachment.name }}</span>
-              </div>
-            </div>
-          </div>
-          
-          <!-- 消息底部操作栏 -->
-          <div class="message-actions" v-if="message.role === 'assistant' && message.status === 'completed'">
-            <el-button 
-              size="small" 
-              link
-              @click="copyMessage(message)"
-              :title="'复制内容'"
-            >
-              <el-icon><DocumentCopy /></el-icon>
-            </el-button>
-            
-            <el-button 
-              size="small" 
-              link
-              @click="$emit('regenerate', message)"
-              v-if="index === messages.length - 1"
-              :title="'重新生成'"
-            >
-              <el-icon><RefreshRight /></el-icon>
-            </el-button>
-            
-            <div class="feedback-buttons">
-              <el-button 
-                size="small" 
-                link
-                @click="$emit('feedback', message.id, 'like')"
-                :class="{ active: message.feedback === 'like' }"
-                :title="'有帮助'"
-              >
-                <el-icon><Star /></el-icon>
-              </el-button>
-              
-              <el-button 
-                size="small" 
-                link
-                @click="$emit('feedback', message.id, 'dislike')"
-                :class="{ active: message.feedback === 'dislike' }"
-                :title="'没帮助'"
-              >
-                <el-icon><Close /></el-icon>
-              </el-button>
-            </div>
-          </div>
-          
-          <!-- 用户消息操作栏 -->
-          <div class="message-actions" v-if="message.role === 'user' && message.status !== 'editing'">
-            <el-button 
-              size="small" 
-              link
-              @click="copyMessage(message)"
-              :title="'复制内容'"
-            >
-              <el-icon><DocumentCopy /></el-icon>
-            </el-button>
-            
-            <el-button 
-              size="small" 
-              link
-              @click="startEdit(message)"
-              :title="'编辑消息'"
-            >
-              <el-icon><Edit /></el-icon>
-            </el-button>
-          </div>
-          
-          <!-- 停止生成按钮 -->
-          <div class="stop-button" v-if="message.role === 'assistant' && message.status === 'generating'">
-            <el-button 
-              size="small" 
-              @click="$emit('stop')"
-              :title="'停止生成'"
-            >
-              停止生成
-            </el-button>
-          </div>
+          <AttachmentList 
+            v-if="message.attachments && message.attachments.length > 0" 
+            :attachments="message.attachments"
+            @attachment-click="handleAttachmentClick"
+          />
+        </div>
+        
+        <!-- 消息底部操作栏 - 移到外部 -->
+        <div class="message-actions-wrapper">
+          <MessageActions
+            :role="message.role"
+            :status="message.status"
+            :feedback="message.feedback"
+            :is-latest-message="index === messages.length - 1"
+            @copy="copyMessage(message)"
+            @regenerate="$emit('regenerate', message)"
+            @edit="startEdit(message)"
+            @feedback="(value: 'like' | 'dislike') => $emit('feedback', message.id, value)"
+          />
+        </div>
+        
+        <!-- 停止生成按钮 -->
+        <div class="stop-button" v-if="message.role === 'assistant' && message.status === 'generating'">
+          <el-button 
+            size="small" 
+            @click="$emit('stop')"
+            :title="'停止生成'"
+          >
+            停止生成
+          </el-button>
         </div>
       </div>
     </template>
@@ -229,16 +111,11 @@
 <script setup lang="ts">
 import { ref, onMounted, watch, nextTick } from 'vue'
 import { ElMessage } from 'element-plus'
-import {
-  Document, 
-  DocumentCopy, 
-  RefreshRight, 
-  Star,
-  Close,
-  WarningFilled,
-  Edit
-} from '@element-plus/icons-vue'
-import MarkdownMessage from './MarkdownMessage.vue'
+import { WarningFilled } from '@element-plus/icons-vue'
+import UserMessageBubble from './message-bubbles/UserMessageBubble.vue'
+import AssistantMessageBubble from './message-bubbles/AssistantMessageBubble.vue'
+import AttachmentList from './message-bubbles/AttachmentList.vue'
+import MessageActions from './message-bubbles/MessageActions.vue'
 import type { Message, Attachment, Command, SubCommand } from '@/types/chat'
 
 // 定义组件属性
@@ -728,18 +605,33 @@ defineExpose({
   white-space: nowrap;
 }
 
-/* 消息操作按钮 */
-.message-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-  margin-top: 8px;
-  opacity: 0;
+/* 消息操作按钮 - 修改为外部显示 */
+.message-actions-wrapper {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1;
   transition: opacity 0.2s;
+  opacity: 0;
 }
 
-.chat-content:hover .message-actions {
+.chat-bubble-user .message-actions-wrapper {
+  left: auto;
+  right: 50px;
+  transform: none;
+}
+
+.chat-bubble:hover .message-actions-wrapper {
   opacity: 1;
+}
+
+.message-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
 }
 
 .feedback-buttons {
@@ -815,6 +707,8 @@ defineExpose({
     border-color: #444;
     color: #a8abb2;
   }
+  
+  /* Dark mode message actions are now handled by the MessageActions component */
 }
 
 /* Add styles for sub-commands */
