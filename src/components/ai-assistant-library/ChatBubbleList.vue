@@ -3,18 +3,21 @@
     <!-- 欢迎区域 -->
     <div v-if="messages.length === 0" class="chat-welcome">
       <h1 class="chat-title">你好，我是景智文档助手</h1>
-      <p class="chat-subtitle">我今天能帮你什么？</p>
+      <p class="chat-subtitle">我可以帮助你创建、编辑和优化各类文档，提供专业的写作建议和内容生成</p>
       
       <!-- 快捷命令按钮区 -->
-      <div class="chat-header-actions">
-        <div 
-          v-for="cmd in quickCommands" 
-          :key="cmd.id" 
-          class="quick-command-btn"
-          @click="handleQuickCommand(cmd)"
-        >
-          <el-icon><component :is="cmd.icon || 'ChatLineRound'" /></el-icon>
-          <span>{{ cmd.name }}</span>
+      <div class="command-section">
+        <div class="command-section-title">快捷命令</div>
+        <div class="chat-header-actions">
+          <div 
+            v-for="cmd in quickCommands" 
+            :key="cmd.id" 
+            class="quick-command-btn"
+            @click="handleQuickCommand(cmd)"
+          >
+            <el-icon><component :is="cmd.icon || 'ChatLineRound'" /></el-icon>
+            <span>{{ cmd.name }}</span>
+          </div>
         </div>
       </div>
     </div>
@@ -376,26 +379,43 @@ defineExpose({
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 60px 20px 40px;
   text-align: center;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .chat-title {
-  font-size: 28px;
-  font-weight: 600;
-  margin-bottom: 12px;
+  font-size: 36px;
+  font-weight: 700;
+  margin-bottom: 16px;
   background: linear-gradient(90deg, #1a73e8, #8e44ad, #e74c3c, #f39c12, #2ecc71, #3498db);
   background-size: 400% 400%;
   color: transparent;
   -webkit-background-clip: text;
   background-clip: text;
   animation: gradient 10s ease infinite;
+  letter-spacing: -0.5px;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+  position: relative;
+}
+
+.chat-title::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 3px;
+  background: linear-gradient(90deg, #1a73e8, #8e44ad);
+  border-radius: 3px;
 }
 
 .chat-subtitle {
-  font-size: 18px;
-  color: #666;
-  margin-bottom: 32px;
+  font-size: 20px;
+  font-weight: 400;
+  margin: 24px 0 40px;
   background: linear-gradient(90deg, #1a73e8, #8e44ad, #e74c3c, #f39c12, #2ecc71, #3498db);
   background-size: 400% 400%;
   color: transparent;
@@ -403,6 +423,8 @@ defineExpose({
   background-clip: text;
   animation: gradient 10s ease infinite;
   animation-delay: 0.5s;
+  max-width: 600px;
+  line-height: 1.4;
 }
 
 @keyframes gradient {
@@ -415,37 +437,93 @@ defineExpose({
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 16px;
+  gap: 12px;
   max-width: 800px;
+  margin-top: 20px;
+  animation: fadeInUp 0.8s ease-out forwards;
+  animation-delay: 0.5s;
+  opacity: 0;
 }
 
 .quick-command-btn {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  padding: 16px;
-  border-radius: 8px;
-  background-color: #f5f7fa;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background-color: var(--el-bg-color-overlay);
   cursor: pointer;
-  transition: all 0.3s;
-  width: 120px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
+  border: 1px solid var(--el-border-color-light);
+  width: auto;
+  min-width: 160px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  position: relative;
+  overflow: hidden;
+}
+
+.quick-command-btn::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: var(--el-color-primary-light-5);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
 }
 
 .quick-command-btn:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+  border-color: var(--el-color-primary-light-5);
+  background-color: var(--el-color-primary-light-9);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.quick-command-btn:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+@keyframes ripple {
+  0% {
+    transform: scale(0) translate(-50%, -50%);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(20) translate(-50%, -50%);
+    opacity: 0;
+  }
 }
 
 .quick-command-btn .el-icon {
-  font-size: 24px;
-  margin-bottom: 8px;
-  color: #409eff;
+  font-size: 22px;
+  margin-right: 12px;
+  color: var(--el-color-primary);
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  transition: transform 0.25s ease;
+}
+
+.quick-command-btn:hover .el-icon {
+  transform: scale(1.1) rotate(5deg);
+  color: var(--el-color-primary);
+  background: none;
 }
 
 .quick-command-btn span {
-  font-size: 14px;
-  color: #333;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+  transition: color 0.25s ease;
+  text-align: left;
+  margin-top: 0;
+}
+
+.quick-command-btn:hover span {
+  color: var(--el-color-primary);
 }
 
 /* 消息气泡样式 */
@@ -784,5 +862,60 @@ defineExpose({
 .sub-command-description {
   font-size: 12px;
   color: var(--el-text-color-secondary);
+}
+
+.command-section {
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: fadeInUp 0.8s ease-out forwards;
+  animation-delay: 0.3s;
+  opacity: 0;
+}
+
+.command-section-title {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 16px;
+  text-align: center;
+  position: relative;
+  display: inline-block;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.command-section-title::before,
+.command-section-title::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--el-border-color-light), transparent);
+  width: 40px;
+}
+
+.command-section-title::before {
+  right: 100%;
+  margin-right: 15px;
+}
+
+.command-section-title::after {
+  left: 100%;
+  margin-left: 15px;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style> 
