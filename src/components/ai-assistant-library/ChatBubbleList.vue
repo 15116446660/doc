@@ -74,13 +74,19 @@
           <!-- 附件列表 -->
           <AttachmentList 
             v-if="message.attachments && message.attachments.length > 0" 
-            :attachments="message.attachments"
+            :attachments="message.attachments || []"
             @attachment-click="handleAttachmentClick"
           />
         </div>
         
-        <!-- 消息底部操作栏 - 移到外部 -->
-        <div class="message-actions-wrapper">
+        <!-- 消息底部操作栏 - 移到外部，排除AI命令类型消息 -->
+        <div 
+          v-if="!isCommandMessage(message)" 
+          class="message-actions-wrapper"
+          :class="[
+            message.role === 'user' ? 'user-actions' : 'assistant-actions'
+          ]"
+        >
           <MessageActions
             :role="message.role"
             :status="message.status"
@@ -279,6 +285,13 @@ const findParentCommand = (commandId?: string): Command => {
   
   // If not found, return a basic object with the ID
   return command || { id: commandId } as Command
+}
+
+// 判断是否为命令类型的消息 - AI回复中包含子命令的消息
+const isCommandMessage = (message: Message): boolean => {
+  return message.role === 'assistant' && 
+         Array.isArray(message.subCommands) && 
+         message.subCommands.length > 0
 }
 
 // 滚动到底部
@@ -605,21 +618,25 @@ defineExpose({
   white-space: nowrap;
 }
 
-/* 消息操作按钮 - 修改为外部显示 */
+/* 消息操作按钮 - 修改为外部显示，自适应位置 */
 .message-actions-wrapper {
   position: absolute;
-  bottom: -30px;
-  left: 50%;
-  transform: translateX(-50%);
   z-index: 1;
   transition: opacity 0.2s;
   opacity: 0;
 }
 
-.chat-bubble-user .message-actions-wrapper {
-  left: auto;
-  right: 50px;
-  transform: none;
+/* 助手消息操作按钮位置 */
+.assistant-actions {
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* 用户消息操作按钮位置 */
+.user-actions {
+  bottom: -30px;
+  right: 10%;
 }
 
 .chat-bubble:hover .message-actions-wrapper {
