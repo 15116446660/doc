@@ -252,7 +252,7 @@ export function usePromptCommands() {
       return (
         cmd.name.toLowerCase().includes(lowerKeyword) ||
         cmd.description?.toLowerCase().includes(lowerKeyword) ||
-        cmd.prompt.toLowerCase().includes(lowerKeyword) ||
+        (cmd.prompt || '').toLowerCase().includes(lowerKeyword) ||
         cmd.category?.toLowerCase().includes(lowerKeyword)
       )
     })
@@ -268,7 +268,7 @@ export function usePromptCommands() {
     }
     
     // 替换命令模板中的{input}占位符
-    let processedPrompt = command.prompt.replace(/\{input\}/g, input)
+    let processedPrompt = (command.prompt || '').replace(/\{input\}/g, input)
     
     return processedPrompt
   }

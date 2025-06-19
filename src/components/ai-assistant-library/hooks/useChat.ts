@@ -191,11 +191,11 @@ export function useChat(initialConfig: ChatConfig = {
           (content: string, id?: string) => {
             aiMessage.content = content;
           },
-          (error: Error) => {
-            console.error('RAG Chat Error:', error);
+          (err: Error) => {
+            console.error('RAG Chat Error:', err);
             updateMessageStatus(aiMessage.id, 'error');
-            (aiMessage as any).error = error.message || '获取AI回复失败';
-            ElMessage.error('获取AI回复失败: ' + (error.message || '未知错误'));
+            (aiMessage as any).error = err.message || '获取AI回复失败';
+            ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'));
           },
           () => {
             updateMessageStatus(aiMessage.id, 'completed');
@@ -255,15 +255,15 @@ export function useChat(initialConfig: ChatConfig = {
         
         updateMessageStatus(aiMessage.id, 'completed')
       }
-    } catch (error: any) {
+    } catch (err: any) {
       // 检查是否是用户取消
-      if (error.name === 'AbortError') {
+      if (err.name === 'AbortError') {
         updateMessageStatus(aiMessage.id, 'stopped')
       } else {
         // 其他错误
         updateMessageStatus(aiMessage.id, 'error')
-        (aiMessage as any).error = error.message || '获取AI回复失败';
-        ElMessage.error('获取AI回复失败: ' + (error.message || '未知错误'))
+        (aiMessage as any).error = err.message || '获取AI回复失败'
+        ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'))
       }
     } finally {
       // 重置状态
@@ -279,9 +279,6 @@ export function useChat(initialConfig: ChatConfig = {
     if (abortController.value) {
       abortController.value.abort()
       abortController.value = null
-    }
-    if (lastMessage.value?.status === 'pending') {
-      updateMessageStatus(lastMessage.value.id, 'completed')
     }
     isGenerating.value = false
   }
@@ -553,11 +550,11 @@ export function useChat(initialConfig: ChatConfig = {
           (content: string, id?: string) => {
             aiMessage.content = content;
           },
-          (error: Error) => {
-            console.error('RAG Chat Error:', error);
+          (err: Error) => {
+            console.error('RAG Chat Error:', err);
             updateMessageStatus(aiMessage.id, 'error');
-            (aiMessage as any).error = error.message || '获取AI回复失败';
-            ElMessage.error('获取AI回复失败: ' + (error.message || '未知错误'));
+            (aiMessage as any).error = err.message || '获取AI回复失败';
+            ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'));
             if (onCompletedCallback) onCompletedCallback();
           },
           () => {
@@ -620,15 +617,15 @@ export function useChat(initialConfig: ChatConfig = {
         updateMessageStatus(aiMessage.id, 'completed');
         if (onCompletedCallback) onCompletedCallback();
       }
-    } catch (error: any) {
+    } catch (err: any) {
       // 检查是否是用户取消
-      if (error.name === 'AbortError') {
+      if (err.name === 'AbortError') {
         updateMessageStatus(aiMessage.id, 'stopped');
       } else {
         // 其他错误
         updateMessageStatus(aiMessage.id, 'error');
-        (aiMessage as any).error = error.message || '获取AI回复失败';
-        ElMessage.error('获取AI回复失败: ' + (error.message || '未知错误'));
+        (aiMessage as any).error = err.message || '获取AI回复失败';
+        ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'));
       }
       if (onCompletedCallback) onCompletedCallback();
     } finally {

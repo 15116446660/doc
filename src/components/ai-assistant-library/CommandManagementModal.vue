@@ -231,14 +231,6 @@ import { ElMessageBox, ElMessage } from 'element-plus'
 import {
   Plus,
   Delete,
-  ChatLineRound, // 用于动态组件
-  Document, // 用于动态组件
-  Edit, // 用于动态组件
-  Search, // 用于动态组件
-  QuestionFilled, // 用于动态组件
-  Operation, // 用于动态组件
-  Star, // 用于动态组件
-  List, // 用于动态组件
   Lock,
   Share,
   ArrowDown
@@ -385,7 +377,7 @@ function saveCommand() {
     return
   }
   
-  if (!commandForm.prompt.trim()) {
+  if (!commandForm.prompt?.trim()) {
     ElMessage.warning('请输入命令提示词')
     return
   }

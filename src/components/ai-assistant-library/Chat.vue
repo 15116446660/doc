@@ -342,8 +342,8 @@ const handleStartEditingMessage = (messageId: string) => {
   startEditingMessage(messageId)
 }
 
-const handleCancelEditingMessage = () => {
-  cancelEditingMessage()
+const handleCancelEditingMessage = (messageId: string) => {
+  cancelEditingMessage(messageId)
 }
 
 const handleSaveEditingMessage = (messageId: string, newContent: string) => {

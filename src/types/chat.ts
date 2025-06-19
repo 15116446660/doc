@@ -27,6 +27,8 @@ export interface Message {
   status?: MessageStatus;
   thinking?: string;
   commandId?: string;
+  commandName?: string;
+  error?: string;
   reference?: Reference;
   docAggs?: DocumentAggregation[];
   attachments?: Attachment[];
