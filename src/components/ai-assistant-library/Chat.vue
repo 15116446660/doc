@@ -324,11 +324,26 @@ const handleExecuteCommand = (command: Command, input: string = '') => {
     // If the command has sub-commands, load them from API
     handleCommandWithSubCommands(command)
   } else {
+    // 获取选中文本（如果有的话）
+    const selectedText = getSelectedText();
+    
+    // 处理命令提示词，替换占位符
+    let processedPrompt = command.prompt || '';
+    
+    // 替换{input}占位符
+    processedPrompt = processedPrompt.replace(/{input}/g, input);
+    
+    // 替换{selectedText}占位符
+    processedPrompt = processedPrompt.replace(/{selectedText}/g, selectedText || '');
+    
+    // 如果提示词中有{selectedText}占位符但没有选中文本，记录日志
+    if (processedPrompt.includes('{selectedText}') && !selectedText) {
+      console.warn(`命令 '${command.name}' 的提示词中包含{selectedText}占位符，但没有选中文本`);
+    }
+    
     // Handle regular command
     sendUserMessage(
-      command.prompt
-        ? command.prompt.replace('{input}', input)
-        : input,
+      processedPrompt,
       [], // attachments
       undefined, // knowledgeBaseId
       command.id // commandId
@@ -438,10 +453,18 @@ const handleSelectSubCommand = (parentCommand: Command, subCommand: SubCommand, 
   // Process the template to replace placeholders
   let template = subCommand.template || '';
   
+  // 获取选中文本（如果有的话）
+  const selectedText = getSelectedText();
+  
   // Replace common placeholders
   template = template
     .replace(/{input}/g, input)
-    .replace(/{selectedText}/g, ''); // Add your selected text logic here if needed
+    .replace(/{selectedText}/g, selectedText || ''); // 替换选中文本占位符
+  
+  // 如果模板中有{selectedText}占位符但没有选中文本，记录日志
+  if (template.includes('{selectedText}') && !selectedText) {
+    console.warn('模板中包含{selectedText}占位符，但没有选中文本');
+  }
   
   // Send the processed template as a user message
   sendUserMessage(
@@ -453,6 +476,12 @@ const handleSelectSubCommand = (parentCommand: Command, subCommand: SubCommand, 
   
   saveCurrentConversation();
 }
+
+// 获取用户选中的文本
+const getSelectedText = (): string => {
+  const selection = window.getSelection();
+  return selection ? selection.toString().trim() : '';
+};
 
 const handleSelectKnowledgeBase = (knowledgeBaseId: string) => {
   setCurrentKnowledgeBase(knowledgeBaseId)
@@ -707,8 +736,8 @@ const viewCommandSubCommands = async (commandId: string) => {
     const command = findCommand(commandId);
     if (!command) {
       throw new Error(`未找到命令: ${commandId}`);
-    }
-    
+  }
+
     // 检查命令是否标记为有子命令
     if (!command.hasSubCommands) {
       // 如果命令没有标记为有子命令，直接执行该命令
@@ -716,7 +745,7 @@ const viewCommandSubCommands = async (commandId: string) => {
       isGenerating.value = false;
       handleExecuteCommand(command);
       return;
-    }
+  }
   
     // 获取子命令
     const subCommands = await fetchSubCommands(commandId);
@@ -769,7 +798,7 @@ const viewCommandSubCommands = async (commandId: string) => {
   } finally {
     isGenerating.value = false;
   }
-}
+  }
   
 /**
  * 查找命令对象
@@ -794,7 +823,7 @@ const findCommand = (commandId: string) => {
     console.warn(`未找到命令: ${commandId}`);
     // 打印所有命令ID以便调试
     console.log('可用命令ID列表:', commands.value.map(cmd => cmd.id));
-  }
+    }
   
   return command;
 }

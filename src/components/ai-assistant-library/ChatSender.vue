@@ -448,8 +448,19 @@ const handleSendMessage = () => {
       
       // 替换命令为提示词
       if (command.prompt) {
+        // 替换{input}占位符
         messageToSend = command.prompt.replace(/{input}/g, commandInput);
-        console.log(`替换后的消息: ${messageToSend}`);
+        
+        // 替换{selectedText}占位符
+        if (selectedText.value) {
+          messageToSend = messageToSend.replace(/{selectedText}/g, selectedText.value);
+          console.log(`替换selectedText后的消息: ${messageToSend}`);
+        } else {
+          // 如果没有选中文本，但提示词中有{selectedText}占位符，则替换为空字符串
+          messageToSend = messageToSend.replace(/{selectedText}/g, '');
+        }
+        
+        console.log(`最终替换后的消息: ${messageToSend}`);
       }
       
       // 发送消息时附带命令ID
@@ -461,6 +472,12 @@ const handleSendMessage = () => {
     }
   } else {
     // 不是命令格式，直接发送
+    // 检查普通消息中是否包含{selectedText}占位符
+    if (messageToSend.includes('{selectedText}') && selectedText.value) {
+      messageToSend = messageToSend.replace(/{selectedText}/g, selectedText.value);
+      console.log(`替换普通消息中的selectedText: ${messageToSend}`);
+    }
+    
     emit('send', messageToSend, attachedFiles.value);
   }
 
@@ -588,7 +605,19 @@ const selectCommand = async (cmd: BaseCommand) => {
   activeCommandIndex.value = suggestionCommands.value.findIndex(c => c.id === cmd.id);
 
   if (!cmd.hasSubCommands) {
-    inputMessage.value = `/${cmd.name} `;
+    // 在命令提示中添加命令名称
+    let commandPrompt = `/${cmd.name} `;
+    
+    // 如果有选中文本，且命令描述中提到了使用选中文本，自动添加选中文本
+    if (selectedText.value && cmd.description && typeof cmd.description === 'string' && 
+        (cmd.description.includes('选中文本') || 
+         cmd.description.includes('选择的文本') || 
+         cmd.description.includes('selected text'))) {
+      commandPrompt += selectedText.value;
+      console.log(`自动添加选中文本到命令: ${commandPrompt}`);
+    }
+    
+    inputMessage.value = commandPrompt;
     showCommandSuggestions.value = false;
     selectedCommandId.value = null;
     activeSubCommand.value = null;
@@ -625,7 +654,18 @@ const selectCommand = async (cmd: BaseCommand) => {
 
 const selectSubCommand = (subCmd: SubCommandType) => {
   // 二级命令选择后，只显示"/二级命令名称 "，不需要显示一级命令名称
-  inputMessage.value = `/${subCmd.name} `;
+  let commandPrompt = `/${subCmd.name} `;
+  
+  // 如果有选中文本，且子命令描述中提到了使用选中文本，自动添加选中文本
+  if (selectedText.value && subCmd.description && typeof subCmd.description === 'string' && 
+      (subCmd.description.includes('选中文本') || 
+       subCmd.description.includes('选择的文本') || 
+       subCmd.description.includes('selected text'))) {
+    commandPrompt += selectedText.value;
+    console.log(`自动添加选中文本到子命令: ${commandPrompt}`);
+  }
+  
+  inputMessage.value = commandPrompt;
   showCommandSuggestions.value = false;
   activeSubCommand.value = null;
   selectedCommandId.value = null;
