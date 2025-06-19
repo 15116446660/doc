@@ -249,19 +249,17 @@ function toggleFavorite(conversationId: string): void {
         throw new Error('无效的会话数据格式')
       }
       
-      // 检查是否已存在相同ID的会话
-      const existingIndex = conversations.value.findIndex(conv => conv.id === conversation.id)
-      if (existingIndex >= 0) {
-        // 替换现有会话
-        conversations.value[existingIndex] = conversation
-      } else {
-        // 添加新会话
-        conversations.value.unshift(conversation)
+      // 检查会话是否已存在
+      if (conversations.value.some(c => c.id === conversation.id)) {
+        ElMessage.warning('该会话已存在')
+        return false
       }
       
+      conversations.value.unshift(conversation)
+      activeConversationId.value = conversation.id
       return true
     } catch (error) {
-      console.error('导入会话数据失败:', error)
+      ElMessage.error(`导入失败: ${error}`)
       return false
     }
   }
@@ -301,18 +299,13 @@ function toggleFavorite(conversationId: string): void {
     }
   }
   
-  // 初始化
-  init()
-  
   return {
-    // 状态
     conversations,
     activeConversationId,
     activeConversation,
     activeMessages,
-    
-    // 方法
     init,
+    saveConversations,
     createConversation,
     switchConversation,
     updateConversationTitle,

@@ -413,43 +413,35 @@ const mockApi: MockMethod[] = [
   },
   
   // 发送消息获取AI回复
-  {
-    url: '/api/chat/completions/stream',
-    method: 'post',
-    response: ({ body }: RequestParams) => {
-      const { deepThinking } = body || {}
+  // {
+  //   url: '/api/chat/completions/stream',
+  //   method: 'post',
+  //   response: ({ body }: RequestParams) => {
+  //     const { deepThinking } = body || {}
 
-      const response: Message = {
-        id: uuidv4(),
-        role: 'assistant',
-        content: fullMarkdownExample,
-        timestamp: Date.now(),
-        status: 'completed',
-        thinking: deepThinking ? '正在进行深度思考...' : undefined
-      }
+  //     const response: Message = {
+  //       id: uuidv4(),
+  //       role: 'assistant',
+  //       content: fullMarkdownExample,
+  //       timestamp: Date.now(),
+  //       status: 'completed',
+  //       thinking: deepThinking ? '正在进行深度思考...' : undefined
+  //     }
       
-      return {
-        code: 200,
-        msg: '操作成功',
-        data: response
-      }
-    }
-  },
+  //     return {
+  //       code: 200,
+  //       msg: '操作成功',
+  //       data: response
+  //     }
+  //   }
+  // },
   
   // 流式发送消息
   {
     url: '/api/chat/completions/stream',
     method: 'post',
     response: () => {
-      const stream = new ReadableStream({
-        start(controller) {
-          const encoder = new TextEncoder();
-          const encodedData = encoder.encode(fullMarkdownExample);
-          controller.enqueue(encodedData);
-          controller.close();
-        },
-      });
-
+      const stream = createStreamResponse(fullMarkdownExample);
       return {
         code: 200,
         body: stream,

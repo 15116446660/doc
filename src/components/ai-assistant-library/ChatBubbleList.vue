@@ -93,7 +93,7 @@
               
               <!-- 已完成的AI消息 -->
               <MarkdownMessage 
-                :content="message.content || fullMarkdownExample" 
+                :content="message.content" 
                 :thinking="message.thinking"
               />
             </template>

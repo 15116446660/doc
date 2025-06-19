@@ -87,8 +87,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onBeforeUnmount, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, computed, onMounted, onBeforeUnmount, watch, nextTick } from 'vue'
+import { ElMessage } from 'element-plus'
 import ChatBubbleList from './ChatBubbleList.vue'
 import ChatSender from './ChatSender.vue'
 import HistoryDialog from './HistoryDialog.vue'
@@ -99,7 +99,7 @@ import { useChat } from './hooks/useChat'
 import { useConversations } from './hooks/useConversations'
 import { useAIModels } from './hooks/useAIModels'
 import { usePromptCommands } from './hooks/usePromptCommands'
-import type { Attachment, Command } from '@/types/chat'
+import type { Attachment, Command, Message, AIModel } from '@/types/chat'
 
 // 组件属性定义
 const props = defineProps<{
@@ -136,7 +136,6 @@ const {
   sendUserMessage,
   stopGeneration,
   regenerateMessage,
-  clearMessages,
   setMessageFeedback,
   currentModelId,
   setCurrentModel,
@@ -153,21 +152,21 @@ const {
 const {
   conversations,
   activeConversationId,
+  activeConversation,
   createConversation,
   loadConversation,
   saveConversation,
   deleteConversation,
   renameConversation,
   toggleFavorite,
-  clearNonFavoriteConversations
+  clearNonFavoriteConversations,
+  init: initConversations,
 } = useConversations()
 
 const {
   models,
   loadModels,
   updateModels,
-  addCustomModel,
-  updateModel
 } = useAIModels()
 
 const {
@@ -180,7 +179,7 @@ const {
 } = usePromptCommands()
 
 // 引用聊天气泡列表组件
-const chatBubbleListRef = ref(null);
+const chatBubbleListRef = ref<InstanceType<typeof ChatBubbleList> | null>(null)
 
 // 计算属性：是否为暗色模式
 const isDarkMode = computed(() => {
@@ -194,6 +193,66 @@ const isDarkMode = computed(() => {
 const quickCommands = computed(() => {
   // 返回前5个命令作为快捷命令
   return commands.value.slice(0, 5)
+})
+
+// 监听消息变化，自动滚动到底部
+watch(
+  () => messages.value,
+  () => {
+    nextTick(() => {
+      chatBubbleListRef.value?.scrollToBottom()
+    })
+  },
+  { deep: true }
+)
+
+// 初始化
+onMounted(async () => {
+  await initConversations()
+  await loadModels()
+  await loadCommands()
+
+  // 如果有初始会话ID，加载该会话
+  if (props.initialConversationId) {
+    loadConversation(props.initialConversationId)
+  } else if (conversations.value.length === 0) {
+    // 否则如果没有会话，则创建新会话
+    createConversation(currentModelId.value)
+  }
+
+  // 加载本地设置
+  const savedTheme = localStorage.getItem('chatTheme') as 'light' | 'dark' | 'auto' | null
+  if (savedTheme) {
+    localTheme.value = savedTheme
+    emit('themeChange', savedTheme)
+  }
+
+  const savedUserAvatar = localStorage.getItem('chatUserAvatar')
+  if (savedUserAvatar) {
+    localUserAvatar.value = savedUserAvatar
+    emit('avatarChange', 'user', savedUserAvatar)
+  }
+
+  const savedAssistantAvatar = localStorage.getItem('chatAssistantAvatar')
+  if (savedAssistantAvatar) {
+    localAssistantAvatar.value = savedAssistantAvatar
+    emit('avatarChange', 'assistant', savedAssistantAvatar)
+  }
+
+  // 监听系统暗色模式变化
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+
+  const handleThemeChange = () => {
+    if (localTheme.value === 'auto') {
+      emit('themeChange', 'auto')
+    }
+  }
+
+  mediaQuery.addEventListener('change', handleThemeChange)
+
+  onBeforeUnmount(() => {
+    mediaQuery.removeEventListener('change', handleThemeChange)
+  })
 })
 
 // 定义 stopGenerating 函数，关联到 stopGeneration
@@ -234,7 +293,7 @@ const handleModelChange = (modelId: string) => {
 }
 
 // 处理模型列表更新
-const handleModelsUpdated = (updatedModels: any[]) => {
+const handleModelsUpdated = (updatedModels: AIModel[]) => {
   updateModels(updatedModels)
 }
 
@@ -248,110 +307,45 @@ const handleMessageFeedback = (messageId: string, feedback: 'like' | 'dislike') 
 const handleQuickCommand = (commandId: string) => {
   try {
     const command = findCommand(commandId)
-    if (command && command.prompt) {
-      sendUserMessage(command.prompt, undefined, command.id, command.name)
-      saveCurrentConversation()
-    } else if (command) {
-      // 如果命令没有预设prompt，可以执行其他操作
-      ElMessage.info(`执行了命令: ${command.name}`)
+    if (command) {
+      handleExecuteCommand(command)
     }
   } catch (error) {
-    ElMessage.error('执行命令失败')
+    ElMessage.error('执行快捷命令失败')
   }
 }
 
-// 处理来自 ChatSender 的带上下文的命令执行
-const handleExecuteCommand = async (command: Command, context: string) => {
+const handleCommand = (command: Command) => {
+  handleExecuteCommand(command)
+}
+
+const handleExecuteCommand = (command: Command, args?: any) => {
+  console.log('Executing command:', command, args)
+  // 在这里实现命令执行逻辑
   if (command.prompt) {
-    const finalPrompt = command.prompt.replace('{selectedText}', context)
-    await sendUserMessage(finalPrompt, [], command.id, command.name)
-    saveCurrentConversation()
-  } else {
-    ElMessage.info(`执行了命令: ${command.name}`)
+    sendUserMessage(command.prompt, [], command.id, command.name);
   }
 }
 
-// 处理其他命令菜单操作
-const handleCommand = (command: string) => {
-  switch (command) {
-    case 'new':
-      createNewConversation()
-      break
-    case 'history':
-      showHistoryDialog.value = true
-      break
-    case 'commands':
-      showCommandModal.value = true
-      break
-    case 'settings':
-      showSettingsModal.value = true
-      break
-    case 'clear':
-      ElMessageBox.confirm('确定要清空当前会话吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }).then(() => {
-        clearMessages()
-        saveCurrentConversation()
-      }).catch(() => {})
-      break
-  }
+const handleSelectKnowledgeBase = (knowledgeBaseId: string) => {
+  setCurrentKnowledgeBase(knowledgeBaseId)
 }
 
-// 打开模型配置
-const openModelConfig = () => {
-  showModelConfigModal.value = true
+const handleClearSelectedKnowledgeBase = () => {
+  setCurrentKnowledgeBase(null)
 }
 
-// 创建新会话
-const createNewConversation = () => {
-  createConversation(currentModelId.value)
-  clearMessages()
+const handleStartEditingMessage = (messageId: string) => {
+  startEditingMessage(messageId)
 }
 
-// 处理选择会话
-const handleSelectConversation = (conversationId: string) => {
-  loadConversation(conversationId)
-  showHistoryDialog.value = false
+const handleCancelEditingMessage = () => {
+  cancelEditingMessage()
 }
 
-// 处理删除会话
-const handleDeleteConversation = (conversationId: string) => {
-  deleteConversation(conversationId)
-}
-
-// 处理重命名会话
-const handleRenameConversation = (conversationId: string, newTitle: string) => {
-  renameConversation(conversationId, newTitle)
-}
-
-// 处理切换收藏状态
-const handleToggleFavorite = (conversationId: string, favorite: boolean) => {
-  toggleFavorite(conversationId)
-}
-
-// 处理清空非收藏会话
-const handleClearNonFavorites = () => {
-  clearNonFavoriteConversations()
-  ElMessage.success('非收藏会话已清空')
-}
-
-// 处理保存命令
-const handleSaveCommand = async (command: Omit<Command, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }) => {
-  if (command.id && commands.value.some(cmd => cmd.id === command.id)) {
-    // 更新现有命令
-    await updateCommandById(command.id, command)
-  } else {
-    // 添加新命令
-    await addCommand(command)
-  }
-  showCommandModal.value = false
-}
-
-// 处理删除命令
-const handleDeleteCommand = (commandId: string) => {
-  removeCommand(commandId)
+const handleSaveEditingMessage = (messageId: string, newContent: string) => {
+  editUserMessage(messageId, newContent)
+  saveCurrentConversation()
 }
 
 // 保存当前会话
@@ -361,165 +355,80 @@ const saveCurrentConversation = () => {
   }
 }
 
-// 处理保存设置
-const handleSaveSettings = (settings: { theme: 'light' | 'dark' | 'auto', userAvatar: string, assistantAvatar: string }) => {
-  // 更新本地设置
+// 处理选择会话
+const handleSelectConversation = (conversationId: string) => {
+  loadConversation(conversationId)
+  showHistoryDialog.value = false
+  // 切换后滚动到底部
+  nextTick(() => {
+    chatBubbleListRef.value?.scrollToBottom()
+  })
+}
+
+const handleDeleteConversation = (conversationId: string) => {
+  deleteConversation(conversationId)
+}
+
+const handleRenameConversation = (conversationId: string, newTitle: string) => {
+  renameConversation(conversationId, newTitle)
+}
+
+const handleToggleFavorite = (conversationId: string) => {
+  toggleFavorite(conversationId)
+}
+
+const handleClearNonFavorites = () => {
+  clearNonFavoriteConversations()
+  ElMessage.success('非收藏会话已清空')
+}
+
+// 打开模型配置
+const openModelConfig = () => {
+  showModelConfigModal.value = true
+}
+
+// 处理命令保存
+const handleSaveCommand = (command: Command) => {
+  if (command.id) {
+    updateCommandById(command.id, command)
+  } else {
+    addCommand(command)
+  }
+}
+
+// 处理命令删除
+const handleDeleteCommand = (commandId: string) => {
+  removeCommand(commandId)
+}
+
+// 处理设置保存
+const handleSaveSettings = (settings: { theme: 'light' | 'dark' | 'auto', userAvatar: string, assistantAvatar:string }) => {
   localTheme.value = settings.theme
   localUserAvatar.value = settings.userAvatar
   localAssistantAvatar.value = settings.assistantAvatar
-  
-  // 触发事件
   emit('themeChange', settings.theme)
-  
-  if (settings.userAvatar !== props.userAvatar) {
-    emit('avatarChange', 'user', settings.userAvatar)
-  }
-  
-  if (settings.assistantAvatar !== props.assistantAvatar) {
-    emit('avatarChange', 'assistant', settings.assistantAvatar)
-  }
-  
+  emit('avatarChange', 'user', settings.userAvatar)
+  emit('avatarChange', 'assistant', settings.assistantAvatar)
+
   // 保存到本地存储
   localStorage.setItem('chatTheme', settings.theme)
-  localStorage.setItem('userAvatar', settings.userAvatar)
-  localStorage.setItem('assistantAvatar', settings.assistantAvatar)
-  
-  // 应用主题
-  applyTheme(settings.theme)
+  localStorage.setItem('chatUserAvatar', settings.userAvatar)
+  localStorage.setItem('chatAssistantAvatar', settings.assistantAvatar)
 }
 
-// 应用主题
-const applyTheme = (theme: 'light' | 'dark' | 'auto') => {
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark-mode')
-  } else if (theme === 'light') {
-    document.documentElement.classList.remove('dark-mode')
-  } else {
-    // 自动模式，根据系统偏好设置
-    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-    document.documentElement.classList.toggle('dark-mode', prefersDark)
-  }
-}
-
-// 计算属性：用户头像
-const userAvatar = computed(() => {
-  return localUserAvatar.value
-})
-
-// 计算属性：助手头像
-const assistantAvatar = computed(() => {
-  return localAssistantAvatar.value
-})
-
-// 初始化
-onMounted(async () => {
-  // 加载本地设置
-  const savedTheme = localStorage.getItem('chatTheme') as 'light' | 'dark' | 'auto' | null
-  const savedUserAvatar = localStorage.getItem('userAvatar')
-  const savedAssistantAvatar = localStorage.getItem('assistantAvatar')
-  
-  if (savedTheme) {
-    localTheme.value = savedTheme
-    applyTheme(savedTheme)
-  } else {
-    applyTheme(localTheme.value)
-  }
-  
-  if (savedUserAvatar) {
-    localUserAvatar.value = savedUserAvatar
-  }
-  
-  if (savedAssistantAvatar) {
-    localAssistantAvatar.value = savedAssistantAvatar
-  }
-
-  // 加载模型
-  await loadModels()
-  
-  // 加载命令
-  await loadCommands()
-  
-  // 如果有初始会话ID，加载该会话
-  if (props.initialConversationId) {
-    loadConversation(props.initialConversationId)
-  } else {
-    // 否则创建新会话
-    createConversation(currentModelId.value)
-  }
-  
-  // 监听系统暗色模式变化
-  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
-  const handleChange = () => {
-    // 触发重新渲染
-    if (localTheme.value === 'auto') {
-      document.documentElement.classList.toggle('dark-mode', mediaQuery.matches)
+// 监听活动会话变化，同步消息列表
+watch(
+  activeConversationId,
+  (newId) => {
+    const conversation = conversations.value.find(c => c.id === newId)
+    if (conversation) {
+      messages.value = conversation.messages
+    } else {
+      messages.value = []
     }
-  }
-  
-  mediaQuery.addEventListener('change', handleChange)
-  
-  // 清理函数
-  onBeforeUnmount(() => {
-    mediaQuery.removeEventListener('change', handleChange)
-  })
-})
-
-// 监听消息变化，保存会话
-watch(messages, () => {
-  saveCurrentConversation()
-}, { deep: true })
-
-// 监听当前模型变化，保存会话
-watch(currentModelId, () => {
-  saveCurrentConversation()
-})
-
-// 处理选择知识库
-const handleSelectKnowledgeBase = (knowledgeBaseId: string) => {
-  setCurrentKnowledgeBase(knowledgeBaseId)
-  saveCurrentConversation()
-}
-
-// 处理清除选择的知识库
-const handleClearSelectedKnowledgeBase = () => {
-  setCurrentKnowledgeBase(null)
-  saveCurrentConversation()
-}
-
-// 处理开始编辑消息
-const handleStartEditingMessage = (messageId: string) => {
-  // 首先在消息对象上设置标记，防止在状态变化时触发自动滚动
-  const messageToEdit = messages.value.find(msg => msg.id === messageId);
-  if (messageToEdit) {
-    (messageToEdit as any).preventScrollOnNextUpdate = true;
-  }
-  
-  // 然后调用编辑函数
-  startEditingMessage(messageId);
-}
-
-// 处理取消编辑消息
-const handleCancelEditingMessage = (messageId: string) => {
-  // 首先在消息对象上设置标记，防止在状态变化时触发自动滚动
-  const messageToCancel = messages.value.find(msg => msg.id === messageId);
-  if (messageToCancel) {
-    (messageToCancel as any).preventScrollOnNextUpdate = true;
-  }
-  
-  // 然后调用取消编辑函数
-  cancelEditingMessage(messageId);
-}
-
-// 处理保存编辑消息
-const handleSaveEditingMessage = (messageId: string, newContent: string) => {
-  editUserMessage(messageId, newContent, () => {
-    // 编辑完成后，确保滚动到底部
-    if (chatBubbleListRef.value) {
-      chatBubbleListRef.value.scrollToBottom();
-    }
-  });
-  saveCurrentConversation();
-}
+  },
+  { immediate: true }
+)
 </script>
 
 <style scoped>
@@ -552,3 +461,5 @@ const handleSaveEditingMessage = (messageId: string, newContent: string) => {
   padding: 10px;
 }
 </style> 
+
+
