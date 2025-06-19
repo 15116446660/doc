@@ -68,7 +68,7 @@
             :key="cmd.id"
             class="quick-command-btn"
             size="small"
-            @click="emit('executeCommand', cmd, selectedText || '')"
+            @click="emit('command', cmd)"
           >
             {{ cmd.name }}
           </el-button>
@@ -82,7 +82,7 @@
                 <el-dropdown-item 
                   v-for="cmd in hiddenQuickCommands" 
                   :key="cmd.id"
-                  @click="emit('executeCommand', cmd, selectedText || '')"
+                  @click="emit('command', cmd)"
                 >
                   {{ cmd.name }}
                 </el-dropdown-item>
@@ -317,7 +317,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'send', message: string, attachments?: Array<any>): void
+  (e: 'send', message: string, attachments?: Array<any>, commandId?: string): void
   (e: 'stop'): void
   (e: 'modelChange', modelId: string): void
   (e: 'command', command: BaseCommand): void
@@ -417,31 +417,57 @@ const removeFile = (index: number) => {
 const handleSendMessage = () => {
   if (!canSend.value) return;
 
-  // 所有在输入框里通过"发送"按钮或回车提交的内容，都通过 'send' 事件发出。
-  emit('send', inputMessage.value, attachedFiles.value);
+  let messageToSend = inputMessage.value;
+  
+  // 检查是否是命令格式（以/开头，后面跟着命令名称和可能的空格及参数）
+  const commandRegex = /^\/(\S+)(?:\s+(.*))?$/;
+  const match = messageToSend.match(commandRegex);
+  
+  if (match) {
+    const commandName = match[1];
+    const commandInput = match[2] || '';
+    console.log(`检测到命令: /${commandName}, 参数: "${commandInput}"`);
+    
+    // 查找匹配的命令
+    const command = props.commands.find(cmd => cmd.name === commandName);
+    
+    if (command) {
+      console.log(`找到命令: ${command.name}, 提示词: ${command.prompt}`);
+      
+      // 如果命令有子命令，则通过emit('command')处理
+      if (command.hasSubCommands) {
+        console.log(`命令 ${command.name} 有子命令，通过command事件处理`);
+        emit('command', command);
+        
+        // 清理工作
+        inputMessage.value = '';
+        attachedFiles.value = [];
+        clearSelectedText();
+        return;
+      }
+      
+      // 替换命令为提示词
+      if (command.prompt) {
+        messageToSend = command.prompt.replace(/{input}/g, commandInput);
+        console.log(`替换后的消息: ${messageToSend}`);
+      }
+      
+      // 发送消息时附带命令ID
+      emit('send', messageToSend, attachedFiles.value, command.id);
+    } else {
+      console.warn(`未找到命令: ${commandName}`);
+      // 未找到命令时，仍然发送原始消息
+      emit('send', messageToSend, attachedFiles.value);
+    }
+  } else {
+    // 不是命令格式，直接发送
+    emit('send', messageToSend, attachedFiles.value);
+  }
 
   // 清理工作
   inputMessage.value = '';
   attachedFiles.value = [];
   clearSelectedText();
-};
-
-const handleCommand = (command: string) => {
-  if (command === 'clear') {
-    ElMessageBox.confirm('确定要清空当前会话的所有消息吗？', '提示', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    })
-      .then(() => {
-        emit('command', 'clear');
-      })
-      .catch(() => {
-        // 用户取消，无需操作
-      });
-  } else {
-    emit('command', command);
-  }
 };
 
 const toggleDeepThinkingMode = () => emit('toggleDeepThinking');
@@ -624,10 +650,6 @@ const handleOpenHistory = () => {
 
 const handleClearChat = () => {
   emit('clear-chat');
-};
-
-const handleOpenCommandManagement = () => {
-  emit('open-command-management');
 };
 
 // #endregion
