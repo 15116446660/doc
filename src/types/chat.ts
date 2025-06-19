@@ -200,17 +200,37 @@ export interface Provider {
   };
 }
 
+// 用于模型定义的接口
+export interface AIModelDefinition {
+  id: string;
+  label: string;
+  provider: string;
+  type: string;
+  logo: string;
+  description: string;
+  level: string;
+  defaults: {
+    maxTokens: number;
+    temperature: number;
+    modelVersion: string;
+  }
+}
+
 // AI模型定义 - 根据新API重构
 export interface AIModel {
   id: string;
   name: string; // 对应 modelName
-  model: string; // 模型标识
+  model?: string; // 模型标识
   apiKey: string;
-  apiUrl: string;
+  apiUrl?: string;
   isDefault: boolean;
-  cueWord: string; // 提示词
+  cueWord?: string; // 提示词
   description?: string;
   logo?: string;
+  // 新增字段
+  provider?: string;
+  level?: string;
+  modelVersion?: string;
   // 高级设置
   temperature?: number;
   maxTokens?: number;

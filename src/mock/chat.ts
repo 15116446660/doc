@@ -32,7 +32,8 @@ const mockModels: AIModel[] = [
     apiKey: '',
     maxTokens: 2048,
     temperature: 0.7,
-    modelVersion: 'gpt-3.5-turbo'
+    modelVersion: 'gpt-3.5-turbo',
+    isDefault: false
   },
   {
     id: 'claude-3',
@@ -44,7 +45,8 @@ const mockModels: AIModel[] = [
     apiKey: '',
     maxTokens: 4096,
     temperature: 0.7,
-    modelVersion: 'claude-3'
+    modelVersion: 'claude-3',
+    isDefault: false
   }
 ]
 
@@ -424,8 +426,21 @@ const mockApi: MockMethod[] = [
   {
     url: '/api/chat/completions/stream',
     method: 'post',
-    response: () => {
-      const stream = createStreamResponse(fullMarkdownExample);
+    response: (req: RequestParams) => {
+      // 从body或query中获取commandId，而不是从params中获取
+      const { body, query } = req;
+      const commandId = body?.commandId || query?.commandId;
+      
+      console.log('流式请求参数:', { body, query, commandId });
+      
+      // 根据commandId生成不同的回复内容（如果需要）
+      let content = fullMarkdownExample;
+      if (commandId) {
+        console.log(`处理命令ID: ${commandId} 的流式请求`);
+        // 这里可以根据commandId定制不同的回复内容
+      }
+      
+      const stream = createStreamResponse(content);
       return {
         code: 200,
         body: stream,

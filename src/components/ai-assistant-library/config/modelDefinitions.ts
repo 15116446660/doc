@@ -85,6 +85,62 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
       modelVersion: 'qwen-turbo'
     }
   },
+  'qwen-plus': {
+    id: 'qwen-plus',
+    label: '通义千问 Plus',
+    provider: 'alibaba',
+    type: 'alibaba',
+    logo: '/ai-models/qwen.png',
+    description: '阿里云通义千问增强版模型，性能更强',
+    level: 'advanced',
+    defaults: {
+      maxTokens: 8192,
+      temperature: 0.7,
+      modelVersion: 'qwen-plus'
+    }
+  },
+  'qwen-max': {
+    id: 'qwen-max',
+    label: '通义千问 Max',
+    provider: 'alibaba',
+    type: 'alibaba',
+    logo: '/ai-models/qwen.png',
+    description: '阿里云最强大的通义千问模型，能力全面',
+    level: 'super',
+    defaults: {
+      maxTokens: 8192,
+      temperature: 0.7,
+      modelVersion: 'qwen-max'
+    }
+  },
+  'qwen-14b': {
+    id: 'qwen-14b',
+    label: '通义千问 14B',
+    provider: 'alibaba',
+    type: 'alibaba',
+    logo: '/ai-models/qwen.png',
+    description: '通义千问开源14B模型，基础能力强',
+    level: 'basic',
+    defaults: {
+      maxTokens: 4096,
+      temperature: 0.7,
+      modelVersion: 'qwen-14b'
+    }
+  },
+  'qwen-7b': {
+    id: 'qwen-7b',
+    label: '通义千问 7B',
+    provider: 'alibaba',
+    type: 'alibaba',
+    logo: '/ai-models/qwen.png',
+    description: '通义千问开源7B模型，轻量高效',
+    level: 'basic',
+    defaults: {
+      maxTokens: 2048,
+      temperature: 0.7,
+      modelVersion: 'qwen-7b'
+    }
+  },
   'ernie-4': {
     id: 'ernie-4',
     label: '文心一言 4.0',

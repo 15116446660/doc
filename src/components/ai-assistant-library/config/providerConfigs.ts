@@ -85,6 +85,46 @@ export const providerConfigs: Record<string, Provider> = {
       frequencyPenalty: false,
       presencePenalty: false,
       stream: true
+    },
+    modelOptions: [
+      {
+        id: 'qwen-turbo',
+        name: '通义千问 Turbo',
+        description: '快速高效的通义千问标准模型',
+        maxTokens: 6144,
+        contextWindow: 32768
+      },
+      {
+        id: 'qwen-plus',
+        name: '通义千问 Plus',
+        description: '增强版千问模型，性能更好',
+        maxTokens: 8192,
+        contextWindow: 32768
+      },
+      {
+        id: 'qwen-max',
+        name: '通义千问 Max',
+        description: '阿里云的旗舰级大模型，能力全面',
+        maxTokens: 8192,
+        contextWindow: 65536
+      },
+      {
+        id: 'qwen-14b',
+        name: '通义千问 14B',
+        description: '开源的14B参数通义千问模型',
+        maxTokens: 4096,
+        contextWindow: 16384
+      },
+      {
+        id: 'qwen-7b',
+        name: '通义千问 7B',
+        description: '轻量级开源通义千问模型',
+        maxTokens: 2048,
+        contextWindow: 8192
+      }
+    ],
+    defaults: {
+      baseUrl: 'https://dashscope.aliyuncs.com/api/v1'
     }
   },
   baidu: {
