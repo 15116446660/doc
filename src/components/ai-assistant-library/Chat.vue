@@ -320,12 +320,15 @@ const handleQuickCommand = (command: Command) => {
 }
 
 const handleExecuteCommand = (command: Command, input: string = '') => {
-  sendUserMessage({
-    content: command.prompt ? command.prompt.replace('{input}', input) : input,
-    commandId: command.id,
-    commandName: command.name,
-  });
-  saveConversation();
+  sendUserMessage(
+    command.prompt
+      ? command.prompt.replace('{input}', input)
+      : input,
+    [], // attachments
+    undefined, // knowledgeBaseId
+    command.id // commandId
+  );
+  saveCurrentConversation();
 }
 
 const handleSelectKnowledgeBase = (knowledgeBaseId: string) => {
