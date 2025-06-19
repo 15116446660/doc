@@ -96,6 +96,31 @@
                 :content="message.content" 
                 :thinking="message.thinking"
               />
+              
+              <!-- 子命令按钮区域 -->
+              <div 
+                v-if="message.subCommands && message.subCommands.length > 0" 
+                class="sub-commands-container"
+              >
+                <div class="sub-commands-list">
+                  <div 
+                    v-for="subCmd in message.subCommands" 
+                    :key="subCmd.id"
+                    class="sub-command-button"
+                    @click="handleSubCommandClick(findParentCommand(message.commandId), subCmd)"
+                  >
+                    <div class="sub-command-icon">
+                      <el-icon><component :is="subCmd.icon || 'Document'" /></el-icon>
+                    </div>
+                    <div class="sub-command-info">
+                      <div class="sub-command-name">{{ subCmd.name }}</div>
+                      <div class="sub-command-description" v-if="subCmd.description">
+                        {{ subCmd.description }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </template>
           </template>
           
@@ -214,7 +239,7 @@ import {
   Edit
 } from '@element-plus/icons-vue'
 import MarkdownMessage from './MarkdownMessage.vue'
-import type { Message, Attachment, Command } from '@/types/chat'
+import type { Message, Attachment, Command, SubCommand } from '@/types/chat'
 
 // 定义组件属性
 const props = defineProps<{
@@ -230,7 +255,8 @@ const emit = defineEmits<{
   (e: 'regenerate', message: Message): void
   (e: 'stop'): void
   (e: 'feedback', messageId: string, feedback: 'like' | 'dislike'): void
-  (e: 'command', commandId: string): void
+  (e: 'command', command: Command): void
+  (e: 'subCommand', parentCommand: Command, subCommand: SubCommand, input?: string): void
   (e: 'startEditing', messageId: string): void
   (e: 'cancelEditing', messageId: string): void
   (e: 'saveEditing', messageId: string, content: string): void
@@ -357,7 +383,25 @@ const handleAttachmentClick = (attachment: Attachment) => {
 
 // 处理快捷命令点击
 const handleQuickCommand = (command: Command) => {
-  emit('command', command.id)
+  emit('command', command)
+}
+
+// 处理子命令点击
+const handleSubCommandClick = (parentCommand: Command, subCommand: SubCommand) => {
+  emit('subCommand', parentCommand, subCommand)
+}
+
+// 查找父命令
+const findParentCommand = (commandId?: string): Command => {
+  if (!commandId) {
+    return {} as Command // Return empty command as fallback
+  }
+  
+  // Try to find the command in quickCommands
+  const command = props.quickCommands?.find(cmd => cmd.id === commandId)
+  
+  // If not found, return a basic object with the ID
+  return command || { id: commandId } as Command
 }
 
 // 滚动到底部
@@ -771,5 +815,59 @@ defineExpose({
     border-color: #444;
     color: #a8abb2;
   }
+}
+
+/* Add styles for sub-commands */
+.sub-commands-container {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--el-border-color-light);
+}
+
+.sub-commands-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sub-command-button {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border-radius: 6px;
+  background-color: var(--el-fill-color-lighter);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.sub-command-button:hover {
+  background-color: var(--el-fill-color-light);
+  transform: translateY(-2px);
+}
+
+.sub-command-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background-color: var(--el-color-primary-light-8);
+  color: var(--el-color-primary);
+  margin-right: 10px;
+}
+
+.sub-command-info {
+  flex: 1;
+}
+
+.sub-command-name {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.sub-command-description {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 </style> 

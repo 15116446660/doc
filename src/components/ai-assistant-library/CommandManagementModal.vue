@@ -153,6 +153,64 @@
               </div>
             </el-form-item>
             
+            <!-- 子命令支持 -->
+            <div class="sub-commands-section" v-if="!selectedCommand?.isSystem">
+              <el-divider content-position="left">子命令设置</el-divider>
+              
+              <el-form-item label="启用子命令">
+                <el-switch 
+                  v-model="commandForm.hasSubCommands" 
+                  :disabled="selectedCommand?.isSystem"
+                />
+                <div class="form-help-text" v-if="commandForm.hasSubCommands">
+                  启用后，此命令将作为父命令，可以添加多个子命令
+                </div>
+              </el-form-item>
+              
+              <el-form-item v-if="commandForm.hasSubCommands">
+                <el-button 
+                  type="primary" 
+                  @click="openSubCommandManagement"
+                  :disabled="!commandForm.id"
+                >
+                  <el-icon><Setting /></el-icon>
+                  管理子命令
+                </el-button>
+                <div class="form-help-text" v-if="!commandForm.id">
+                  请先保存命令后再管理子命令
+                </div>
+                <div v-if="subCommands.length > 0" class="sub-command-summary">
+                  <div class="sub-command-count">
+                    已添加 {{ subCommands.length }} 个子命令
+                  </div>
+                  <div class="sub-command-tags">
+                    <el-tag 
+                      v-for="subCmd in subCommands.slice(0, 3)" 
+                      :key="subCmd.id"
+                      size="small"
+                      class="sub-command-tag"
+                    >
+                      {{ subCmd.name }}
+                    </el-tag>
+                    <el-tag v-if="subCommands.length > 3" size="small" type="info">
+                      +{{ subCommands.length - 3 }} 个
+                    </el-tag>
+                  </div>
+                </div>
+              </el-form-item>
+              
+              <el-form-item label="子命令API端点" v-if="commandForm.hasSubCommands">
+                <el-input 
+                  v-model="commandForm.subCommandsEndpoint" 
+                  placeholder="请输入获取子命令的API端点（可选）"
+                  :disabled="selectedCommand?.isSystem"
+                />
+                <div class="form-help-text">
+                  如果子命令需要从特定API获取，请填写对应端点，留空则使用默认端点
+                </div>
+              </el-form-item>
+            </div>
+            
             <!-- 参数列表 -->
             <div class="parameters-section" v-if="!selectedCommand?.isSystem">
               <div class="parameters-header">
@@ -222,6 +280,18 @@
       </span>
     </template>
   </el-dialog>
+  
+  <!-- 子命令管理对话框 -->
+  <SubCommandManagementModal
+    v-if="showSubCommandModal"
+    :parent-command-id="commandForm.id || ''"
+    :parent-command="selectedCommand"
+    :sub-commands="subCommands"
+    @save="handleSaveSubCommand"
+    @delete="handleDeleteSubCommand"
+    @refresh="refreshSubCommands"
+    @close="showSubCommandModal = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -233,9 +303,12 @@ import {
   Delete,
   Lock,
   Share,
-  ArrowDown
+  ArrowDown,
+  Setting
 } from '@element-plus/icons-vue'
-import type { Command } from '@/types/chat'
+import type { Command, SubCommand } from '@/types/chat'
+import SubCommandManagementModal from './SubCommandManagementModal.vue'
+import { usePromptCommands } from './hooks/usePromptCommands'
 
 // 定义组件属性
 const props = defineProps<{
@@ -278,11 +351,18 @@ const commandForm = reactive<Command>({
   createdAt: 0,
   updatedAt: 0,
   parameters: [],
-  shareType: 'private'
+  shareType: 'private',
+  hasSubCommands: false,
+  subCommandsEndpoint: ''
 })
 
 // 添加新建状态
 const isCreatingNew = ref(false)
+
+// 子命令相关
+const showSubCommandModal = ref(false)
+const subCommands = ref<SubCommand[]>([])
+const { fetchSubCommands, addSubCommand, updateSubCommandById, removeSubCommand } = usePromptCommands()
 
 // 计算属性：过滤后的命令列表
 const filteredCommands = computed(() => {
@@ -341,7 +421,9 @@ function createNewCommand() {
     createdAt: Date.now(),
     updatedAt: Date.now(),
     parameters: [],
-    shareType: 'private'
+    shareType: 'private',
+    hasSubCommands: false,
+    subCommandsEndpoint: ''
   })
   
   // 清除选中状态，进入新建模式
@@ -489,6 +571,70 @@ watch(() => props.commands, (newCommands) => {
     selectCommand(newCommands[0].id)
   }
 }, { immediate: true })
+
+// 打开子命令管理
+async function openSubCommandManagement() {
+  if (!commandForm.id) {
+    ElMessage.warning('请先保存命令后再管理子命令')
+    return
+  }
+  
+  try {
+    // 加载子命令
+    subCommands.value = await fetchSubCommands(commandForm.id)
+    showSubCommandModal.value = true
+  } catch (error) {
+    console.error('加载子命令失败:', error)
+    ElMessage.error('加载子命令失败，请稍后再试')
+  }
+}
+
+// 刷新子命令列表
+async function refreshSubCommands() {
+  if (commandForm.id) {
+    try {
+      subCommands.value = await fetchSubCommands(commandForm.id)
+    } catch (error) {
+      console.error('刷新子命令失败:', error)
+    }
+  }
+}
+
+// 处理子命令保存
+async function handleSaveSubCommand(subCommand: SubCommand) {
+  if (!commandForm.id) return
+  
+  try {
+    if (subCommand.id) {
+      // 更新子命令
+      await updateSubCommandById(commandForm.id, subCommand.id, subCommand)
+    } else {
+      // 创建子命令
+      await addSubCommand(commandForm.id, subCommand)
+    }
+    
+    // 刷新子命令列表
+    await refreshSubCommands()
+  } catch (error) {
+    console.error('保存子命令失败:', error)
+    ElMessage.error('保存子命令失败，请稍后再试')
+  }
+}
+
+// 处理子命令删除
+async function handleDeleteSubCommand(subCommandId: string) {
+  if (!commandForm.id) return
+  
+  try {
+    await removeSubCommand(commandForm.id, subCommandId)
+    
+    // 刷新子命令列表
+    await refreshSubCommands()
+  } catch (error) {
+    console.error('删除子命令失败:', error)
+    ElMessage.error('删除子命令失败，请稍后再试')
+  }
+}
 </script>
 
 <style scoped>
@@ -754,5 +900,35 @@ watch(() => props.commands, (newCommands) => {
 .command-item-share-type .el-icon {
   font-size: 14px;
   margin-right: 2px;
+}
+
+.sub-commands-section {
+  margin-bottom: 20px;
+}
+
+.sub-command-summary {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: var(--el-fill-color-light);
+  border-radius: 4px;
+}
+
+.sub-command-count {
+  font-size: 13px;
+  margin-bottom: 6px;
+  color: var(--el-text-color-secondary);
+}
+
+.sub-command-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.sub-command-tag {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style> 

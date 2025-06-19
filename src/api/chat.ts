@@ -1,5 +1,5 @@
 import { get, post, put, del } from './request'
-import type { Message, Conversation, AIModel, Command, KnowledgeBase, RAGChatRequest, RAGChatResponse, NormalChatRequest, NormalChatResponse, Reference } from '@/types/chat'
+import type { Message, Conversation, AIModel, Command, KnowledgeBase, RAGChatRequest, RAGChatResponse, NormalChatRequest, NormalChatResponse, Reference, SubCommand } from '@/types/chat'
 
 /**
  * 发送消息并获取AI回复
@@ -290,4 +290,47 @@ export async function normalChat(request: NormalChatRequest): Promise<NormalChat
   }
 
   return response.json();
+}
+
+/**
+ * 获取命令的子命令列表
+ * @param parentCommandId 父命令ID
+ * @param context 上下文参数，如文档ID、项目ID等
+ */
+export function getSubCommands(parentCommandId: string, context?: Record<string, any>) {
+  // 特殊处理document命令，使用硬编码的URL
+  if (parentCommandId === 'document') {
+    return post<SubCommand[]>(`/api/commands/document/sub-commands`, context || {})
+  }
+  
+  // 其他命令使用通用URL模式
+  return post<SubCommand[]>(`/api/commands/${parentCommandId}/sub-commands`, context || {})
+}
+
+/**
+ * 创建子命令
+ * @param parentCommandId 父命令ID
+ * @param subCommand 子命令数据
+ */
+export function createSubCommand(parentCommandId: string, subCommand: Partial<SubCommand>) {
+  return post<SubCommand>(`/api/commands/${parentCommandId}/sub-commands`, subCommand)
+}
+
+/**
+ * 更新子命令
+ * @param parentCommandId 父命令ID
+ * @param subCommandId 子命令ID
+ * @param updates 子命令更新数据
+ */
+export function updateSubCommand(parentCommandId: string, subCommandId: string, updates: Partial<SubCommand>) {
+  return put<SubCommand>(`/api/commands/${parentCommandId}/sub-commands/${subCommandId}`, updates)
+}
+
+/**
+ * 删除子命令
+ * @param parentCommandId 父命令ID
+ * @param subCommandId 子命令ID
+ */
+export function deleteSubCommand(parentCommandId: string, subCommandId: string) {
+  return del<void>(`/api/commands/${parentCommandId}/sub-commands/${subCommandId}`)
 } 

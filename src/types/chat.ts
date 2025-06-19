@@ -35,6 +35,7 @@ export interface Message {
   feedback?: 'like' | 'dislike';
   edited?: boolean;
   originalContent?: string;
+  subCommands?: SubCommand[]; // 用于展示子命令选项
 }
 
 // 知识库引用

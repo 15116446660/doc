@@ -1,8 +1,20 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { v4 as uuidv4 } from 'uuid'
-import { getCommands, getSharedCommands, createCommand, createSharedCommand, updateCommand, deleteCommand } from '@/api/chat'
-import type { Command, CommandParameter } from '@/types/chat'
+import { 
+  getCommands, 
+  getSharedCommands, 
+  createCommand, 
+  createSharedCommand, 
+  updateCommand, 
+  deleteCommand,
+  getSubCommands,
+  createSubCommand,
+  updateSubCommand,
+  deleteSubCommand
+} from '@/api/chat'
+import type { Command, CommandParameter, SubCommand } from '@/types/chat'
+import { presetCommands, getPresetSubCommands } from '@/config/presetCommands'
 
 /**
  * 命令系统的核心逻辑封装
@@ -11,8 +23,12 @@ export function usePromptCommands() {
   // 命令列表
   const commands = ref<Command[]>([])
   
+  // 子命令缓存
+  const subCommandsCache = ref<Record<string, SubCommand[]>>({})
+  
   // 是否正在加载
   const loading = ref<boolean>(false)
+  const loadingSubCommands = ref<boolean>(false)
   
   // 计算属性：按分类分组的命令
   const commandsByCategory = computed(() => {
@@ -53,17 +69,28 @@ export function usePromptCommands() {
     loading.value = true
     
     try {
-      // 加载私有命令
-      const privateResponse = await getCommands()
+      // 首先加载预设命令
+      commands.value = [...presetCommands]
       
-      // 加载共享命令
-      const sharedResponse = await getSharedCommands()
-      
-      // 合并命令列表，确保系统命令在前面
-      const systemCommands = privateResponse.filter(cmd => cmd.isSystem)
-      const nonSystemPrivateCommands = privateResponse.filter(cmd => !cmd.isSystem)
-      
-      commands.value = [...systemCommands, ...nonSystemPrivateCommands, ...sharedResponse]
+      try {
+        // 尝试加载私有命令
+        const privateResponse = await getCommands()
+        
+        // 尝试加载共享命令
+        const sharedResponse = await getSharedCommands()
+        
+        // 合并命令列表，避免与预设命令重复
+        const apiCommands = [...privateResponse, ...sharedResponse]
+        
+        // 过滤掉与预设命令ID重复的命令
+        const filteredApiCommands = apiCommands.filter(apiCmd => 
+          !commands.value.some(cmd => cmd.id === apiCmd.id)
+        )
+        
+        commands.value = [...commands.value, ...filteredApiCommands]
+      } catch (error) {
+        console.warn('从API加载命令失败，使用本地预设命令', error)
+      }
       
       // 合并本地自定义命令
       const localCommands = loadLocalCommands()
@@ -75,14 +102,27 @@ export function usePromptCommands() {
         
         commands.value = [...commands.value, ...newCommands]
       }
+      
+      // 预加载预设命令的子命令到缓存
+      presetCommands.forEach(cmd => {
+        if (cmd.hasSubCommands && cmd.subCommands) {
+          subCommandsCache.value[cmd.id] = cmd.subCommands
+        }
+      })
     } catch (error: any) {
       console.error('加载命令列表失败:', error)
       ElMessage.error('加载命令列表失败: ' + (error.message || '未知错误'))
       
-      // 如果API加载失败，尝试从本地加载
+      // 如果API加载失败，确保至少有预设命令可用
+      commands.value = [...presetCommands]
+      
+      // 尝试从本地加载自定义命令
       const localCommands = loadLocalCommands()
       if (localCommands.length > 0) {
-        commands.value = localCommands
+        const filteredLocalCommands = localCommands.filter(localCmd => 
+          !commands.value.some(cmd => cmd.id === localCmd.id)
+        )
+        commands.value = [...commands.value, ...filteredLocalCommands]
       }
     } finally {
       loading.value = false
@@ -248,12 +288,11 @@ export function usePromptCommands() {
     if (!keyword.trim()) return commands.value
     
     const lowerKeyword = keyword.toLowerCase()
-    return commands.value.filter(cmd => {
+    return commands.value.filter(command => {
       return (
-        cmd.name.toLowerCase().includes(lowerKeyword) ||
-        cmd.description?.toLowerCase().includes(lowerKeyword) ||
-        (cmd.prompt || '').toLowerCase().includes(lowerKeyword) ||
-        cmd.category?.toLowerCase().includes(lowerKeyword)
+        command.name.toLowerCase().includes(lowerKeyword) ||
+        (command.description || '').toLowerCase().includes(lowerKeyword) ||
+        (command.category || '').toLowerCase().includes(lowerKeyword)
       )
     })
   }
@@ -263,22 +302,137 @@ export function usePromptCommands() {
    */
   function executeCommand(commandId: string, input: string = ''): string {
     const command = findCommand(commandId)
-    if (!command) {
-      throw new Error('命令不存在')
+    if (!command || !command.prompt) {
+      return input
     }
     
-    // 替换命令模板中的{input}占位符
-    let processedPrompt = (command.prompt || '').replace(/\{input\}/g, input)
-    
-    return processedPrompt
+    // 替换命令中的{input}占位符
+    return command.prompt.replace(/{input}/g, input)
   }
   
   /**
-   * 获取命令参数
+   * 获取命令的参数列表
    */
   function getCommandParameters(commandId: string): CommandParameter[] {
     const command = findCommand(commandId)
     return command?.parameters || []
+  }
+  
+  /**
+   * 获取命令的子命令列表
+   */
+  async function fetchSubCommands(commandId: string, context?: Record<string, any>): Promise<SubCommand[]> {
+    // 首先检查预设命令的子命令
+    const presetSubCommands = getPresetSubCommands(commandId)
+    if (presetSubCommands.length > 0) {
+      // 更新缓存并返回预设子命令
+      subCommandsCache.value[commandId] = presetSubCommands
+      return presetSubCommands
+    }
+    
+    // 检查缓存
+    if (subCommandsCache.value[commandId]?.length > 0) {
+      return subCommandsCache.value[commandId]
+    }
+    
+    if (loadingSubCommands.value) {
+      return []
+    }
+    
+    loadingSubCommands.value = true
+    try {
+      const result = await getSubCommands(commandId, context)
+      
+      // 缓存子命令结果
+      subCommandsCache.value[commandId] = result
+      
+      return result
+    } catch (error: any) {
+      console.error(`获取命令[${commandId}]的子命令失败:`, error)
+      ElMessage.error(`获取子命令失败: ${error.message || '未知错误'}`)
+      
+      // 返回缓存的子命令，如果有的话
+      return subCommandsCache.value[commandId] || []
+    } finally {
+      loadingSubCommands.value = false
+    }
+  }
+
+  /**
+   * 添加子命令
+   */
+  async function addSubCommand(parentCommandId: string, subCommandData: Partial<SubCommand>): Promise<SubCommand | null> {
+    try {
+      const result = await createSubCommand(parentCommandId, subCommandData)
+      
+      // 更新缓存
+      if (!subCommandsCache.value[parentCommandId]) {
+        subCommandsCache.value[parentCommandId] = []
+      }
+      subCommandsCache.value[parentCommandId].push(result)
+      
+      return result
+    } catch (error) {
+      console.error(`创建子命令失败:`, error)
+      ElMessage.error('创建子命令失败')
+      return null
+    }
+  }
+
+  /**
+   * 更新子命令
+   */
+  async function updateSubCommandById(parentCommandId: string, subCommandId: string, updates: Partial<SubCommand>): Promise<boolean> {
+    try {
+      await updateSubCommand(parentCommandId, subCommandId, updates)
+      
+      // 更新缓存
+      if (subCommandsCache.value[parentCommandId]) {
+        const index = subCommandsCache.value[parentCommandId].findIndex(cmd => cmd.id === subCommandId)
+        if (index !== -1) {
+          subCommandsCache.value[parentCommandId][index] = {
+            ...subCommandsCache.value[parentCommandId][index],
+            ...updates
+          }
+        }
+      }
+      
+      return true
+    } catch (error) {
+      console.error(`更新子命令失败:`, error)
+      ElMessage.error('更新子命令失败')
+      return false
+    }
+  }
+
+  /**
+   * 删除子命令
+   */
+  async function removeSubCommand(parentCommandId: string, subCommandId: string): Promise<boolean> {
+    try {
+      await deleteSubCommand(parentCommandId, subCommandId)
+      
+      // 更新缓存
+      if (subCommandsCache.value[parentCommandId]) {
+        const index = subCommandsCache.value[parentCommandId].findIndex(cmd => cmd.id === subCommandId)
+        if (index !== -1) {
+          subCommandsCache.value[parentCommandId].splice(index, 1)
+        }
+      }
+      
+      return true
+    } catch (error) {
+      console.error(`删除子命令失败:`, error)
+      ElMessage.error('删除子命令失败')
+      return false
+    }
+  }
+
+  /**
+   * 获取已缓存的子命令
+   */
+  function getCachedSubCommands(parentCommandId: string): SubCommand[] {
+    return subCommandsCache.value[parentCommandId] || []
   }
   
   // 监听命令列表变化，自动保存自定义命令
@@ -292,24 +446,25 @@ export function usePromptCommands() {
   })
   
   return {
-    // 状态
     commands,
     loading,
-    
-    // 计算属性
+    loadingSubCommands,
     commandsByCategory,
     categories,
     privateCommands,
     sharedCommands,
-    
-    // 方法
     loadCommands,
+    findCommand,
     addCommand,
     updateCommandById,
     removeCommand,
-    findCommand,
     searchCommands,
     executeCommand,
-    getCommandParameters
+    getCommandParameters,
+    fetchSubCommands,
+    addSubCommand,
+    updateSubCommandById,
+    removeSubCommand,
+    getCachedSubCommands
   }
 } 

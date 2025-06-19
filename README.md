@@ -48,3 +48,119 @@ AI对话助手现在支持编辑已发送的用户消息，并基于编辑后的
 - 编辑功能仅适用于用户消息，不能编辑AI回复
 - 编辑过的消息会显示"(已编辑)"标记
 - 系统会保存原始消息内容，为将来可能的撤销功能做准备
+
+# AI Assistant Library
+
+AI对话助手前端组件库
+
+## 预设命令系统
+
+AI助手包含一套预设的命令系统，可以通过输入 `/` 来触发命令选择器，选择并使用各种命令。
+
+### 预设命令列表
+
+AI助手内置了以下预设命令：
+
+1. **内容扩写** (`/内容扩写`)
+   - 将简短的内容扩展为更详细的文档
+   - 适用于丰富草稿内容、扩展文档细节
+
+2. **内容缩写** (`/内容缩写`)
+   - 将冗长的内容精简为简洁的摘要
+   - 适用于提取文档要点、创建摘要
+
+3. **内容续写** (`/内容续写`)
+   - 根据已有内容继续编写后续段落
+   - 适用于文档创作、内容延伸
+
+4. **内容重写** (`/内容重写`)
+   - 以不同的风格或角度重写现有内容
+   - 适用于调整语气、优化表达、改进结构
+
+5. **复杂表单** (`/复杂表单`)
+   - 生成企业文档中的各类复杂表格
+   - 包含以下子命令：
+     - **达标表**：生成符合标准的达标评估表格
+     - **偏离表**：生成分析偏离原因与程度的表格
+
+### 命令流程
+
+命令执行流程如下图所示：
+
+```mermaid
+flowchart TD
+    A[用户输入 / 触发命令] --> B{是否带子命令?}
+    B -->|否| C[直接填充命令模板]
+    B -->|是| D[显示子命令选项]
+    D --> E[用户选择子命令]
+    E --> F[填充子命令模板]
+    C --> G[用户发送命令]
+    F --> G
+    G --> H[AI生成响应]
+    
+    style A fill:#d4f1f9,stroke:#333
+    style B fill:#ffe6cc,stroke:#333
+    style D fill:#d5e8d4,stroke:#333
+    style E fill:#d5e8d4,stroke:#333
+    style H fill:#e1d5e7,stroke:#333
+```
+
+### 命令系统架构
+
+命令系统的主要组件关系如下：
+
+```mermaid
+classDiagram
+    class Command {
+      +string id
+      +string name
+      +string icon
+      +string description
+      +string prompt
+      +boolean hasSubCommands
+      +SubCommand[] subCommands
+    }
+    
+    class SubCommand {
+      +string id
+      +string name
+      +string description
+      +string icon
+      +string template
+    }
+    
+    class PresetCommandsConfig {
+      +Command[] presetCommands
+      +getPresetCommands()
+      +getPresetSubCommands(commandId)
+    }
+    
+    class UsePromptCommands {
+      +Command[] commands
+      +loadCommands()
+      +fetchSubCommands(commandId)
+      +executeCommand(commandId, input)
+    }
+    
+    Command "1" *-- "many" SubCommand : has
+    PresetCommandsConfig "1" -- "many" Command : defines
+    UsePromptCommands -- PresetCommandsConfig : uses
+    UsePromptCommands -- Command : manages
+```
+
+### 使用方法
+
+1. 在输入框中输入斜杠 `/` 触发命令菜单
+2. 选择所需命令，或继续输入命令名称进行过滤
+3. 对于带有子命令的命令，选择后会显示可用的子命令
+4. 选择命令后，根据需要提供文本内容或使用已选中的文本
+5. 发送命令，AI将根据命令的提示词生成相应内容
+
+### 配置与扩展
+
+预设命令在前端配置，无需依赖后端API。系统使用以下文件进行配置：
+
+- `src/config/presetCommands.ts` - 包含所有预设命令的定义
+- `src/components/ai-assistant-library/hooks/usePromptCommands.ts` - 命令系统的核心逻辑
+
+要添加新的预设命令，可以在 `presetCommands.ts` 文件中添加命令定义，系统会自动加载并显示这些命令。

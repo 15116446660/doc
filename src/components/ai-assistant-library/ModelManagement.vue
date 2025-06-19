@@ -77,13 +77,13 @@
             v-model="modelForm.cueWord" 
             placeholder="配置该模型的默认提示词" 
           />
-        </el-form-item>
-
+          </el-form-item>
+          
         <el-form-item label="默认模型">
            <el-switch v-model="modelForm.isDefault" />
            <div class="field-hint">是否将此模型作为默认使用模型</div>
-        </el-form-item>
-
+          </el-form-item>
+        
         <div class="advanced-options-section">
           <div class="advanced-options-header" @click="showAdvancedOptions = !showAdvancedOptions">
             <span class="advanced-label">高级选项</span>
@@ -110,7 +110,7 @@
                   <div class="field-hint">模型最大生成的Token数</div>
                 </div>
               </el-form-item>
-
+              
               <el-form-item label="Top P">
                 <div class="control-wrapper">
                   <el-slider v-model="modelForm.topP" :min="0" :max="1" :step="0.05" />
@@ -120,14 +120,14 @@
               
               <el-form-item label="频率惩罚">
                 <div class="control-wrapper">
-                  <el-slider v-model="modelForm.frequencyPenalty" :min="-2" :max="2" :step="0.1" />
+                      <el-slider v-model="modelForm.frequencyPenalty" :min="-2" :max="2" :step="0.1" />
                   <div class="field-hint">减少对重复出现Token的使用</div>
                 </div>
               </el-form-item>
-
+              
               <el-form-item label="存在惩罚">
                 <div class="control-wrapper">
-                  <el-slider v-model="modelForm.presencePenalty" :min="-2" :max="2" :step="0.1" />
+                      <el-slider v-model="modelForm.presencePenalty" :min="-2" :max="2" :step="0.1" />
                   <div class="field-hint">减少对已出现主题的重复</div>
                 </div>
               </el-form-item>
@@ -244,12 +244,12 @@ function confirmDelete(model: AIModel) {
 function deleteModel() {
   if (modelToDelete.value) {
     emit('delete-model', modelToDelete.value.id);
-    showDeleteConfirm.value = false;
+  showDeleteConfirm.value = false;
     modelToDelete.value = null;
     if (isFormVisible.value && !isEditing.value) {
-      closeForm();
-    }
+    closeForm();
   }
+}
 }
 </script>
 

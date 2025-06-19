@@ -255,7 +255,7 @@ function toggleFavorite(conversationId: string): void {
         return false
       }
       
-      conversations.value.unshift(conversation)
+        conversations.value.unshift(conversation)
       activeConversationId.value = conversation.id
       return true
     } catch (error) {

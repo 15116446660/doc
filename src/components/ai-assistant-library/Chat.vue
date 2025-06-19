@@ -11,7 +11,8 @@
       @regenerate="regenerateMessage"
       @stop="stopGenerating"
       @feedback="handleMessageFeedback"
-      @command="handleQuickCommand"
+      @command="handleExecuteCommand"
+      @subCommand="handleSelectSubCommand"
       @startEditing="handleStartEditingMessage"
       @cancelEditing="handleCancelEditingMessage"
       @saveEditing="handleSaveEditingMessage"
@@ -41,6 +42,7 @@
       @open-history="handleOpenHistory"
       @clear-chat="handleClearCurrentConversation"
       @open-command-management="handleOpenCommandManagement"
+      @view-sub-commands="viewCommandSubCommands"
     />
     
     <!-- 历史会话对话框 -->
@@ -105,7 +107,8 @@ import { useChat } from './hooks/useChat'
 import { useConversations } from './hooks/useConversations'
 import { useAIModels } from './hooks/useAIModels'
 import { usePromptCommands } from './hooks/usePromptCommands'
-import type { Attachment, Command, Message, AIModel } from '@/types/chat'
+import type { Attachment, Command, Message, AIModel, SubCommand } from '@/types/chat'
+import { v4 as uuidv4 } from 'uuid'
 
 // 组件属性定义
 const props = defineProps<{
@@ -183,7 +186,8 @@ const {
   loadCommands,
   addCommand,
   updateCommandById,
-  removeCommand
+  removeCommand,
+  fetchSubCommands
 } = usePromptCommands()
 
 // 引用聊天气泡列表组件
@@ -315,19 +319,146 @@ const handleMessageFeedback = (messageId: string, feedback: 'like' | 'dislike') 
 }
 
 // 处理来自 ChatBubbleList 的快捷命令
-const handleQuickCommand = (command: Command) => {
-  handleExecuteCommand(command)
+const handleQuickCommand = (commandId: string) => {
+  const command = commands.find(cmd => cmd.id === commandId)
+  if (command) {
+    handleExecuteCommand(command)
+  }
 }
 
 const handleExecuteCommand = (command: Command, input: string = '') => {
+  if (command.hasSubCommands) {
+    // If the command has sub-commands, load them from API
+    handleCommandWithSubCommands(command)
+  } else {
+    // Handle regular command
+    sendUserMessage(
+      command.prompt
+        ? command.prompt.replace('{input}', input)
+        : input,
+      [], // attachments
+      undefined, // knowledgeBaseId
+      command.id // commandId
+    );
+    saveCurrentConversation();
+  }
+}
+
+// Add a new function to handle commands that have sub-commands
+const handleCommandWithSubCommands = async (command: Command) => {
+  try {
+    // Show loading state in UI if needed
+    isGenerating.value = true;
+    
+    // Create a user message indicating the parent command was selected
+    const userMessage: Message = {
+      id: uuidv4(),
+      role: 'user',
+      content: `已选择: ${command.name}`,
+      timestamp: Date.now(),
+      commandId: command.id,
+      commandName: command.name
+    };
+    
+    messages.value.push(userMessage);
+    
+    // Get context parameters if needed (like documentId, etc.)
+    const context = {
+      // Add context parameters needed for your application
+      // Example: documentId: currentDocument.value?.id
+    };
+    
+    // Fetch sub-commands from API
+    const subCommands = await fetchSubCommands(command.id, context);
+    
+    if (subCommands.length === 0) {
+      // No sub-commands available, show an error
+      const errorMessage: Message = {
+        id: uuidv4(),
+        role: 'assistant',
+        content: `抱歉，'${command.name}'命令没有可用的子命令。`,
+        timestamp: Date.now(),
+        status: 'completed'
+      };
+      
+      messages.value.push(errorMessage);
+    } else {
+      // Create an assistant message to show available sub-commands
+      const subCommandsMessage: Message = {
+        id: uuidv4(),
+        role: 'assistant',
+        content: generateSubCommandsContent(command.name, subCommands),
+        timestamp: Date.now(),
+        status: 'completed',
+        subCommands: subCommands // Store sub-commands in message for reference
+      };
+      
+      messages.value.push(subCommandsMessage);
+    }
+    
+    saveCurrentConversation();
+  } catch (error: any) {
+    console.error('加载子命令失败:', error);
+    
+    // Show error message
+    const errorMessage: Message = {
+      id: uuidv4(),
+      role: 'assistant',
+      content: `加载'${command.name}'的子命令失败: ${error.message || '未知错误'}`,
+      timestamp: Date.now(),
+      status: 'error',
+      error: error.message
+    };
+    
+    messages.value.push(errorMessage);
+    saveCurrentConversation();
+  } finally {
+    isGenerating.value = false;
+  }
+}
+
+// Helper function to generate content for sub-commands display
+const generateSubCommandsContent = (commandName: string, subCommands: SubCommand[]): string => {
+  let content = `### ${commandName} - 可用操作\n\n请选择以下操作之一:\n\n`;
+  
+  subCommands.forEach(subCmd => {
+    content += `- **${subCmd.name}**: ${subCmd.description || ''}\n`;
+  });
+  
+  content += '\n点击下方对应的操作按钮继续。';
+  return content;
+}
+
+// Handle selecting a specific sub-command
+const handleSelectSubCommand = (parentCommand: Command, subCommand: SubCommand, input: string = '') => {
+  // Create a user message indicating which sub-command was selected
+  const userMessage: Message = {
+    id: uuidv4(),
+    role: 'user',
+    content: `已选择: ${subCommand.name}${input ? `\n\n${input}` : ''}`,
+    timestamp: Date.now(),
+    commandId: `${parentCommand.id}_${subCommand.id}`,
+    commandName: subCommand.name
+  };
+  
+  messages.value.push(userMessage);
+  
+  // Process the template to replace placeholders
+  let template = subCommand.template || '';
+  
+  // Replace common placeholders
+  template = template
+    .replace(/{input}/g, input)
+    .replace(/{selectedText}/g, ''); // Add your selected text logic here if needed
+  
+  // Send the processed template as a user message
   sendUserMessage(
-    command.prompt
-      ? command.prompt.replace('{input}', input)
-      : input,
+    template,
     [], // attachments
     undefined, // knowledgeBaseId
-    command.id // commandId
+    `${parentCommand.id}_${subCommand.id}` // commandId
   );
+  
   saveCurrentConversation();
 }
 
@@ -459,6 +590,85 @@ async function handleDeleteModel(modelId: string) {
 
 async function handleSetDefaultModel(modelId: string) {
   await setDefaultModel(modelId);
+}
+
+/**
+ * 查看命令的子命令列表
+ * 
+ * 将命令的子命令作为AI助手消息显示在对话中
+ * 
+ * @param commandId 命令ID
+ */
+const viewCommandSubCommands = async (commandId: string) => {
+  try {
+    isGenerating.value = true;
+    
+    // 查找命令
+    const command = findCommand(commandId);
+    if (!command) {
+      throw new Error(`未找到命令: ${commandId}`);
+    }
+    
+    // 获取子命令
+    const subCommands = await fetchSubCommands(commandId);
+    if (!subCommands || subCommands.length === 0) {
+      throw new Error(`命令 '${command.name}' 没有子命令`);
+    }
+    
+    // 生成子命令消息内容
+    const content = generateSubCommandsContent(command.name, subCommands);
+    
+    // 创建消息
+    const message: Message = {
+      id: uuidv4(),
+      role: 'assistant',
+      content,
+      timestamp: Date.now(),
+      status: 'completed',
+      commandId,
+      commandName: command.name,
+      subCommands // 添加子命令列表供UI展示
+    };
+    
+    messages.value.push(message);
+    saveCurrentConversation();
+    
+    // 滚动到底部
+    nextTick(() => {
+      chatBubbleListRef.value?.scrollToBottom();
+    });
+    
+  } catch (error: any) {
+    console.error('查看子命令失败:', error);
+    
+    // 显示错误消息
+    const errorMessage: Message = {
+      id: uuidv4(),
+      role: 'assistant',
+      content: `查看'${commandId}'的子命令失败: ${error.message || '未知错误'}`,
+      timestamp: Date.now(),
+      status: 'error',
+      error: error.message
+    };
+    
+    messages.value.push(errorMessage);
+    saveCurrentConversation();
+  } finally {
+    isGenerating.value = false;
+  }
+}
+
+/**
+ * 查找命令对象
+ * 
+ * @param commandId 命令ID
+ * @returns 找到的命令对象，如果未找到则返回undefined
+ */
+const findCommand = (commandId: string) => {
+  if (!commandId) return undefined;
+  
+  // 从commands数组中查找命令
+  return commands.value.find(cmd => cmd.id === commandId);
 }
 </script>
 

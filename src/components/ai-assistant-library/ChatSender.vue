@@ -191,6 +191,48 @@
             </el-button>
           </el-tooltip>
           
+          <!-- 命令子命令查看按钮 -->
+          <el-popover
+            placement="top-start"
+            :width="300"
+            trigger="click"
+            popper-class="beautiful-popper"
+            :show-arrow="false"
+          >
+            <template #reference>
+              <el-button 
+                class="mode-btn"
+                size="small"
+              >
+                <el-icon><List /></el-icon>
+                命令
+              </el-button>
+            </template>
+            <div class="command-panel">
+              <div class="panel-header">预设命令</div>
+              <div class="panel-body">
+                <div
+                  v-for="cmd in commands"
+                  :key="cmd.id"
+                  class="command-panel-item"
+                  @click="emit('view-sub-commands', cmd.id)"
+                >
+                  <el-icon class="cmd-icon"><component :is="cmd.icon || 'Document'" /></el-icon>
+                  <div class="cmd-info">
+                    <div class="cmd-name">{{ cmd.name }}</div>
+                    <div class="cmd-desc">{{ cmd.description }}</div>
+                    <el-tag 
+                      v-if="cmd.hasSubCommands" 
+                      type="info" 
+                      size="small" 
+                      class="sub-cmd-tag"
+                    >有子命令</el-tag>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </el-popover>
+          
           <el-popover
             placement="top-start"
             :width="300"
@@ -318,6 +360,7 @@ const emit = defineEmits<{
   (e: 'open-history'): void
   (e: 'clear-chat'): void
   (e: 'open-command-management'): void
+  (e: 'view-sub-commands', commandId: string): void
 }>();
 // #endregion
 
@@ -1012,6 +1055,66 @@ onUnmounted(() => {
       font-size: 12px;
       color: var(--el-text-color-secondary);
     }
+  }
+}
+
+.command-panel {
+  .panel-header {
+    font-weight: 500;
+    padding-bottom: 8px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--el-border-color-lighter);
+  }
+
+  .panel-body {
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .command-panel-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    margin-bottom: 6px;
+
+    &:hover {
+      background-color: var(--el-fill-color-light);
+    }
+  }
+
+  .cmd-icon {
+    font-size: 18px;
+    margin-right: 10px;
+    margin-top: 3px;
+    color: var(--el-color-primary);
+  }
+
+  .cmd-info {
+    flex: 1;
+    position: relative;
+  }
+
+  .cmd-name {
+    font-weight: 500;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .cmd-desc {
+    font-size: 12px;
+    color: var(--el-text-color-secondary);
+    margin-bottom: 4px;
+  }
+
+  .sub-cmd-tag {
+    margin-top: 4px;
+    font-size: 10px;
+    padding: 0 6px;
+    height: 18px;
+    line-height: 16px;
   }
 }
 

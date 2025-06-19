@@ -13,7 +13,6 @@ const mockModels: AIModel[] = [
     id: 'gpt-4',
     name: 'GPT-4',
     description: '最强大的AI模型，适合复杂任务',
-    type: 'openai',
     provider: 'openai',
     logo: 'https://cdn-icons-png.flaticon.com/512/2111/2111615.png',
     level: 'super',
@@ -27,7 +26,6 @@ const mockModels: AIModel[] = [
     id: 'gpt-3.5-turbo',
     name: 'GPT-3.5 Turbo',
     description: '快速高效的AI模型，适合一般任务',
-    type: 'openai',
     provider: 'openai',
     logo: 'https://cdn-icons-png.flaticon.com/512/2111/2111432.png',
     level: 'basic',
@@ -40,7 +38,6 @@ const mockModels: AIModel[] = [
     id: 'claude-3',
     name: 'Claude 3',
     description: '理解能力强的AI模型，适合文本分析',
-    type: 'anthropic',
     provider: 'anthropic',
     logo: 'https://cdn-icons-png.flaticon.com/512/2111/2111795.png',
     level: 'advanced',
@@ -168,12 +165,23 @@ const mockSharedCommands: Command[] = [
   },
 ]
 
+// 扩展mockSubCommands，为更多父命令添加子命令
 const mockSubCommands: Record<string, SubCommand[]> = {
   document: [
     { id: 'doc_summary', name: '生成摘要', description: '为当前文档生成摘要内容', icon: 'DocumentText', template: '为当前文档生成一份摘要' },
     { id: 'doc_outline', name: '提取大纲', description: '提取文档的章节结构', icon: 'List', template: '为当前文档提取大纲结构' },
     { id: 'doc_qa', name: '问答', description: '根据文档内容回答问题', icon: 'Help', template: '根据文档内容回答我的问题：{input}' },
     { id: 'doc_format', name: '格式转换', description: '将文档转换为不同格式', icon: 'Switch', template: '将当前文档转换为 Markdown 格式' },
+  ],
+  rewrite: [
+    { id: 'rewrite_formal', name: '正式语气', description: '使用正式语气重写', icon: 'Briefcase', template: '请使用正式语气重写以下文本：\n{selectedText}' },
+    { id: 'rewrite_casual', name: '轻松语气', description: '使用轻松语气重写', icon: 'ChatRound', template: '请使用轻松友好的语气重写以下文本：\n{selectedText}' },
+    { id: 'rewrite_professional', name: '专业化', description: '使用专业术语重写', icon: 'Medal', template: '请使用更专业的术语重写以下文本：\n{selectedText}' },
+  ],
+  summary: [
+    { id: 'summary_brief', name: '简要总结', description: '生成简短的总结', icon: 'Paperclip', template: '请简要总结以下文本（100字以内）：\n{selectedText}' },
+    { id: 'summary_detailed', name: '详细总结', description: '生成详细的总结', icon: 'Document', template: '请详细总结以下文本，包括关键点和重要数据：\n{selectedText}' },
+    { id: 'summary_executive', name: '执行摘要', description: '生成执行层面的摘要', icon: 'Management', template: '请为以下文本生成一份适合管理层阅读的执行摘要：\n{selectedText}' },
   ],
 };
 
@@ -412,30 +420,6 @@ const mockApi: MockMethod[] = [
     }
   },
   
-  // 发送消息获取AI回复
-  // {
-  //   url: '/api/chat/completions/stream',
-  //   method: 'post',
-  //   response: ({ body }: RequestParams) => {
-  //     const { deepThinking } = body || {}
-
-  //     const response: Message = {
-  //       id: uuidv4(),
-  //       role: 'assistant',
-  //       content: fullMarkdownExample,
-  //       timestamp: Date.now(),
-  //       status: 'completed',
-  //       thinking: deepThinking ? '正在进行深度思考...' : undefined
-  //     }
-      
-  //     return {
-  //       code: 200,
-  //       msg: '操作成功',
-  //       data: response
-  //     }
-  //   }
-  // },
-  
   // 流式发送消息
   {
     url: '/api/chat/completions/stream',
@@ -561,16 +545,27 @@ const mockApi: MockMethod[] = [
   },
   // 获取子命令
   {
-    url: '/api/commands/sub-commands',
-    method: 'get',
-    response: ({ query }: { query: any }) => {
-      const { commandId } = query
+    url: '/api/commands/:commandId/sub-commands',
+    method: 'post',
+    response: (req: any) => {
+      const { commandId } = req.params
+      const { body } = req
+      
+      // 从mock数据中获取子命令
+      const subCommands = mockSubCommands[commandId] || []
+      
+      // 如果提供了documentId，可以返回适合该文档的特定子命令
+      if (body?.documentId) {
+        console.log(`获取文档ID: ${body.documentId} 相关的子命令`)
+        // 这里可以基于documentId做一些过滤或增强，示例中我们不做特殊处理
+      }
+      
       return {
         code: 200,
         msg: '获取成功',
-        data: mockSubCommands[commandId] || [],
+        data: subCommands
       }
-    },
+    }
   },
   {
     url: '/api/knowledge-bases',
@@ -647,7 +642,129 @@ const mockApi: MockMethod[] = [
         }
       };
     }
-  }
+  },
+  // 创建子命令
+  {
+    url: '/api/commands/:commandId/sub-commands',
+    method: 'post',
+    response: (req: any) => {
+      const { commandId } = req.params
+      const { body } = req
+      
+      if (!mockSubCommands[commandId]) {
+        mockSubCommands[commandId] = []
+      }
+      
+      // 创建新子命令
+      const newSubCommand: SubCommand = {
+        id: `${commandId}_sub_${uuidv4().substring(0, 8)}`,
+        name: body.name || '新建子命令',
+        description: body.description || '',
+        icon: body.icon || 'Document',
+        template: body.template || '{selectedText}',
+      }
+      
+      mockSubCommands[commandId].push(newSubCommand)
+      
+      return {
+        code: 200,
+        msg: '创建成功',
+        data: newSubCommand
+      }
+    }
+  },
+  // 更新子命令
+  {
+    url: '/api/commands/:commandId/sub-commands/:subCommandId',
+    method: 'put',
+    response: (req: any) => {
+      const { commandId, subCommandId } = req.params
+      const { body } = req
+      
+      // 检查父命令和子命令是否存在
+      if (!mockSubCommands[commandId]) {
+        return {
+          code: 404,
+          msg: '父命令不存在',
+          data: null
+        }
+      }
+      
+      const subCommandIndex = mockSubCommands[commandId].findIndex(cmd => cmd.id === subCommandId)
+      if (subCommandIndex === -1) {
+        return {
+          code: 404,
+          msg: '子命令不存在',
+          data: null
+        }
+      }
+      
+      // 更新子命令
+      const updatedSubCommand = {
+        ...mockSubCommands[commandId][subCommandIndex],
+        ...body,
+        id: subCommandId // 保留原ID
+      }
+      
+      mockSubCommands[commandId][subCommandIndex] = updatedSubCommand
+      
+      return {
+        code: 200,
+        msg: '更新成功',
+        data: updatedSubCommand
+      }
+    }
+  },
+  // 删除子命令
+  {
+    url: '/api/commands/:commandId/sub-commands/:subCommandId',
+    method: 'delete',
+    response: (req: any) => {
+      const { commandId, subCommandId } = req.params
+      
+      // 检查父命令和子命令是否存在
+      if (!mockSubCommands[commandId]) {
+        return {
+          code: 404,
+          msg: '父命令不存在',
+          data: null
+        }
+      }
+      
+      const subCommandIndex = mockSubCommands[commandId].findIndex(cmd => cmd.id === subCommandId)
+      if (subCommandIndex === -1) {
+        return {
+          code: 404,
+          msg: '子命令不存在',
+          data: null
+        }
+      }
+      
+      // 删除子命令
+      mockSubCommands[commandId].splice(subCommandIndex, 1)
+      
+      return {
+        code: 200,
+        msg: '删除成功',
+        data: null
+      }
+    }
+  },
+  // Add specific handler for '/api/commands/document/sub-commands'
+  {
+    url: '/api/commands/document/sub-commands',
+    method: 'post',
+    response: ({ body }: RequestParams) => {
+      // Return document sub-commands from our mock data
+      const subCommands = mockSubCommands['document'] || []
+      
+      return {
+        code: 200,
+        msg: '获取成功',
+        data: subCommands
+      }
+    }
+  },
 ]
 
 export default mockApi 

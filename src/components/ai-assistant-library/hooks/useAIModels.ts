@@ -10,15 +10,15 @@ export function useAIModels() {
   const models = ref<AIModel[]>([])
   const currentModelId = ref<string>('')
   const loading = ref<boolean>(false)
-
+  
   const currentModel = computed<AIModel | undefined>(() => {
     return models.value.find(model => model.id === currentModelId.value)
   })
-
+  
   const defaultModel = computed<AIModel | undefined>(() => {
     return models.value.find(model => model.isDefault) || models.value[0]
   })
-
+  
   async function loadModels(): Promise<void> {
     if (loading.value) return
     loading.value = true
@@ -39,7 +39,7 @@ export function useAIModels() {
       loading.value = false
     }
   }
-
+  
   function selectModel(modelId: string): void {
     const model = models.value.find(m => m.id === modelId)
     if (model) {
@@ -47,11 +47,11 @@ export function useAIModels() {
       saveCurrentModelId()
     }
   }
-
+  
   function saveCurrentModelId(): void {
     localStorage.setItem('currentModelId', currentModelId.value)
   }
-
+  
   async function addModelAndUpdate(modelData: Omit<AIModel, 'id' | 'isDefault'> & { isDefault?: boolean }): Promise<void> {
     try {
       const modelToAdd = {
@@ -65,7 +65,7 @@ export function useAIModels() {
       ElMessage.error('添加模型失败: ' + (error.message || '未知错误'));
     }
   }
-
+  
   async function updateModelAndUpdate(modelData: Partial<AIModel> & { id: string }): Promise<void> {
     try {
       await updateModel(modelData);
@@ -96,8 +96,8 @@ export function useAIModels() {
         if (currentDefault) {
             await updateModel({ id: currentDefault.id, isDefault: false });
         }
-        
-        // 设置新的默认模型
+    
+    // 设置新的默认模型
         await updateModel({ id: modelId, isDefault: true });
         ElMessage.success('默认模型设置成功');
         await loadModels();
@@ -109,7 +109,7 @@ export function useAIModels() {
   function updateModels(newModels: AIModel[]): void {
     models.value = newModels;
   }
-
+  
   onMounted(() => {
     loadModels()
   })
