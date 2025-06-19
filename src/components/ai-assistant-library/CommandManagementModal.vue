@@ -196,6 +196,17 @@
                       +{{ subCommands.length - 3 }} 个
                     </el-tag>
                   </div>
+                  <div class="sub-command-actions">
+                    <el-button 
+                      type="primary" 
+                      plain
+                      size="small" 
+                      @click="viewSubCommands"
+                    >
+                      <el-icon><View /></el-icon>
+                      查看子命令
+                    </el-button>
+                  </div>
                 </div>
               </el-form-item>
               
@@ -262,6 +273,27 @@
                 :closable="false"
                 show-icon
               />
+              
+              <!-- 系统命令子命令查看入口 -->
+              <div v-if="selectedCommand?.hasSubCommands" class="system-sub-commands">
+                <div class="sub-command-summary mt-3">
+                  <div class="system-sub-command-header">
+                    <el-icon><Setting /></el-icon>
+                    <span class="ml-1">子命令管理</span>
+                  </div>
+                  
+                  <el-button 
+                    type="primary" 
+                    plain
+                    size="small" 
+                    class="mt-2 w-full"
+                    @click="viewSubCommandsForSystem"
+                  >
+                    <el-icon><View /></el-icon>
+                    查看预设子命令
+                  </el-button>
+                </div>
+              </div>
             </div>
 
             <!-- 操作按钮 -->
@@ -292,6 +324,14 @@
     @refresh="refreshSubCommands"
     @close="showSubCommandModal = false"
   />
+  
+  <!-- 子命令查看对话框 -->
+  <SubCommandViewerModal
+    v-if="showSubCommandViewerModal"
+    :parent-command-id="selectedCommand?.isSystem ? (selectedCommand.id || '') : (commandForm.id || '')"
+    :parent-command="selectedCommand || undefined"
+    @close="showSubCommandViewerModal = false"
+  />
 </template>
 
 <script setup lang="ts">
@@ -304,10 +344,12 @@ import {
   Lock,
   Share,
   ArrowDown,
-  Setting
+  Setting,
+  View
 } from '@element-plus/icons-vue'
 import type { Command, SubCommand } from '@/types/chat'
 import SubCommandManagementModal from './SubCommandManagementModal.vue'
+import SubCommandViewerModal from './SubCommandViewerModal.vue'
 import { usePromptCommands } from './hooks/usePromptCommands'
 
 // 定义组件属性
@@ -361,6 +403,7 @@ const isCreatingNew = ref(false)
 
 // 子命令相关
 const showSubCommandModal = ref(false)
+const showSubCommandViewerModal = ref(false)
 const subCommands = ref<SubCommand[]>([])
 const { fetchSubCommands, addSubCommand, updateSubCommandById, removeSubCommand } = usePromptCommands()
 
@@ -635,6 +678,48 @@ async function handleDeleteSubCommand(subCommandId: string) {
     ElMessage.error('删除子命令失败，请稍后再试')
   }
 }
+
+// 查看子命令（用于用户自定义命令）
+function viewSubCommands() {
+  if (!commandForm.id) {
+    ElMessage.warning('请先保存命令后再查看子命令')
+    return
+  }
+  
+  // 打开子命令查看对话框
+  showSubCommandViewerModal.value = true
+}
+
+// 查看系统命令的子命令
+async function viewSubCommandsForSystem() {
+  if (!selectedCommand.value || !selectedCommand.value.id) {
+    ElMessage.warning('无法获取命令信息')
+    return
+  }
+  
+  try {
+    // 对于系统命令，首先尝试获取其预设的子命令
+    if (selectedCommand.value.subCommands) {
+      subCommands.value = [...selectedCommand.value.subCommands]
+    } else {
+      // 如果没有预设子命令，则尝试从API获取
+      subCommands.value = await fetchSubCommands(selectedCommand.value.id)
+    }
+    
+    // 打开子命令查看对话框
+    if (subCommands.value.length === 0) {
+      ElMessage.info('此命令暂无子命令')
+      return
+    }
+    
+    showSubCommandViewerModal.value = true
+  } catch (error) {
+    console.error('加载预设子命令失败:', error)
+    ElMessage.error('加载预设子命令失败，请稍后再试')
+  }
+}
+
+
 </script>
 
 <style scoped>
@@ -930,5 +1015,45 @@ async function handleDeleteSubCommand(subCommandId: string) {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.sub-command-actions {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.system-sub-commands {
+  margin-top: 16px;
+}
+
+.system-sub-command-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: var(--el-text-color-primary);
+}
+
+.mt-1 {
+  margin-top: 4px;
+}
+
+.mt-2 {
+  margin-top: 8px;
+}
+
+.mt-3 {
+  margin-top: 12px;
+}
+
+.w-full {
+  width: 100%;
+}
+
+.ml-1 {
+  margin-left: 4px;
 }
 </style> 

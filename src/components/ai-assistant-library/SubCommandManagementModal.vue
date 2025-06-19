@@ -147,7 +147,7 @@ import type { SubCommand, Command } from '@/types/chat'
 // 定义组件属性
 const props = defineProps<{
   parentCommandId: string,
-  parentCommand?: Command,
+  parentCommand?: Command | null,
   subCommands: SubCommand[]
 }>()
 

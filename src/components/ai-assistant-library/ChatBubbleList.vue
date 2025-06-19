@@ -155,6 +155,7 @@ const chatListRef = ref<HTMLElement | null>(null)
 // 编辑消息相关状态
 const editingContent = ref<string>('')
 const editingMessageId = ref<string | null>(null)
+const disableAutoScroll = ref<boolean>(false)
 
 // 计算文本区域的行数
 const calculateRows = (text: string): number => {
@@ -173,8 +174,8 @@ const startEdit = (message: Message) => {
     editingMessageId.value = message.id;
     editingContent.value = typeof message.content === 'string' ? message.content : '';
     
-    // 使用类型断言添加标记，防止自动滚动
-    (message as any).preventScrollOnNextUpdate = true;
+    // 设置全局禁止滚动标记
+    disableAutoScroll.value = true;
     emit('startEditing', message.id);
   } catch (error) {
     console.error('Error in startEdit:', error, message);
@@ -193,10 +194,8 @@ const cancelEdit = (message: Message) => {
     editingMessageId.value = null;
     editingContent.value = '';
     
-    // 使用类型断言添加标记，确保操作前进行类型检查
-    if (message && typeof message === 'object') {
-      (message as any).preventScrollOnNextUpdate = true;
-    }
+    // 设置禁止自动滚动标记
+    disableAutoScroll.value = true;
     
     if (message && message.id) {
       emit('cancelEditing', message.id);
@@ -222,6 +221,8 @@ const saveEdit = (message: Message) => {
     }
     
     if (message && message.id) {
+      // 设置禁止自动滚动标记
+      disableAutoScroll.value = true;
       emit('saveEditing', message.id, editingContent.value);
       editingMessageId.value = null;
       editingContent.value = '';
@@ -315,27 +316,9 @@ const forceScrollToBottom = () => {
 // 监听消息列表变化，自动滚动到底部
 watch(() => props.messages, (messages, oldMessages) => {
   try {
-    // 检查是否有消息带有不滚动标记
-    const hasNoScrollFlag = messages.some(msg => {
-      try {
-        return !!(msg && (msg as any).preventScrollOnNextUpdate);
-      } catch (e) {
-        console.error('Error checking preventScrollOnNextUpdate:', e, msg);
-        return false;
-      }
-    });
-    
-    // 如果有标记，则移除标记但不滚动
-    if (hasNoScrollFlag) {
-      messages.forEach(msg => {
-        try {
-          if ((msg as any).preventScrollOnNextUpdate) {
-            delete (msg as any).preventScrollOnNextUpdate;
-          }
-        } catch (e) {
-          console.error('Error removing preventScrollOnNextUpdate:', e, msg);
-        }
-      });
+    // 如果设置了禁止自动滚动标记，则取消标记并直接返回
+    if (disableAutoScroll.value) {
+      disableAutoScroll.value = false;
       return;
     }
     
