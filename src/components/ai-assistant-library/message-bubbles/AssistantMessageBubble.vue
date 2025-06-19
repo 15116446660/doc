@@ -1,5 +1,16 @@
 <template>
   <div>
+    <!-- 模型信息显示 -->
+    <div v-if="message.modelInfo" class="model-info">
+      <AIModelLogo 
+        v-if="message.modelInfo"
+        :model="message.modelInfo"
+        size="small"
+        class="model-info-logo"
+      />
+      <span class="model-info-name">{{ message.modelInfo.name }}</span>
+    </div>
+    
     <!-- 生成中状态 -->
     <div v-if="message.status === 'generating' || message.status === 'thinking'" class="generating-indicator">
       <div v-if="message.status === 'thinking'" class="thinking-text">思考中...</div>
@@ -46,6 +57,7 @@
 
 <script setup lang="ts">
 import MarkdownMessage from '../MarkdownMessage.vue'
+import AIModelLogo from '../AIModelLogo.vue'
 import type { Message, SubCommand, Command } from '@/types/chat'
 
 // 定义组件属性
@@ -67,6 +79,28 @@ const handleSubCommandClick = (subCommand: SubCommand) => {
 </script>
 
 <style scoped>
+/* 模型信息样式 */
+.model-info {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 4px 8px;
+  background-color: var(--el-fill-color-lighter);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.model-info-logo {
+  margin-right: 6px;
+  width: 16px;
+  height: 16px;
+}
+
+.model-info-name {
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+}
+
 /* 生成中动画 */
 .generating-indicator {
   display: flex;
@@ -129,6 +163,37 @@ const handleSubCommandClick = (subCommand: SubCommand) => {
   background-color: var(--el-fill-color-lighter);
   cursor: pointer;
   transition: all 0.2s;
+}
+
+.sub-command-button:hover {
+  background-color: var(--el-fill-color-light);
+  transform: translateY(-2px);
+}
+
+.sub-command-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background-color: var(--el-color-primary-light-8);
+  color: var(--el-color-primary);
+  margin-right: 10px;
+}
+
+.sub-command-info {
+  flex: 1;
+}
+
+.sub-command-name {
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+
+.sub-command-description {
+  font-size: 12px;
+  color: var(--el-text-color-secondary);
 }
 
 .sub-command-button:hover {

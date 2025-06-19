@@ -1,14 +1,12 @@
 <template>
   <el-dropdown trigger="click" @command="handleModelChange" :disabled="disabled" popper-class="beautiful-popper">
     <div class="model-selector">
-      <template v-if="currentModelLogo">
-        <img 
-          :src="currentModelLogo" 
-          class="model-logo" 
-          alt="logo" 
-          @error="handleLogoError"
-        />
-      </template>
+      <AIModelLogo 
+        v-if="currentModel" 
+        :model="currentModel" 
+        size="small" 
+        class="model-logo"
+      />
       <el-icon v-else class="model-logo-default"><Cpu /></el-icon>
       <span>{{ currentModelName }}</span>
       <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
@@ -24,15 +22,11 @@
             :class="{ 'is-active': model.id === currentModelId }"
             class="model-dropdown-item"
           >
-            <template v-if="model.logo">
-              <img 
-                :src="model.logo" 
-                class="model-logo" 
-                alt="logo" 
-                @error="handleLogoError"
-              />
-            </template>
-            <el-icon v-else class="model-logo-default"><Cpu /></el-icon>
+            <AIModelLogo 
+              :model="model" 
+              size="small" 
+              class="model-logo"
+            />
             <span>{{ model.name }}</span>
           </el-dropdown-item>
         </div>
@@ -50,6 +44,7 @@
 import { computed } from 'vue';
 import type { AIModel } from '@/types/chat';
 import { Cpu, ArrowDown, Setting } from '@element-plus/icons-vue';
+import AIModelLogo from './AIModelLogo.vue';
 
 const props = defineProps<{
   currentModelId: string;
@@ -62,28 +57,9 @@ const emit = defineEmits<{
   (e: 'open-config'): void;
 }>();
 
-// 处理logo加载错误
-const handleLogoError = (event: Event) => {
-  const imgElement = event.target as HTMLImageElement;
-  imgElement.style.display = 'none';
-  const parentElement = imgElement.parentElement;
-  if (parentElement) {
-    // 创建 Element Plus 图标组件
-    const iconWrapper = document.createElement('div');
-    iconWrapper.className = 'el-icon model-logo-default';
-    iconWrapper.innerHTML = '<svg viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg" style="width: 1em; height: 1em;"><path fill="currentColor" d="M544 805.888V168a32 32 0 0 0-32-32H384a32 32 0 0 0-32 32v637.888L246.656 608a32 32 0 0 0-45.248 45.248l288 288a32 32 0 0 0 45.248 0l288-288a32 32 0 0 0-45.248-45.248L544 805.824zM192 192h640v128H192V192z"/></svg>';
-    parentElement.insertBefore(iconWrapper, imgElement.nextSibling);
-  }
-};
-
 // 计算属性：当前选中的模型
 const currentModel = computed(() => {
   return props.models.find(model => model.id === props.currentModelId) || null;
-});
-
-// 计算属性：当前模型的logo
-const currentModelLogo = computed(() => {
-  return currentModel.value?.logo || '';
 });
 
 // 计算属性：当前模型的名称
@@ -120,21 +96,21 @@ const openModelConfig = () => {
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   }
 
-  .model-logo, .model-logo-default {
-    width: 18px;
-    height: 18px;
+  .model-logo {
     margin-right: 8px;
-    border-radius: 4px;
-    object-fit: contain;
   }
 
   .model-logo-default {
+    width: 18px;
+    height: 18px;
+    margin-right: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     background-color: var(--el-fill-color-light);
     color: var(--el-text-color-secondary);
     font-size: 18px;
+    border-radius: 4px;
     
     :deep(svg) {
       width: 18px;
@@ -167,26 +143,8 @@ const openModelConfig = () => {
   align-items: center;
   padding: 8px 12px;
   
-  .model-logo, .model-logo-default {
-    width: 18px;
-    height: 18px;
+  .model-logo {
     margin-right: 8px;
-    border-radius: 4px;
-    object-fit: contain;
-  }
-
-  .model-logo-default {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: var(--el-fill-color-light);
-    color: var(--el-text-color-secondary);
-    font-size: 18px;
-    
-    :deep(svg) {
-      width: 18px;
-      height: 18px;
-    }
   }
 }
 

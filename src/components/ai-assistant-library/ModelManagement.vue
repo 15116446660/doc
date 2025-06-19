@@ -15,7 +15,11 @@
           @click="selectModel(model.id)"
         >
           <div class="model-info">
-            <el-icon class="model-logo-default"><Cpu /></el-icon>
+            <AIModelLogo 
+              :model="model"
+              size="small"
+              class="model-logo"
+            />
             <div class="model-details">
               <div class="model-name">
                 {{ model.name }}
@@ -156,8 +160,9 @@
 <script setup lang="ts">
 import { ref, watch, reactive } from 'vue';
 import { ElMessage } from 'element-plus';
-import { Cpu, Close, ArrowDown } from '@element-plus/icons-vue';
+import { Close, ArrowDown } from '@element-plus/icons-vue';
 import type { AIModel } from '@/types/chat';
+import AIModelLogo from './AIModelLogo.vue';
 
 defineProps<{
   currentModelId?: string;
@@ -305,9 +310,13 @@ function deleteModel() {
   align-items: center;
   gap: 12px;
 }
-.model-logo-default {
-  font-size: 24px;
-  color: #409eff;
+.model-logo {
+  width: 24px;
+  height: 24px;
+  margin-right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .model-name {
   font-weight: 500;

@@ -27,12 +27,7 @@ export function useChat(initialConfig: ChatConfig = {
   const messages = ref<Message[]>([])
   
   // 集成 AI 模型管理，确保在同一个作用域内
-  const aiModelsResult = scope.run(() => useAIModels())
-  const { currentModelId, currentModel, selectModel: selectAIModel } = aiModelsResult || { 
-    currentModelId: ref(''), 
-    currentModel: computed(() => undefined), 
-    selectModel: () => {} 
-  }
+  const { currentModelId, currentModel, selectModel: selectAIModel } = scope.run(() => useAIModels()) || { currentModelId: ref(''), currentModel: computed(() => undefined), selectModel: () => {} }
   
   // 深度思考模式
   const isDeepThinkingMode = ref<boolean>(initialConfig.deepthinking || false)
@@ -477,7 +472,17 @@ export function useChat(initialConfig: ChatConfig = {
     }
   }
 
-  // 编辑用户消息
+  // 移除重复的sendMessage函数，统一使用sendUserMessage
+  // 保留一个简化版本作为向后兼容的包装器
+  async function sendMessage(content: string, attachments?: Attachment[]) {
+    return sendUserMessage(content, attachments);
+  }
+
+  /**
+   * 编辑用户消息
+   * @param messageId 要编辑的消息ID
+   * @param newContent 新的消息内容
+   */
   async function editUserMessage(messageId: string, newContent: string, onCompletedCallback?: () => void): Promise<void> {
     if (isGenerating.value) {
       stopGeneration();
@@ -632,7 +637,10 @@ export function useChat(initialConfig: ChatConfig = {
     }
   }
 
-  // 开始编辑消息
+  /**
+   * 开始编辑消息
+   * @param messageId 要编辑的消息ID
+   */
   function startEditingMessage(messageId: string): void {
     const message = messages.value.find(msg => msg.id === messageId);
     if (message && message.role === 'user') {
@@ -640,7 +648,10 @@ export function useChat(initialConfig: ChatConfig = {
     }
   }
 
-  // 取消编辑消息
+  /**
+   * 取消编辑消息
+   * @param messageId 要取消编辑的消息ID
+   */
   function cancelEditingMessage(messageId: string): void {
     const message = messages.value.find(msg => msg.id === messageId);
     if (message && message.status === 'editing') {
@@ -666,7 +677,7 @@ export function useChat(initialConfig: ChatConfig = {
     lastMessage,
     currentKnowledgeBaseId,
     currentReferences,
-    sendUserMessage,
+    sendMessage,
     stopGeneration,
     regenerateMessage,
     clearMessages,
@@ -685,4 +696,4 @@ export function useChat(initialConfig: ChatConfig = {
     startEditingMessage,
     cancelEditingMessage
   }
-}
+} 

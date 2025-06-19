@@ -36,6 +36,7 @@ export interface Message {
   edited?: boolean;
   originalContent?: string;
   subCommands?: SubCommand[]; // 用于展示子命令选项
+  modelInfo?: AIModel; // 消息使用的模型信息
 }
 
 // 知识库引用
@@ -307,4 +308,5 @@ export interface QuickCommand {
   id: string;
   name: string;
   prompt: string;
+} 
 } 

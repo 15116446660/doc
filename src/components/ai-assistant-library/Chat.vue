@@ -8,6 +8,7 @@
       :assistantAvatar="assistantAvatar"
       :quickCommands="quickCommands"
       :autoScroll="true"
+      :currentModel="currentModel"
       @regenerate="regenerateMessage"
       @stop="stopGenerating"
       @feedback="handleMessageFeedback"
@@ -155,7 +156,8 @@ const {
   currentKnowledgeBaseId,
   editUserMessage,
   startEditingMessage,
-  cancelEditingMessage
+  cancelEditingMessage,
+  currentModel
 } = useChat()
 
 const {

@@ -20,9 +20,9 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
     label: 'GPT-4',
     provider: 'openai',
     type: 'openai',
-    logo: '/ai-models/gpt4.png',
-    description: '功能强大的GPT-4模型，适合复杂任务',
-    level: 'advanced',
+    logo: 'openai',
+    description: 'OpenAI最先进的大语言模型',
+    level: 'super',
     defaults: {
       maxTokens: 8192,
       temperature: 0.7,
@@ -31,11 +31,11 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
   },
   'gpt-3.5-turbo': {
     id: 'gpt-3.5-turbo',
-    label: 'GPT-3.5 Turbo',
+    label: 'GPT-3.5',
     provider: 'openai',
     type: 'openai',
-    logo: '/ai-models/gpt3.png',
-    description: '高效的GPT-3.5模型，适合日常任务',
+    logo: 'openai',
+    description: '强大而经济的AI模型',
     level: 'basic',
     defaults: {
       maxTokens: 4096,
@@ -43,16 +43,16 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
       modelVersion: 'gpt-3.5-turbo'
     }
   },
-  'claude-3-opus': {
-    id: 'claude-3-opus',
-    label: 'Claude 3 Opus',
+  'claude-3': {
+    id: 'claude-3',
+    label: 'Claude 3',
     provider: 'anthropic',
     type: 'anthropic',
-    logo: '/ai-models/claude.png',
-    description: 'Anthropic最强大的Claude 3模型',
+    logo: 'anthropic',
+    description: 'Anthropic最先进的AI模型',
     level: 'super',
     defaults: {
-      maxTokens: 200000,
+      maxTokens: 8192,
       temperature: 0.7,
       modelVersion: 'claude-3-opus-20240229'
     }
@@ -76,7 +76,7 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
     label: '通义千问 Turbo',
     provider: 'alibaba',
     type: 'alibaba',
-    logo: '/ai-models/qwen.png',
+    logo: 'alibaba',
     description: '阿里云通义千问高性能模型',
     level: 'advanced',
     defaults: {
@@ -90,7 +90,7 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
     label: '通义千问 Plus',
     provider: 'alibaba',
     type: 'alibaba',
-    logo: '/ai-models/qwen.png',
+    logo: 'alibaba',
     description: '阿里云通义千问增强版模型，性能更强',
     level: 'advanced',
     defaults: {
@@ -104,7 +104,7 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
     label: '通义千问 Max',
     provider: 'alibaba',
     type: 'alibaba',
-    logo: '/ai-models/qwen.png',
+    logo: 'alibaba',
     description: '阿里云最强大的通义千问模型，能力全面',
     level: 'super',
     defaults: {
@@ -118,7 +118,7 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
     label: '通义千问 2.5',
     provider: 'alibaba',
     type: 'alibaba',
-    logo: '/ai-models/qwen.png',
+    logo: 'alibaba',
     description: '通义千问最新一代基础大模型，性能大幅提升',
     level: 'super',
     defaults: {
@@ -132,7 +132,7 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
     label: '通义千问 14B',
     provider: 'alibaba',
     type: 'alibaba',
-    logo: '/ai-models/qwen.png',
+    logo: 'alibaba',
     description: '通义千问开源14B模型，基础能力强',
     level: 'basic',
     defaults: {
@@ -146,7 +146,7 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
     label: '通义千问 7B',
     provider: 'alibaba',
     type: 'alibaba',
-    logo: '/ai-models/qwen.png',
+    logo: 'alibaba',
     description: '通义千问开源7B模型，轻量高效',
     level: 'basic',
     defaults: {
@@ -160,13 +160,55 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
     label: '文心一言 4.0',
     provider: 'baidu',
     type: 'baidu',
-    logo: '/ai-models/ernie.png',
-    description: '百度文心一言最新模型',
+    logo: 'baidu',
+    description: '百度最强的中文大模型',
+    level: 'super',
+    defaults: {
+      maxTokens: 4096,
+      temperature: 0.7,
+      modelVersion: 'ernie-4.0-8k'
+    }
+  },
+  'ernie-3.5': {
+    id: 'ernie-3.5',
+    label: '文心一言 3.5',
+    provider: 'baidu',
+    type: 'baidu',
+    logo: 'baidu',
+    description: '百度文心一言通用大模型',
+    level: 'advanced',
+    defaults: {
+      maxTokens: 2048,
+      temperature: 0.7,
+      modelVersion: 'ernie-3.5-8k'
+    }
+  },
+  'gemini-pro': {
+    id: 'gemini-pro',
+    label: 'Gemini Pro',
+    provider: 'google',
+    type: 'google',
+    logo: 'google',
+    description: 'Google最强大的多模态AI系统',
+    level: 'super',
+    defaults: {
+      maxTokens: 8192,
+      temperature: 0.7,
+      modelVersion: 'gemini-pro'
+    }
+  },
+  'mistral-large': {
+    id: 'mistral-large',
+    label: 'Mistral Large',
+    provider: 'mistral',
+    type: 'mistral',
+    logo: 'mistral',
+    description: 'Mistral AI的高级大模型',
     level: 'advanced',
     defaults: {
       maxTokens: 4096,
       temperature: 0.7,
-      modelVersion: 'ernie-4.0'
+      modelVersion: 'mistral-large-latest'
     }
   },
   'deepseek-coder': {
@@ -174,7 +216,7 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
     label: 'DeepSeek Coder',
     provider: 'deepseek',
     type: 'deepseek',
-    logo: '/ai-models/deepseek.png',
+    logo: 'deepseek',
     description: '专注于代码生成和理解的大模型',
     level: 'advanced',
     defaults: {
@@ -188,7 +230,7 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
     label: 'DeepSeek V3',
     provider: 'deepseek',
     type: 'deepseek',
-    logo: '/ai-models/deepseek.png',
+    logo: 'deepseek',
     description: 'DeepSeek最新一代通用大模型，能力全面增强',
     level: 'super',
     defaults: {
