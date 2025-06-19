@@ -35,15 +35,15 @@
       <div class="toolbar-right">
         <!-- 新建会话 -->
         <el-tooltip content="新建会话" placement="top">
-          <el-button :icon="Plus" circle @click="handleCommand('new')" />
+          <el-button :icon="Plus" circle @click="handleNewChat" />
         </el-tooltip>
         <!-- 历史会话 -->
         <el-tooltip content="历史会话" placement="top">
-          <el-button :icon="List" circle @click="handleCommand('history')" />
+          <el-button :icon="List" circle @click="handleOpenHistory" />
         </el-tooltip>
         <!-- 清空当前会话 -->
         <el-tooltip content="清空当前会话" placement="top">
-          <el-button :icon="Delete" circle @click="handleCommand('clear')" />
+          <el-button :icon="Delete" circle @click="handleClearChat" />
         </el-tooltip>
       </div>
     </div>
@@ -314,6 +314,9 @@ const emit = defineEmits<{
   (e: 'command', command: string): void
   (e: 'selectKnowledgeBase', kbId: string): void
   (e: 'clearSelectedKnowledgeBase'): void
+  (e: 'new-chat'): void
+  (e: 'open-history'): void
+  (e: 'clear-chat'): void
 }>();
 // #endregion
 
@@ -546,6 +549,18 @@ const handleMouseUp = () => {
   if (text && text.length > 10) {
     selectedText.value = text;
   }
+};
+
+const handleNewChat = () => {
+  emit('new-chat');
+};
+
+const handleOpenHistory = () => {
+  emit('open-history');
+};
+
+const handleClearChat = () => {
+  emit('clear-chat');
 };
 
 // #endregion

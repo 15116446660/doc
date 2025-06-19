@@ -38,6 +38,9 @@
       @executeCommand="handleExecuteCommand"
       @selectKnowledgeBase="handleSelectKnowledgeBase"
       @clearSelectedKnowledgeBase="handleClearSelectedKnowledgeBase"
+      @new-chat="handleNewConversation"
+      @open-history="handleOpenHistory"
+      @clear-chat="handleClearCurrentConversation"
     />
     
     <!-- 历史会话对话框 -->
@@ -346,6 +349,25 @@ const handleCancelEditingMessage = () => {
 const handleSaveEditingMessage = (messageId: string, newContent: string) => {
   editUserMessage(messageId, newContent)
   saveCurrentConversation()
+}
+
+// 新建会话
+const handleNewConversation = () => {
+  createConversation(currentModelId.value)
+}
+
+// 打开历史记录
+const handleOpenHistory = () => {
+  showHistoryDialog.value = true
+}
+
+// 清空当前会话
+const handleClearCurrentConversation = () => {
+  if (activeConversation.value) {
+    messages.value = []
+    saveCurrentConversation()
+    ElMessage.success('当前会话已清空')
+  }
 }
 
 // 保存当前会话
