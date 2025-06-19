@@ -25,7 +25,7 @@ export const presetCommands: Command[] = [
   {
     id: 'condense',
     name: '内容缩写',
-    icon: 'Compress',
+    icon: 'Fold',
     description: '将冗长的内容精简为简洁的摘要',
     prompt: '请将以下内容进行精简，保留核心信息和关键点，但使表达更加简洁明了，减少冗余：\n\n{selectedText}',
     createdAt: Date.now(),
