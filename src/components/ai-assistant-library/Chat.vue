@@ -318,13 +318,8 @@ const handleMessageFeedback = (messageId: string, feedback: 'like' | 'dislike') 
   saveCurrentConversation()
 }
 
-// 处理来自 ChatBubbleList 的快捷命令
-const handleQuickCommand = (commandId: string) => {
-  const command = commands.find(cmd => cmd.id === commandId)
-  if (command) {
-    handleExecuteCommand(command)
-  }
-}
+// 注意：ChatBubbleList组件的快捷命令现在直接通过@command事件处理，
+// 该事件会触发handleExecuteCommand函数
 
 const handleExecuteCommand = (command: Command, input: string = '') => {
   if (command.hasSubCommands) {
@@ -548,10 +543,118 @@ const openModelConfig = () => {
 
 // 处理命令保存
 const handleSaveCommand = (command: Command) => {
-  if (command.id) {
+  console.log('处理保存命令:', command)
+  console.log('命令ID:', command.id)
+  console.log('命令类型:', command.shareType)
+  
+  // 检查命令是否已存在于commands列表中
+  const existingCommand = commands.value.find((cmd: Command) => cmd.id === command.id)
+  console.log('命令是否已存在:', existingCommand ? '是' : '否')
+  
+  // 判断是更新还是新增命令
+  if (existingCommand) {
+    // 更新已有命令
+    console.log('更新已有命令:', command.id)
     updateCommandById(command.id, command)
+      .then(() => {
+        console.log('命令更新成功:', command.id)
+        
+        // 验证命令是否已更新
+        const updatedCommand = commands.value.find((cmd: Command) => cmd.id === command.id)
+        console.log('更新后的命令:', updatedCommand)
+        ElMessage.success('命令更新成功')
+      })
+      .catch(error => {
+        console.error('命令更新失败:', error)
+        ElMessage.error('命令更新失败')
+      })
   } else {
+    // 添加新命令
+    console.log('添加新命令', command.id ? `(预设ID: ${command.id})` : '')
+    
+    // 如果已有ID（从CommandManagementModal传入），则使用addCommand的完整参数形式
+    if (command.id && command.id.startsWith('local-')) {
+      console.log('使用预设ID添加本地命令:', command.id)
+      
+      // 构建完整的命令对象
+      const fullCommand: Command = {
+        ...command,
+        createdAt: command.createdAt || Date.now(),
+        updatedAt: command.updatedAt || Date.now(),
+        isSystem: false,
+        parameters: command.parameters || [],
+        hasSubCommands: command.hasSubCommands || false
+      }
+      
+      // 直接添加到命令列表
+      commands.value.push(fullCommand)
+      console.log('命令已直接添加到列表，当前命令数量:', commands.value.length)
+      
+      // 手动触发保存
+      setTimeout(() => {
+        console.log('手动触发保存本地命令')
+        const savedCommands = commands.value.filter(cmd => 
+          (cmd.id.startsWith('local-') || (!cmd.isSystem && cmd.shareType === 'private'))
+        )
+        console.log('需要保存的本地命令:', savedCommands.length, '个')
+        
+        if (savedCommands.length > 0) {
+          const jsonString = JSON.stringify(savedCommands)
+          localStorage.setItem('customCommands', jsonString)
+          console.log('本地命令已手动保存到localStorage，命令数量:', savedCommands.length)
+          
+          // 验证保存是否成功
+          setTimeout(() => {
+            const savedData = localStorage.getItem('customCommands')
+            if (savedData) {
+              try {
+                const parsedData = JSON.parse(savedData)
+                console.log('手动保存后验证读取成功，命令数量:', parsedData.length)
+                console.log('保存的命令ID列表:', parsedData.map((cmd: any) => cmd.id))
+                ElMessage.success('命令保存成功')
+              } catch (parseError) {
+                console.error('保存后验证解析失败:', parseError)
+                ElMessage.error('命令保存验证失败')
+              }
+            }
+          }, 100)
+        }
+      }, 100)
+      
+      return
+    }
+    
+    // 使用API添加命令
     addCommand(command)
+      .then(id => {
+        console.log('命令添加成功，ID:', id)
+        
+        // 验证命令是否已添加
+        const addedCommand = commands.value.find((cmd: Command) => cmd.id === id)
+        console.log('添加的命令是否存在:', addedCommand ? '是' : '否')
+        console.log('添加的命令:', addedCommand)
+        
+        // 检查本地存储
+        setTimeout(() => {
+          const savedCommands = localStorage.getItem('customCommands')
+          console.log('本地存储中的命令:', savedCommands)
+          if (savedCommands) {
+            const parsedCommands = JSON.parse(savedCommands)
+            const foundCommand = parsedCommands.find((cmd: any) => cmd.id === id)
+            console.log('在localStorage中找到新命令:', foundCommand ? '是' : '否')
+            
+            if (foundCommand) {
+              ElMessage.success('命令添加并保存成功')
+            } else {
+              ElMessage.warning('命令添加成功但未保存到本地存储')
+            }
+          }
+        }, 500)
+      })
+      .catch(error => {
+        console.error('命令添加失败:', error)
+        ElMessage.error('命令添加失败')
+      })
   }
 }
 
@@ -668,7 +771,7 @@ const findCommand = (commandId: string) => {
   if (!commandId) return undefined;
   
   // 从commands数组中查找命令
-  return commands.value.find(cmd => cmd.id === commandId);
+  return commands.value.find((cmd: Command) => cmd.id === commandId);
 }
 </script>
 

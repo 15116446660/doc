@@ -147,6 +147,15 @@ export interface AIModelConfig {
   randomSeed?: number;
 }
 
+// AI模型选项
+export interface ModelOption {
+  id: string;
+  name: string;
+  description?: string;
+  maxTokens?: number;
+  contextWindow?: number;
+}
+
 // AI服务提供商配置
 export interface Provider {
   name: string;
@@ -179,6 +188,15 @@ export interface Provider {
   // 特殊参数配置
   specialParams?: {
     randomSeed?: boolean;
+  };
+  
+  // 模型选项列表
+  modelOptions?: ModelOption[];
+  
+  // 默认配置
+  defaults?: {
+    baseUrl: string;
+    [key: string]: any;
   };
 }
 

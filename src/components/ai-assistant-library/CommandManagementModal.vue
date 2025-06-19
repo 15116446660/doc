@@ -12,10 +12,20 @@
         <div class="command-list">
           <div class="command-list-header">
             <h3>命令列表</h3>
-            <el-button type="primary" size="small" @click="createNewCommand">
-              <el-icon><Plus /></el-icon>
-              新建命令
-            </el-button>
+            <div class="command-actions">
+              <el-button type="warning" size="small" @click="createTestLocalCommand">
+                <el-icon><Warning /></el-icon>
+                测试本地命令
+              </el-button>
+              <el-button type="info" size="small" @click="checkLocalStorage">
+                <el-icon><Search /></el-icon>
+                检查存储
+              </el-button>
+              <el-button type="primary" size="small" @click="createNewCommand">
+                <el-icon><Plus /></el-icon>
+                新建命令
+              </el-button>
+            </div>
           </div>
           
           <el-input
@@ -25,6 +35,16 @@
             clearable
             class="command-search"
           />
+          
+          <!-- 测试工具区域 -->
+          <div class="test-tools" v-if="isDevelopment">
+            <el-divider>测试工具</el-divider>
+            <div class="test-buttons">
+              <el-button size="small" type="info" @click="createTestLocalCommand">创建测试命令</el-button>
+              <el-button size="small" type="warning" @click="checkLocalStorage">检查localStorage</el-button>
+              <el-button size="small" type="danger" @click="confirmClearLocalStorage">清理localStorage</el-button>
+            </div>
+          </div>
           
           <div class="command-items">
             <div
@@ -335,7 +355,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, onUnmounted } from 'vue'
+import { ref, reactive, computed, watch, onUnmounted, onMounted } from 'vue'
 import { ElMessageBox, ElMessage } from 'element-plus'
 // 这些图标组件在模板中通过动态组件使用，ESLint可能无法正确识别
 import {
@@ -345,14 +365,19 @@ import {
   Share,
   ArrowDown,
   Setting,
-  View
+  View,
+  Warning,
+  Search
 } from '@element-plus/icons-vue'
 import type { Command, SubCommand } from '@/types/chat'
 import SubCommandManagementModal from './SubCommandManagementModal.vue'
 import SubCommandViewerModal from './SubCommandViewerModal.vue'
 import { usePromptCommands } from './hooks/usePromptCommands'
 
-// 定义组件属性
+// 开发模式判断
+const isDevelopment = ref(process.env.NODE_ENV === 'development' || import.meta.env?.DEV)
+
+// 组件属性
 const props = defineProps<{
   commands: Command[]
 }>()
@@ -362,6 +387,7 @@ const emit = defineEmits<{
   (e: 'save', command: Command): void
   (e: 'delete', commandId: string): void
   (e: 'close'): void
+  (e: 'update:commands', commands: Command[]): void
 }>()
 
 // 状态
@@ -409,18 +435,28 @@ const { fetchSubCommands, addSubCommand, updateSubCommandById, removeSubCommand 
 
 // 计算属性：过滤后的命令列表
 const filteredCommands = computed(() => {
+  console.log('CommandManagementModal - 可用命令列表:', props.commands.length, '个')
+  console.log('命令类型统计:', {
+    系统命令: props.commands.filter(cmd => cmd.isSystem).length,
+    本地命令: props.commands.filter(cmd => cmd.id.startsWith('local-')).length,
+    私有命令: props.commands.filter(cmd => !cmd.isSystem && cmd.shareType === 'private' && !cmd.id.startsWith('local-')).length,
+    共享命令: props.commands.filter(cmd => cmd.shareType === 'shared').length
+  })
+  
   if (!searchQuery.value) {
-    return [...props.commands].sort((a, b) => {
+    const sorted = [...props.commands].sort((a, b) => {
       // 系统命令排在前面
       if (a.isSystem && !b.isSystem) return -1
       if (!a.isSystem && b.isSystem) return 1
       // 按名称排序
       return a.name.localeCompare(b.name)
     })
+    console.log('排序后的命令列表:', sorted.length, '个')
+    return sorted
   }
   
   const query = searchQuery.value.toLowerCase()
-  return props.commands
+  const filtered = props.commands
     .filter(cmd => {
       return cmd.name.toLowerCase().includes(query) ||
              (cmd.description && cmd.description.toLowerCase().includes(query)) ||
@@ -431,6 +467,9 @@ const filteredCommands = computed(() => {
       if (!a.isSystem && b.isSystem) return 1
       return a.name.localeCompare(b.name)
     })
+  
+  console.log('搜索过滤后的命令列表:', filtered.length, '个')
+  return filtered
 })
 
 // 计算属性：当前选中的命令
@@ -453,6 +492,7 @@ function selectCommand(commandId: string) {
 
 // 创建新命令
 function createNewCommand() {
+  console.log('创建新命令')
   // 重置表单
   Object.assign(commandForm, {
     id: '',
@@ -469,9 +509,13 @@ function createNewCommand() {
     subCommandsEndpoint: ''
   })
   
+  console.log('新命令表单已重置:', commandForm)
+  
   // 清除选中状态，进入新建模式
   selectedCommandId.value = null
   isCreatingNew.value = true
+  
+  console.log('进入新建模式')
 }
 
 // 添加参数
@@ -510,10 +554,15 @@ function saveCommand() {
   // 准备保存的命令数据
   const commandToSave: Command = {
     ...commandForm,
-    id: commandForm.id || `cmd-${Date.now()}`,
+    // 如果是新建命令且是私有类型，使用local-前缀的ID
+    id: commandForm.id || (commandForm.shareType === 'private' ? `local-${Date.now()}` : `cmd-${Date.now()}`),
     updatedAt: Date.now(),
     shareType: commandForm.shareType || 'private'
   }
+  
+  console.log('准备保存命令:', commandToSave)
+  console.log('命令ID:', commandToSave.id)
+  console.log('命令类型:', commandToSave.shareType)
   
   // 触发保存事件
   emit('save', commandToSave)
@@ -523,6 +572,20 @@ function saveCommand() {
   isCreatingNew.value = false
   
   ElMessage.success('命令已保存')
+  
+  // 验证保存结果
+  setTimeout(() => {
+    // 这里添加一个延时，确保命令已经保存到localStorage
+    console.log('验证命令是否成功保存')
+    const savedCommands = localStorage.getItem('customCommands')
+    if (savedCommands) {
+      const parsedCommands = JSON.parse(savedCommands)
+      const foundCommand = parsedCommands.find((cmd: any) => cmd.id === commandToSave.id)
+      console.log('在localStorage中找到命令:', foundCommand ? '是' : '否')
+    } else {
+      console.warn('localStorage中没有找到customCommands')
+    }
+  }, 500)
 }
 
 // 确认删除命令
@@ -607,11 +670,60 @@ onUnmounted(() => {
   document.removeEventListener('click', handleOutsideClick)
 })
 
+// 组件挂载时调试
+onMounted(() => {
+  console.log('CommandManagementModal组件挂载')
+  
+  // 检查localStorage中的命令数据
+  const savedCommands = localStorage.getItem('customCommands')
+  console.log('localStorage中的命令数据:', savedCommands)
+  
+  if (savedCommands) {
+    try {
+      const parsedCommands = JSON.parse(savedCommands)
+      console.log('解析后的命令数据:', parsedCommands)
+      console.log('localStorage中的命令数量:', parsedCommands.length)
+    } catch (error) {
+      console.error('解析localStorage中的命令数据失败:', error)
+    }
+  } else {
+    console.warn('localStorage中没有找到customCommands')
+  }
+  
+  // 检查传入的命令列表
+  console.log('传入的命令列表:', props.commands)
+  console.log('传入的命令数量:', props.commands.length)
+  
+  // 检查本地命令
+  const localCommands = props.commands.filter(cmd => cmd.id.startsWith('local-'))
+  console.log('传入的本地命令:', localCommands)
+  console.log('传入的本地命令数量:', localCommands.length)
+})
+
 // 初始化
 watch(() => props.commands, (newCommands) => {
-  if (newCommands.length > 0 && !selectedCommandId.value) {
-    // 默认选择第一个命令
-    selectCommand(newCommands[0].id)
+  console.log('CommandManagementModal - 命令列表变化，新命令数量:', newCommands.length)
+  
+  if (newCommands.length > 0) {
+    console.log('命令列表详情:', newCommands.map(cmd => ({ id: cmd.id, name: cmd.name, shareType: cmd.shareType })))
+    
+    if (!selectedCommandId.value) {
+      // 默认选择第一个命令
+      console.log('没有选中的命令，默认选择第一个:', newCommands[0].id)
+      selectCommand(newCommands[0].id)
+    } else {
+      // 检查选中的命令是否还存在
+      const commandExists = newCommands.some(cmd => cmd.id === selectedCommandId.value)
+      console.log('当前选中的命令:', selectedCommandId.value, '是否存在:', commandExists)
+      
+      if (!commandExists) {
+        // 如果选中的命令不存在了，选择第一个命令
+        console.log('选中的命令不存在，默认选择第一个:', newCommands[0].id)
+        selectCommand(newCommands[0].id)
+      }
+    }
+  } else {
+    console.log('命令列表为空')
   }
 }, { immediate: true })
 
@@ -719,7 +831,110 @@ async function viewSubCommandsForSystem() {
   }
 }
 
+// 创建测试本地命令
+function createTestLocalCommand() {
+  console.log('创建测试本地命令')
+  
+  // 生成唯一的测试命令名称
+  const timestamp = Date.now()
+  const randomPart = Math.floor(Math.random() * 10000).toString().padStart(4, '0')
+  const testCommandId = `local-test-${timestamp}-${randomPart}`
+  
+  // 创建测试命令对象
+  const testCommand: Command = {
+    id: testCommandId,
+    name: `测试命令-${timestamp}`,
+    icon: 'Warning',
+    description: '这是一个测试本地命令',
+    prompt: '这是测试本地命令的提示词，用于测试本地命令是否正常工作。',
+    category: '测试',
+    createdAt: timestamp,
+    updatedAt: timestamp,
+    parameters: [],
+    shareType: 'private',
+    hasSubCommands: false,
+    isSystem: false
+  }
+  
+  console.log('创建的测试本地命令:', testCommand)
+  
+  // 直接保存测试命令
+  emit('save', testCommand)
+  
+  // 选中新创建的命令
+  setTimeout(() => {
+    // 延迟选中，确保命令已经添加到列表中
+    selectCommand(testCommandId)
+    
+    // 再次检查命令是否已添加到列表
+    const commandExists = props.commands.some(cmd => cmd.id === testCommandId)
+    console.log('测试命令是否已添加到列表:', commandExists ? '是' : '否')
+    
+    if (commandExists) {
+      ElMessage.success('测试本地命令已创建')
+    } else {
+      ElMessage.warning('测试命令创建可能失败，请检查控制台')
+      // 尝试手动添加
+      const commands = [...props.commands]
+      commands.push(testCommand)
+      emit('update:commands', commands)
+      console.log('已尝试手动添加测试命令到列表')
+    }
+    
+    // 检查localStorage
+    setTimeout(checkLocalStorage, 500)
+  }, 500)
+}
 
+// 检查localStorage中的命令
+function checkLocalStorage() {
+  console.log('检查localStorage中的命令')
+  
+  // 获取localStorage中的命令数据
+  const savedCommands = localStorage.getItem('customCommands')
+  console.log('localStorage中的命令数据:', savedCommands)
+  
+  if (savedCommands) {
+    try {
+      const parsedCommands = JSON.parse(savedCommands)
+      console.log('解析后的命令数据:', parsedCommands)
+      console.log('localStorage中的命令数量:', parsedCommands.length)
+    } catch (error) {
+      console.error('解析localStorage中的命令数据失败:', error)
+    }
+  } else {
+    console.warn('localStorage中没有找到customCommands')
+  }
+}
+
+// 清理localStorage中的命令
+function clearLocalStorage() {
+  console.log('清理localStorage中的命令')
+  localStorage.removeItem('customCommands')
+  ElMessage.success('已清除本地命令缓存')
+  
+  // 重新加载页面以刷新命令列表
+  setTimeout(() => {
+    window.location.reload()
+  }, 1000)
+}
+
+// 确认清理localStorage
+function confirmClearLocalStorage() {
+  ElMessageBox.confirm(
+    '确定要清除所有本地命令缓存吗？这将删除所有自定义命令，且无法恢复。',
+    '确认操作',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    clearLocalStorage()
+  }).catch(() => {
+    ElMessage.info('已取消操作')
+  })
+}
 </script>
 
 <style scoped>
@@ -750,6 +965,11 @@ async function viewSubCommandsForSystem() {
 
 .command-list-header h3 {
   margin: 0;
+}
+
+.command-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .command-search {

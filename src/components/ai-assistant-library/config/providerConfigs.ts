@@ -1,6 +1,6 @@
 // src/components/ai-assistant-library/config/providerConfigs.ts
 
-import type { Provider } from '@/types/chat'
+import type { Provider, ModelOption } from '@/types/chat'
 
 export const providerConfigs: Record<string, Provider> = {
   openai: {
@@ -160,5 +160,5 @@ export function getModelOptions(type: string): ModelOption[] {
 
 export function getDefaultBaseUrl(type: string): string {
   const config = providerConfigs[type];
-  return config?.defaults.baseUrl || '';
+  return config?.defaults?.baseUrl || '';
 } 
