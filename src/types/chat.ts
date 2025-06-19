@@ -181,39 +181,23 @@ export interface Provider {
   };
 }
 
-// AI模型定义
-export interface AIModelDefinition {
-  id: string;
-  label: string;
-  provider: string;
-  type: string;
-  logo?: string;
-  description?: string;
-  level?: 'basic' | 'advanced' | 'super';
-  defaults: {
-    maxTokens: number;
-    temperature: number;
-    modelVersion: string;
-  }
-}
-
-// AI模型实例（运行时）
+// AI模型定义 - 根据新API重构
 export interface AIModel {
   id: string;
-  name: string;
-  type: string;
-  provider: string;
-  logo?: string;
-  description?: string;
-  level?: 'basic' | 'advanced' | 'super';
-  isDefault?: boolean;
-  
-  // 运行时配置
+  name: string; // 对应 modelName
+  model: string; // 模型标识
   apiKey: string;
-  baseUrl?: string;
-  maxTokens: number;
-  temperature: number;
-  modelVersion: string;
+  apiUrl: string;
+  isDefault: boolean;
+  cueWord: string; // 提示词
+  description?: string;
+  logo?: string;
+  // 高级设置
+  temperature?: number;
+  maxTokens?: number;
+  topP?: number;
+  frequencyPenalty?: number;
+  presencePenalty?: number;
 }
 
 // 命令参数类型

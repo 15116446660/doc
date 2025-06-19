@@ -30,12 +30,11 @@
       @send="handleSendMessage"
       @stop="stopGenerating"
       @modelChange="handleModelChange"
-      @command="handleCommand"
+      @command="handleExecuteCommand"
       @toggleDeepThinking="toggleDeepThinkingMode"
       @toggleRAG="toggleRAGMode"
       @toggleFullTextReference="toggleFullTextReferenceMode"
       @openModelConfig="openModelConfig"
-      @executeCommand="handleExecuteCommand"
       @selectKnowledgeBase="handleSelectKnowledgeBase"
       @clearSelectedKnowledgeBase="handleClearSelectedKnowledgeBase"
       @new-chat="handleNewConversation"
@@ -64,7 +63,10 @@
       :current-model-id="currentModelId"
       @update:show="showModelConfigModal = false"
       @select-model="handleModelChange"
-      @models-updated="handleModelsUpdated"
+      @add-model="handleAddModel"
+      @update-model="handleUpdateModel"
+      @delete-model="handleDeleteModel"
+      @set-default-model="handleSetDefaultModel"
     />
     
     <!-- 命令管理对话框 -->
@@ -169,7 +171,10 @@ const {
 const {
   models,
   loadModels,
-  updateModels,
+  addModel,
+  updateModel,
+  deleteModel,
+  setDefaultModel
 } = useAIModels()
 
 const {
@@ -209,21 +214,32 @@ watch(
   { deep: true }
 )
 
+// 监听当前活跃会话变化，同步消息
+watch(
+  () => activeConversation.value,
+  (newConversation) => {
+    if (newConversation) {
+      messages.value = newConversation.messages;
+      setCurrentModel(newConversation.modelId);
+    } else {
+      messages.value = [];
+    }
+  },
+  { immediate: true }
+);
+
 // 初始化
 onMounted(async () => {
   await initConversations()
   await loadModels()
   await loadCommands()
 
-  // 如果有初始会话ID，加载该会话
   if (props.initialConversationId) {
     loadConversation(props.initialConversationId)
   } else if (conversations.value.length === 0) {
-    // 否则如果没有会话，则创建新会话
     createConversation(currentModelId.value)
   }
 
-  // 加载本地设置
   const savedTheme = localStorage.getItem('chatTheme') as 'light' | 'dark' | 'auto' | null
   if (savedTheme) {
     localTheme.value = savedTheme
@@ -242,19 +258,16 @@ onMounted(async () => {
     emit('avatarChange', 'assistant', savedAssistantAvatar)
   }
 
-  // 监听系统暗色模式变化
   const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
 
-  const handleThemeChange = () => {
+  const handleSystemThemeChange = () => {
     if (localTheme.value === 'auto') {
       emit('themeChange', 'auto')
     }
   }
-
-  mediaQuery.addEventListener('change', handleThemeChange)
-
+  mediaQuery.addEventListener('change', handleSystemThemeChange)
   onBeforeUnmount(() => {
-    mediaQuery.removeEventListener('change', handleThemeChange)
+    mediaQuery.removeEventListener('change', handleSystemThemeChange)
   })
 })
 
@@ -295,11 +308,6 @@ const handleModelChange = (modelId: string) => {
   saveCurrentConversation()
 }
 
-// 处理模型列表更新
-const handleModelsUpdated = (updatedModels: AIModel[]) => {
-  updateModels(updatedModels)
-}
-
 // 处理消息反馈
 const handleMessageFeedback = (messageId: string, feedback: 'like' | 'dislike') => {
   setMessageFeedback(messageId, feedback)
@@ -307,27 +315,17 @@ const handleMessageFeedback = (messageId: string, feedback: 'like' | 'dislike') 
 }
 
 // 处理来自 ChatBubbleList 的快捷命令
-const handleQuickCommand = (commandId: string) => {
-  try {
-    const command = findCommand(commandId)
-    if (command) {
-      handleExecuteCommand(command)
-    }
-  } catch (error) {
-    ElMessage.error('执行快捷命令失败')
-  }
-}
-
-const handleCommand = (command: Command) => {
+const handleQuickCommand = (command: Command) => {
   handleExecuteCommand(command)
 }
 
-const handleExecuteCommand = (command: Command, args?: any) => {
-  console.log('Executing command:', command, args)
-  // 在这里实现命令执行逻辑
-  if (command.prompt) {
-    sendUserMessage(command.prompt, [], command.id, command.name);
-  }
+const handleExecuteCommand = (command: Command, input: string = '') => {
+  sendUserMessage({
+    content: command.prompt ? command.prompt.replace('{input}', input) : input,
+    commandId: command.id,
+    commandName: command.name,
+  });
+  saveConversation();
 }
 
 const handleSelectKnowledgeBase = (knowledgeBaseId: string) => {
@@ -438,19 +436,22 @@ const handleSaveSettings = (settings: { theme: 'light' | 'dark' | 'auto', userAv
   localStorage.setItem('chatAssistantAvatar', settings.assistantAvatar)
 }
 
-// 监听活动会话变化，同步消息列表
-watch(
-  activeConversationId,
-  (newId) => {
-    const conversation = conversations.value.find(c => c.id === newId)
-    if (conversation) {
-      messages.value = conversation.messages
-    } else {
-      messages.value = []
-    }
-  },
-  { immediate: true }
-)
+// --- 模型管理 ---
+async function handleAddModel(modelData: Omit<AIModel, 'id'>) {
+  await addModel(modelData);
+}
+
+async function handleUpdateModel(modelData: Partial<AIModel> & { id: string }) {
+  await updateModel(modelData);
+}
+
+async function handleDeleteModel(modelId: string) {
+  await deleteModel(modelId);
+}
+
+async function handleSetDefaultModel(modelId: string) {
+  await setDefaultModel(modelId);
+}
 </script>
 
 <style scoped>
