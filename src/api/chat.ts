@@ -66,6 +66,79 @@ export async function streamMessage(messages: Message[], modelId: string, option
  */
 export function getModels() {
   return get<AIModel[]>('/api/chat/models')
+    .then(models => {
+      // 如果服务端返回了模型列表，则使用服务端返回的模型列表
+      if (models && models.length > 0) {
+        return models;
+      }
+      
+      // 服务端未返回模型列表，使用默认预设模型列表
+      return getDefaultModels();
+    })
+    .catch(() => {
+      // 请求出错时，使用默认预设模型列表
+      return getDefaultModels();
+    });
+}
+
+/**
+ * 获取默认预设模型列表，在不加载服务端大模型的情况下使用
+ */
+function getDefaultModels(): AIModel[] {
+  return [
+    {
+      id: 'gpt-4',
+      name: 'GPT-4',
+      description: '最强大的AI模型，适合复杂任务',
+      provider: 'openai',
+      logo: '/ai-models/openai.png',
+      level: 'super',
+      isDefault: true,
+      apiKey: '',
+      maxTokens: 4096,
+      temperature: 0.7,
+      modelVersion: 'gpt-4'
+    },
+    {
+      id: 'qwen-2.5',
+      name: '通义千问 2.5',
+      description: '阿里云最新一代基础大模型，性能全面升级',
+      provider: 'alibaba',
+      logo: '/ai-models/qwen.png',
+      level: 'super',
+      apiKey: '',
+      maxTokens: 10240,
+      temperature: 0.7,
+      modelVersion: 'qwen-2.5',
+      isDefault: false
+    },
+    {
+      id: 'deepseek-v3',
+      name: 'DeepSeek V3',
+      description: 'DeepSeek最新一代通用大模型，能力全面增强',
+      provider: 'deepseek',
+      logo: '/ai-models/deepseek.png',
+      level: 'super',
+      apiKey: '',
+      maxTokens: 16384,
+      temperature: 0.7,
+      modelVersion: 'deepseek-v3',
+      isDefault: false
+    },
+    {
+      id: 'gpt-3.5-turbo',
+      name: 'GPT-3.5 Turbo',
+      description: '快速高效的AI模型，适合一般任务',
+      provider: 'openai',
+      logo: '/ai-models/openai.png',
+      level: 'basic',
+      apiKey: '',
+      maxTokens: 2048,
+      temperature: 0.7,
+      modelVersion: 'gpt-3.5-turbo',
+      isDefault: false
+    }
+  ];
 }
 
 /**

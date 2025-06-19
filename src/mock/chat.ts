@@ -36,6 +36,32 @@ const mockModels: AIModel[] = [
     isDefault: false
   },
   {
+    id: 'qwen-2.5',
+    name: '通义千问 2.5',
+    description: '阿里云最新一代基础大模型，性能全面升级',
+    provider: 'alibaba',
+    logo: '/ai-models/qwen.png',
+    level: 'super',
+    apiKey: '',
+    maxTokens: 10240,
+    temperature: 0.7,
+    modelVersion: 'qwen-2.5',
+    isDefault: false
+  },
+  {
+    id: 'deepseek-v3',
+    name: 'DeepSeek V3',
+    description: 'DeepSeek最新一代通用大模型，能力全面增强',
+    provider: 'deepseek',
+    logo: '/ai-models/deepseek.png',
+    level: 'super',
+    apiKey: '',
+    maxTokens: 16384,
+    temperature: 0.7,
+    modelVersion: 'deepseek-v3',
+    isDefault: false
+  },
+  {
     id: 'claude-3',
     name: 'Claude 3',
     description: '理解能力强的AI模型，适合文本分析',

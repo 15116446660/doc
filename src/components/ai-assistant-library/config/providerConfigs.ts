@@ -109,6 +109,13 @@ export const providerConfigs: Record<string, Provider> = {
         contextWindow: 65536
       },
       {
+        id: 'qwen-2.5',
+        name: '通义千问 2.5',
+        description: '最新一代基础大模型，性能全面升级',
+        maxTokens: 10240,
+        contextWindow: 128000
+      },
+      {
         id: 'qwen-14b',
         name: '通义千问 14B',
         description: '开源的14B参数通义千问模型',
@@ -185,6 +192,25 @@ export const providerConfigs: Record<string, Provider> = {
       frequencyPenalty: true,
       presencePenalty: true,
       stream: true
+    },
+    modelOptions: [
+      {
+        id: 'deepseek-coder',
+        name: 'DeepSeek Coder',
+        description: '专注于代码生成和理解的大模型',
+        maxTokens: 8192,
+        contextWindow: 32768
+      },
+      {
+        id: 'deepseek-v3',
+        name: 'DeepSeek V3',
+        description: '最新一代通用大模型，能力全面增强',
+        maxTokens: 16384,
+        contextWindow: 131072
+      }
+    ],
+    defaults: {
+      baseUrl: 'https://api.deepseek.com/v1'
     }
   }
 }

@@ -113,6 +113,20 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
       modelVersion: 'qwen-max'
     }
   },
+  'qwen-2.5': {
+    id: 'qwen-2.5',
+    label: '通义千问 2.5',
+    provider: 'alibaba',
+    type: 'alibaba',
+    logo: '/ai-models/qwen.png',
+    description: '通义千问最新一代基础大模型，性能大幅提升',
+    level: 'super',
+    defaults: {
+      maxTokens: 10240,
+      temperature: 0.7,
+      modelVersion: 'qwen-2.5'
+    }
+  },
   'qwen-14b': {
     id: 'qwen-14b',
     label: '通义千问 14B',
@@ -167,6 +181,20 @@ export const modelDefinitions: Record<string, AIModelDefinition> = {
       maxTokens: 8192,
       temperature: 0.7,
       modelVersion: 'deepseek-coder-33b'
+    }
+  },
+  'deepseek-v3': {
+    id: 'deepseek-v3',
+    label: 'DeepSeek V3',
+    provider: 'deepseek',
+    type: 'deepseek',
+    logo: '/ai-models/deepseek.png',
+    description: 'DeepSeek最新一代通用大模型，能力全面增强',
+    level: 'super',
+    defaults: {
+      maxTokens: 16384,
+      temperature: 0.7,
+      modelVersion: 'deepseek-v3'
     }
   }
 } 
