@@ -26,7 +26,6 @@
       :commands="commands"
       :isDeepThinkingMode="isDeepThinkingMode"
       :isRAGMode="isRAGMode"
-      :isFullTextReferenceMode="isFullTextReferenceMode"
       :currentKnowledgeBaseId="currentKnowledgeBaseId"
       @send="handleSendMessage"
       @stop="stopGenerating"
@@ -34,7 +33,6 @@
       @command="handleExecuteCommand"
       @toggleDeepThinking="toggleDeepThinkingMode"
       @toggleRAG="toggleRAGMode"
-      @toggleFullTextReference="toggleFullTextReferenceMode"
       @openModelConfig="openModelConfig"
       @selectKnowledgeBase="handleSelectKnowledgeBase"
       @clearSelectedKnowledgeBase="handleClearSelectedKnowledgeBase"
@@ -566,9 +564,9 @@ const handleSaveSettings = (settings: { theme: 'light' | 'dark' | 'auto', userAv
   localUserAvatar.value = settings.userAvatar
   localAssistantAvatar.value = settings.assistantAvatar
   emit('themeChange', settings.theme)
-  emit('avatarChange', 'user', settings.userAvatar)
-  emit('avatarChange', 'assistant', settings.assistantAvatar)
-
+    emit('avatarChange', 'user', settings.userAvatar)
+    emit('avatarChange', 'assistant', settings.assistantAvatar)
+  
   // 保存到本地存储
   localStorage.setItem('chatTheme', settings.theme)
   localStorage.setItem('chatUserAvatar', settings.userAvatar)

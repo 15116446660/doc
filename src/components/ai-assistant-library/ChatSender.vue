@@ -12,9 +12,14 @@
         />
         
         <!-- 命令管理 -->
-        <el-tooltip content="命令管理" placement="top">
+        <!-- <el-tooltip content="命令管理" placement="top">
           <el-button :icon="Operation" circle @click="handleOpenCommandManagement" />
-        </el-tooltip>
+        </el-tooltip> -->
+        <CommandSelector 
+          :commands="commands"
+          @view-sub-commands="cmd => emit('view-sub-commands', cmd)"
+          @open-command-management="emit('open-command-management')"
+        />
         
         <!-- 上传附件 -->
         <el-tooltip content="上传附件" placement="top">
@@ -191,47 +196,12 @@
             </el-button>
           </el-tooltip>
           
-          <!-- 命令子命令查看按钮 -->
-          <el-popover
-            placement="top-start"
-            :width="300"
-            trigger="click"
-            popper-class="beautiful-popper"
-            :show-arrow="false"
-          >
-            <template #reference>
-              <el-button 
-                class="mode-btn"
-                size="small"
-              >
-                <el-icon><List /></el-icon>
-                命令
-              </el-button>
-            </template>
-            <div class="command-panel">
-              <div class="panel-header">预设命令</div>
-              <div class="panel-body">
-                <div
-                  v-for="cmd in commands"
-                  :key="cmd.id"
-                  class="command-panel-item"
-                  @click="emit('view-sub-commands', cmd.id)"
-                >
-                  <el-icon class="cmd-icon"><component :is="cmd.icon || 'Document'" /></el-icon>
-                  <div class="cmd-info">
-                    <div class="cmd-name">{{ cmd.name }}</div>
-                    <div class="cmd-desc">{{ cmd.description }}</div>
-                    <el-tag 
-                      v-if="cmd.hasSubCommands" 
-                      type="info" 
-                      size="small" 
-                      class="sub-cmd-tag"
-                    >有子命令</el-tag>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </el-popover>
+          <!-- 命令选择器 -->
+          <!-- <CommandSelector 
+            :commands="commands"
+            @view-sub-commands="cmd => emit('view-sub-commands', cmd)"
+            @open-command-management="emit('open-command-management')"
+          /> -->
           
           <el-popover
             placement="top-start"
@@ -323,6 +293,7 @@ import { usePromptCommands } from '@/components/ai-assistant-library/hooks/usePr
 import { getSubCommands, getQuickCommands } from '@/api/command';
 import { getKnowledgeBases } from '@/api/knowledgeBase';
 import ModelSelector from './ModelSelector.vue';
+import CommandSelector from './CommandSelector.vue';
 
 // Icon mapping to resolve linter errors and for dynamic rendering
 const iconMap: Record<string, any> = {
@@ -345,16 +316,14 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: 'send', content: string, files: File[]): void
+  (e: 'send', message: string, attachments?: Array<any>): void
   (e: 'stop'): void
-  (e: 'select-model', modelId: string): void
+  (e: 'modelChange', modelId: string): void
+  (e: 'command', command: BaseCommand): void
   (e: 'toggleDeepThinking'): void
   (e: 'toggleRAG'): void
-  (e: 'toggleFullTextReference'): void
   (e: 'openModelConfig'): void
-  (e: 'executeCommand', command: BaseCommand | QuickCommand, context: string): void
-  (e: 'command', command: string): void
-  (e: 'selectKnowledgeBase', kbId: string): void
+  (e: 'selectKnowledgeBase', knowledgeBaseId: string): void
   (e: 'clearSelectedKnowledgeBase'): void
   (e: 'new-chat'): void
   (e: 'open-history'): void
@@ -425,7 +394,7 @@ const selectedKnowledgeBase = computed(() => {
 // #endregion
 
 // #region --- Event Handlers & Methods ---
-const handleModelChange = (modelId: string) => emit('select-model', modelId);
+const handleModelChange = (modelId: string) => emit('modelChange', modelId);
 const openModelConfig = () => emit('openModelConfig');
 const triggerFileUpload = () => fileInputRef.value?.click();
 
