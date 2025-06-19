@@ -402,20 +402,24 @@ function saveCommand() {
 
 // 确认删除命令
 function confirmDeleteCommand(commandId: string) {
-  ElMessageBox.confirm('确定要删除这个命令吗？此操作不可恢复。', '提示', {
-    confirmButtonText: '确定',
-    cancelButtonText: '取消',
-    type: 'warning'
-  }).then(() => {
-    emit('delete', commandId)
-    
-    // 如果删除的是当前选中的命令，清除选择
-    if (selectedCommandId.value === commandId) {
-      selectedCommandId.value = null
+  ElMessageBox.confirm(
+    '确定要删除此命令吗？此操作无法撤销。',
+    '确认删除',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
     }
-    
+  ).then(() => {
+    emit('delete', commandId)
     ElMessage.success('命令已删除')
-  }).catch(() => {})
+    if (commandId === selectedCommandId.value) {
+      selectedCommandId.value = null
+      isCreatingNew.value = false
+    }
+  }).catch(() => {
+    // 用户取消则不执行任何操作
+  })
 }
 
 // 添加关闭处理函数

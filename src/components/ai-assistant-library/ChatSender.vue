@@ -13,7 +13,7 @@
         
         <!-- 命令管理 -->
         <el-tooltip content="命令管理" placement="top">
-          <el-button :icon="Operation" circle @click="handleCommand('commands')" />
+          <el-button :icon="Operation" circle @click="handleOpenCommandManagement" />
         </el-tooltip>
         
         <!-- 上传附件 -->
@@ -317,6 +317,7 @@ const emit = defineEmits<{
   (e: 'new-chat'): void
   (e: 'open-history'): void
   (e: 'clear-chat'): void
+  (e: 'open-command-management'): void
 }>();
 // #endregion
 
@@ -561,6 +562,10 @@ const handleOpenHistory = () => {
 
 const handleClearChat = () => {
   emit('clear-chat');
+};
+
+const handleOpenCommandManagement = () => {
+  emit('open-command-management');
 };
 
 // #endregion

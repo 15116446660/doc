@@ -40,6 +40,7 @@
       @new-chat="handleNewConversation"
       @open-history="handleOpenHistory"
       @clear-chat="handleClearCurrentConversation"
+      @open-command-management="handleOpenCommandManagement"
     />
     
     <!-- 历史会话对话框 -->
@@ -180,7 +181,6 @@ const {
 const {
   commands,
   loadCommands,
-  findCommand,
   addCommand,
   updateCommandById,
   removeCommand
@@ -403,6 +403,11 @@ const handleToggleFavorite = (conversationId: string) => {
 const handleClearNonFavorites = () => {
   clearNonFavoriteConversations()
   ElMessage.success('非收藏会话已清空')
+}
+
+// 打开命令管理
+const handleOpenCommandManagement = () => {
+  showCommandModal.value = true
 }
 
 // 打开模型配置
