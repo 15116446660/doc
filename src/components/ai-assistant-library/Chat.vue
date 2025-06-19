@@ -26,6 +26,7 @@
       :commands="commands"
       :isDeepThinkingMode="isDeepThinkingMode"
       :isRAGMode="isRAGMode"
+      :isFullTextReferenceMode="isFullTextReferenceMode"
       :currentKnowledgeBaseId="currentKnowledgeBaseId"
       @send="handleSendMessage"
       @stop="stopGenerating"
@@ -33,6 +34,7 @@
       @command="handleExecuteCommand"
       @toggleDeepThinking="toggleDeepThinkingMode"
       @toggleRAG="toggleRAGMode"
+      @toggleFullTextReference="toggleFullTextReferenceMode"
       @openModelConfig="openModelConfig"
       @selectKnowledgeBase="handleSelectKnowledgeBase"
       @clearSelectedKnowledgeBase="handleClearSelectedKnowledgeBase"
@@ -605,8 +607,8 @@ const viewCommandSubCommands = async (commandId: string) => {
     const command = findCommand(commandId);
     if (!command) {
       throw new Error(`未找到命令: ${commandId}`);
-    }
-    
+  }
+  
     // 获取子命令
     const subCommands = await fetchSubCommands(commandId);
     if (!subCommands || subCommands.length === 0) {
@@ -654,8 +656,8 @@ const viewCommandSubCommands = async (commandId: string) => {
   } finally {
     isGenerating.value = false;
   }
-}
-
+  }
+  
 /**
  * 查找命令对象
  * 

@@ -33,7 +33,7 @@
             :icon="Link" 
             circle 
             :class="{ 'is-active': isFullTextReferenceMode }"
-            @click="emit('toggleFullTextReference')" 
+            @click="toggleFullTextReferenceMode" 
           />
         </el-tooltip>
       </div>
@@ -322,6 +322,7 @@ const emit = defineEmits<{
   (e: 'command', command: BaseCommand): void
   (e: 'toggleDeepThinking'): void
   (e: 'toggleRAG'): void
+  (e: 'toggleFullTextReference'): void
   (e: 'openModelConfig'): void
   (e: 'selectKnowledgeBase', knowledgeBaseId: string): void
   (e: 'clearSelectedKnowledgeBase'): void
@@ -442,6 +443,8 @@ const handleCommand = (command: string) => {
 };
 
 const toggleDeepThinkingMode = () => emit('toggleDeepThinking');
+
+const toggleFullTextReferenceMode = () => emit('toggleFullTextReference');
 
 const handleKnowledgeBaseButtonClick = () => {
   isKnowledgeBasePanelVisible.value = true;
