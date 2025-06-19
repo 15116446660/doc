@@ -318,9 +318,7 @@ const handleMessageFeedback = (messageId: string, feedback: 'like' | 'dislike') 
   saveCurrentConversation()
 }
 
-// 注意：ChatBubbleList组件的快捷命令现在直接通过@command事件处理，
-// 该事件会触发handleExecuteCommand函数
-
+// 处理命令
 const handleExecuteCommand = (command: Command, input: string = '') => {
   if (command.hasSubCommands) {
     // If the command has sub-commands, load them from API
@@ -367,16 +365,16 @@ const handleCommandWithSubCommands = async (command: Command) => {
     const subCommands = await fetchSubCommands(command.id, context);
     
     if (subCommands.length === 0) {
-      // No sub-commands available, show an error
-      const errorMessage: Message = {
-        id: uuidv4(),
-        role: 'assistant',
-        content: `抱歉，'${command.name}'命令没有可用的子命令。`,
-        timestamp: Date.now(),
-        status: 'completed'
-      };
+      // 没有子命令时，直接执行主命令
+      console.log(`命令 '${command.name}' 没有子命令，直接执行主命令`);
       
-      messages.value.push(errorMessage);
+      // 直接发送命令的提示词作为用户消息
+      sendUserMessage(
+        command.prompt || `执行命令: ${command.name}`,
+        [], // attachments
+        undefined, // knowledgeBaseId
+        command.id // commandId
+      );
     } else {
       // Create an assistant message to show available sub-commands
       const subCommandsMessage: Message = {
@@ -395,17 +393,16 @@ const handleCommandWithSubCommands = async (command: Command) => {
   } catch (error: any) {
     console.error('加载子命令失败:', error);
     
-    // Show error message
-    const errorMessage: Message = {
-      id: uuidv4(),
-      role: 'assistant',
-      content: `加载'${command.name}'的子命令失败: ${error.message || '未知错误'}`,
-      timestamp: Date.now(),
-      status: 'error',
-      error: error.message
-    };
+    // 出错时也直接执行主命令
+    console.log(`加载子命令失败，直接执行主命令: ${command.name}`);
     
-    messages.value.push(errorMessage);
+    sendUserMessage(
+      command.prompt || `执行命令: ${command.name}`,
+      [], // attachments
+      undefined, // knowledgeBaseId
+      command.id // commandId
+    );
+    
     saveCurrentConversation();
   } finally {
     isGenerating.value = false;
@@ -710,12 +707,25 @@ const viewCommandSubCommands = async (commandId: string) => {
     const command = findCommand(commandId);
     if (!command) {
       throw new Error(`未找到命令: ${commandId}`);
-  }
+    }
+    
+    // 检查命令是否标记为有子命令
+    if (!command.hasSubCommands) {
+      // 如果命令没有标记为有子命令，直接执行该命令
+      console.log(`命令 '${command.name}' 没有标记为有子命令，直接执行命令`);
+      isGenerating.value = false;
+      handleExecuteCommand(command);
+      return;
+    }
   
     // 获取子命令
     const subCommands = await fetchSubCommands(commandId);
     if (!subCommands || subCommands.length === 0) {
-      throw new Error(`命令 '${command.name}' 没有子命令`);
+      // 如果标记为有子命令但实际没有子命令，直接执行命令
+      console.log(`命令 '${command.name}' 标记为有子命令，但没有找到子命令，直接执行命令`);
+      isGenerating.value = false;
+      handleExecuteCommand(command);
+      return;
     }
     
     // 生成子命令消息内容
@@ -759,7 +769,7 @@ const viewCommandSubCommands = async (commandId: string) => {
   } finally {
     isGenerating.value = false;
   }
-  }
+}
   
 /**
  * 查找命令对象
@@ -768,10 +778,25 @@ const viewCommandSubCommands = async (commandId: string) => {
  * @returns 找到的命令对象，如果未找到则返回undefined
  */
 const findCommand = (commandId: string) => {
-  if (!commandId) return undefined;
+  if (!commandId) {
+    console.warn('查找命令时未提供commandId');
+    return undefined;
+  }
+  
+  console.log(`查找命令: ${commandId}, 当前命令列表长度: ${commands.value.length}`);
   
   // 从commands数组中查找命令
-  return commands.value.find((cmd: Command) => cmd.id === commandId);
+  const command = commands.value.find((cmd: Command) => cmd.id === commandId);
+  
+  if (command) {
+    console.log(`找到命令: ${command.name}, hasSubCommands: ${command.hasSubCommands}`);
+  } else {
+    console.warn(`未找到命令: ${commandId}`);
+    // 打印所有命令ID以便调试
+    console.log('可用命令ID列表:', commands.value.map(cmd => cmd.id));
+  }
+  
+  return command;
 }
 </script>
 
