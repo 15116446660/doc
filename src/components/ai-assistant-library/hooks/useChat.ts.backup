@@ -109,8 +109,7 @@ export function useChat(initialConfig: ChatConfig = {
       thinking: message.thinking,
       commandId: message.commandId,
       reference: message.reference,
-      docAggs: message.docAggs,
-      modelInfo: message.modelInfo // 添加模型信息
+      docAggs: message.docAggs
     };
     messages.value.push(newMessage);
     return newMessage;
@@ -465,7 +464,7 @@ export function useChat(initialConfig: ChatConfig = {
       timestamp: Date.now(),
       status: 'pending' as MessageStatus,
       thinking,
-      ...(currentModel.value ? { modelInfo: currentModel.value } : {})
+      modelInfo: currentModel.value // 添加当前模型信息
     };
     messages.value.push(message);
     return message;

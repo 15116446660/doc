@@ -39,7 +39,13 @@
         <div class="chat-avatar" :class="{ 'user-avatar': message.role === 'user' }">
           <el-avatar v-if="message.role === 'user'" :size="36" :src="userAvatar" />
           <AIModelLogo 
-            v-else-if="currentModel && message.role === 'assistant'"
+            v-else-if="message.modelInfo && message.role === 'assistant'"
+            :model="message.modelInfo"
+            size="medium"
+            class="assistant-model-logo"
+          />
+          <AIModelLogo 
+            v-else-if="currentModel && message.role === 'assistant' && !message.modelInfo"
             :model="currentModel"
             size="medium"
             class="assistant-model-logo"
@@ -327,6 +333,14 @@ const forceScrollToBottom = () => {
 
 // 监听消息列表变化，自动滚动到底部
 watch(() => props.messages, (messages, oldMessages) => {
+  try {
+    // 调试：打印assistant消息的modelInfo
+    messages.forEach(msg => {
+      if (msg.role === "assistant") {
+        console.log("Assistant message modelInfo:", msg.modelInfo);
+      }
+    });
+
   try {
     // 如果设置了禁止自动滚动标记，则取消标记并直接返回
     if (disableAutoScroll.value) {
