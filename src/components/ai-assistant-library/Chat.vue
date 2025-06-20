@@ -392,7 +392,7 @@ const handleCommandWithSubCommands = async (command: Command) => {
         undefined, // knowledgeBaseId
         command.id // commandId
       );
-    } else {
+  } else {
       // Create an assistant message to show available sub-commands
       const subCommandsMessage: Message = {
         id: uuidv4(),

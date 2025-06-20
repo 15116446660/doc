@@ -161,27 +161,24 @@ export function useChat(initialConfig: ChatConfig = {
     addMessage(userMessage)
     
     // 创建AI回复消息（初始为空）
-    const aiMessage = {
+    const aiMessage = addMessage({
       id: uuidv4(),
-      role: 'assistant' as const,
+      role: 'assistant',
       content: '',
       timestamp: Date.now(),
-      status: 'thinking' as MessageStatus,
-      modelInfo: currentModel.value // 添加当前模型信息
-    } as unknown as Message;
-    
-    // 添加AI回复消息到列表
-    addMessage(aiMessage)
+      status: 'thinking',
+      modelInfo: currentModel.value
+    });
     
     // 设置生成状态
-    isGenerating.value = true
+    isGenerating.value = true;
     
     // 创建中止控制器
-    abortController.value = new AbortController()
+    abortController.value = new AbortController();
     
     try {
       // 更新AI消息状态为生成中
-      updateMessageStatus(aiMessage.id, 'generating')
+      updateMessageStatus(aiMessage.id, 'generating');
       
       if (isRAGMode.value && currentKnowledgeBaseId.value) {
         // 使用RAG模式
@@ -190,18 +187,18 @@ export function useChat(initialConfig: ChatConfig = {
           sessionId: uuidv4(),
           question: content,
           deepthinking: isDeepThinkingMode.value,
-          knowledgeBaseId: currentKnowledgeBaseId.value // 确保传递知识库ID
+          knowledgeBaseId: currentKnowledgeBaseId.value
         };
 
         await streamRAGChat(
           ragRequest,
-          (content: string, id?: string) => {
-            aiMessage.content = content;
+          (content: string) => {
+            updateMessageContent(aiMessage.id, content);
           },
           (err: Error) => {
             console.error('RAG Chat Error:', err);
             updateMessageStatus(aiMessage.id, 'error');
-            (aiMessage as any).error = err.message || '获取AI回复失败';
+            aiMessage.error = err.message || '获取AI回复失败';
             ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'));
           },
           () => {
@@ -213,69 +210,52 @@ export function useChat(initialConfig: ChatConfig = {
         );
       } else {
         // 使用普通模式
-        // 准备消息历史
-        const messageHistory = messages.value
-          .filter(msg => msg.id !== aiMessage.id)
-          .map(msg => ({
-            id: msg.id,
-            role: msg.role,
-            content: msg.content,
-            timestamp: msg.timestamp
-          }))
+        // 准备请求数据
+        const normalRequest: NormalChatRequest = {
+          prompt: content,
+          modelId: currentModel.value?.id,
+          deepthinking: isDeepThinkingMode.value,
+          attachments: attachments
+        };
         
-        // 发送请求获取AI回复
-        const stream = await streamMessage(messageHistory, currentModelId.value, {
-          deepThinking: isDeepThinkingMode.value,
-          signal: abortController.value.signal
-        })
-
-        // 处理流式响应
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-        let thinkingContent = '';
-        let isThinkingPhase = false;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          
-          // 简单的协议解析：检查思考和回答的分隔符
-          if (chunk.includes('<thinking>')) {
-            isThinkingPhase = true;
+        // 使用新的流式函数
+        await streamNormalChat(
+          normalRequest,
+          (content: string) => {
+            updateMessageContent(aiMessage.id, content);
+          },
+          (err: Error) => {
+            console.error('Normal Chat Error:', err);
+            updateMessageStatus(aiMessage.id, 'error');
+            aiMessage.error = err.message || '获取AI回复失败';
+            ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'));
+          },
+          () => {
+            updateMessageStatus(aiMessage.id, 'completed');
+            isGenerating.value = false;
+            abortController.value = null;
+          },
+          abortController.value,
+          (thinking: string) => {
+            // 保存思考内容
+            aiMessage.thinking = thinking;
           }
-          if (chunk.includes('</thinking>')) {
-            isThinkingPhase = false;
-            continue; // 跳过分隔符本身
-          }
-          
-          if (isThinkingPhase) {
-            thinkingContent += chunk.replace('<thinking>', '');
-            if(aiMessage.thinking !== thinkingContent) {
-              aiMessage.thinking = thinkingContent;
-            }
-          } else {
-            aiMessage.content += chunk;
-          }
-        }
-        
-        updateMessageStatus(aiMessage.id, 'completed')
+        );
       }
     } catch (err: any) {
       // 检查是否是用户取消
       if (err.name === 'AbortError') {
-        updateMessageStatus(aiMessage.id, 'stopped')
+        updateMessageStatus(aiMessage.id, 'stopped');
       } else {
         // 其他错误
-        updateMessageStatus(aiMessage.id, 'error')
-        (aiMessage as any).error = err.message || '获取AI回复失败'
-        ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'))
+        updateMessageStatus(aiMessage.id, 'error');
+        aiMessage.error = err.message || '获取AI回复失败';
+        ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'));
       }
     } finally {
       // 重置状态
-      isGenerating.value = false
-      abortController.value = null
+      isGenerating.value = false;
+      abortController.value = null;
     }
   }
   
@@ -512,17 +492,14 @@ export function useChat(initialConfig: ChatConfig = {
     updateMessageStatus(messageId, 'completed');
     
     // 创建AI回复消息（初始为空）
-    const aiMessage = {
+    const aiMessage = addMessage({
       id: uuidv4(),
-      role: 'assistant' as const,
+      role: 'assistant',
       content: '',
       timestamp: Date.now(),
-      status: 'thinking' as MessageStatus,
-      modelInfo: currentModel.value // 添加当前模型信息
-    } as unknown as Message;
-    
-    // 添加AI回复消息到列表
-    addMessage(aiMessage);
+      status: 'thinking',
+      modelInfo: currentModel.value
+    });
     
     // 设置生成状态
     isGenerating.value = true;
@@ -546,13 +523,13 @@ export function useChat(initialConfig: ChatConfig = {
 
         await streamRAGChat(
           ragRequest,
-          (content: string, id?: string) => {
-            aiMessage.content = content;
+          (content: string) => {
+            updateMessageContent(aiMessage.id, content);
           },
           (err: Error) => {
             console.error('RAG Chat Error:', err);
             updateMessageStatus(aiMessage.id, 'error');
-            (aiMessage as any).error = err.message || '获取AI回复失败';
+            aiMessage.error = err.message || '获取AI回复失败';
             ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'));
             if (onCompletedCallback) onCompletedCallback();
           },
@@ -566,55 +543,39 @@ export function useChat(initialConfig: ChatConfig = {
         );
       } else {
         // 使用普通模式
-        // 准备消息历史
-        const messageHistory = messages.value
-          .filter(msg => msg.id !== aiMessage.id)
-          .map(msg => ({
-            id: msg.id,
-            role: msg.role,
-            content: msg.content,
-            timestamp: msg.timestamp
-          }));
+        // 准备请求数据
+        const normalRequest: NormalChatRequest = {
+          prompt: newContent,
+          modelId: currentModel.value?.id,
+          deepthinking: isDeepThinkingMode.value,
+          attachments: userMessage.attachments
+        };
         
-        // 发送请求获取AI回复
-        const stream = await streamMessage(messageHistory, currentModelId.value, {
-          deepThinking: isDeepThinkingMode.value,
-          signal: abortController.value.signal
-        });
-
-        // 处理流式响应
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-        let thinkingContent = '';
-        let isThinkingPhase = false;
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          const chunk = decoder.decode(value, { stream: true });
-          
-          // 简单的协议解析：检查思考和回答的分隔符
-          if (chunk.includes('<thinking>')) {
-            isThinkingPhase = true;
+        // 使用新的流式函数
+        await streamNormalChat(
+          normalRequest,
+          (content: string) => {
+            updateMessageContent(aiMessage.id, content);
+          },
+          (err: Error) => {
+            console.error('Normal Chat Error:', err);
+            updateMessageStatus(aiMessage.id, 'error');
+            aiMessage.error = err.message || '获取AI回复失败';
+            ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'));
+            if (onCompletedCallback) onCompletedCallback();
+          },
+          () => {
+            updateMessageStatus(aiMessage.id, 'completed');
+            isGenerating.value = false;
+            abortController.value = null;
+            if (onCompletedCallback) onCompletedCallback();
+          },
+          abortController.value,
+          (thinking: string) => {
+            // 保存思考内容
+            aiMessage.thinking = thinking;
           }
-          if (chunk.includes('</thinking>')) {
-            isThinkingPhase = false;
-            continue; // 跳过分隔符本身
-          }
-          
-          if (isThinkingPhase) {
-            thinkingContent += chunk.replace('<thinking>', '');
-            if(aiMessage.thinking !== thinkingContent) {
-              aiMessage.thinking = thinkingContent;
-            }
-          } else {
-            aiMessage.content += chunk;
-          }
-        }
-        
-        updateMessageStatus(aiMessage.id, 'completed');
-        if (onCompletedCallback) onCompletedCallback();
+        );
       }
     } catch (err: any) {
       // 检查是否是用户取消
@@ -623,7 +584,7 @@ export function useChat(initialConfig: ChatConfig = {
       } else {
         // 其他错误
         updateMessageStatus(aiMessage.id, 'error');
-        (aiMessage as any).error = err.message || '获取AI回复失败';
+        aiMessage.error = err.message || '获取AI回复失败';
         ElMessage.error('获取AI回复失败: ' + (err.message || '未知错误'));
       }
       if (onCompletedCallback) onCompletedCallback();

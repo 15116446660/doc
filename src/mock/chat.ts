@@ -276,35 +276,6 @@ console.log(greet('Developer'));
 链接示例: [访问 Element Plus 官网](https://element-plus.org)
 `;
 
-// 创建流式响应
-function createStreamResponse(content: string, delay = 100): ReadableStream {
-  const chunks = content.split('');
-  let index = 0;
-
-  return new ReadableStream({
-    start(controller) {
-      function push() {
-        if (index >= chunks.length) {
-          controller.close();
-          return;
-        }
-
-        const chunk = {
-          content: chunks[index],
-          id: uuidv4()
-        };
-
-        controller.enqueue(new TextEncoder().encode(JSON.stringify(chunk) + '\n'));
-        index++;
-
-        setTimeout(push, delay);
-      }
-
-      push();
-    }
-  });
-}
-
 // 生成思考内容
 function generateThinking(question: string): string {
   return `让我思考一下这个问题...\n\n问题分析：\n${question}\n\n这个问题涉及到几个关键点：\n1. 背景信息\n2. 核心概念\n3. 实际应用\n\n开始组织回答...`;
@@ -466,7 +437,35 @@ const mockApi: MockMethod[] = [
         // 这里可以根据commandId定制不同的回复内容
       }
       
-      const stream = createStreamResponse(content);
+      // 创建一个简单的流式响应
+      const encoder = new TextEncoder();
+      let chunks: Uint8Array[] = [];
+      
+      // 发送内容（分成多个小块）
+      const contentChunks = content.split(' ');
+      for (let i = 0; i < contentChunks.length; i++) {
+        chunks.push(encoder.encode(JSON.stringify({ content: contentChunks[i] + ' ', id: uuidv4() }) + '\n'));
+      }
+      
+      // 创建可读流
+      const stream = new ReadableStream({
+        start(controller) {
+          let index = 0;
+          
+          function push() {
+            if (index < chunks.length) {
+              controller.enqueue(chunks[index]);
+              index++;
+              setTimeout(push, 50);  // 模拟流式传输
+            } else {
+              controller.close();
+            }
+          }
+          
+          push();
+        }
+      });
+      
       return {
         code: 200,
         body: stream,
@@ -632,14 +631,49 @@ const mockApi: MockMethod[] = [
   },
   // RAG 流式对话
   {
-    url: '/api/document-ai/ai/rag/streamChat',
+    url: '/api/document-ai/rag/chat',
     method: 'post',
     response: ({ body }: { body: RAGChatRequest }) => {
+      // 生成内容，如果启用了深度思考则包含思考内容
       const content = generateAnswer(body.question, true);
-      return {
-        code: 200,
-        data: createStreamResponse(content)
-      };
+      const thinking = body.deepthinking ? generateThinking(body.question) : '';
+      
+      // 创建数据流响应
+      const encoder = new TextEncoder();
+      let chunks: Uint8Array[] = [];
+      
+      // 如果有思考内容，先发送思考内容
+      if (thinking) {
+        chunks.push(encoder.encode(`data: <think>${thinking}</think>\n\n`));
+      }
+      
+      // 发送主要内容（分成多个小块）
+      const contentChunks = content.split(' ');
+      for (let i = 0; i < contentChunks.length; i++) {
+        chunks.push(encoder.encode(`data: ${contentChunks[i]} \n\n`));
+      }
+      
+      // 发送结束标记
+      chunks.push(encoder.encode('data: ["DONE"]\n\n'));
+      
+      // 创建可读流
+      return new ReadableStream({
+        start(controller) {
+          let index = 0;
+          
+          function push() {
+            if (index < chunks.length) {
+              controller.enqueue(chunks[index]);
+              index++;
+              setTimeout(push, 50);  // 模拟流式传输
+            } else {
+              controller.close();
+            }
+          }
+          
+          push();
+        }
+      });
     }
   },
   // RAG 非流式对话
@@ -663,11 +697,46 @@ const mockApi: MockMethod[] = [
     url: '/api/document-ai/ai/poststreamPolish',
     method: 'post',
     response: ({ body }: { body: NormalChatRequest }) => {
+      // 生成内容，如果启用了深度思考则包含思考内容
       const content = generateAnswer(body.prompt);
-      return {
-        code: 200,
-        data: createStreamResponse(content)
-      };
+      const thinking = body.deepthinking ? generateThinking(body.prompt) : '';
+      
+      // 创建数据流响应
+      const encoder = new TextEncoder();
+      let chunks: Uint8Array[] = [];
+      
+      // 如果有思考内容，先发送思考内容
+      if (thinking) {
+        chunks.push(encoder.encode(`data: <think>${thinking}</think>\n\n`));
+      }
+      
+      // 发送主要内容（分成多个小块）
+      const contentChunks = content.split(' ');
+      for (let i = 0; i < contentChunks.length; i++) {
+        chunks.push(encoder.encode(`data: ${contentChunks[i]} \n\n`));
+      }
+      
+      // 发送结束标记
+      chunks.push(encoder.encode('data: ["DONE"]\n\n'));
+      
+      // 创建可读流
+      return new ReadableStream({
+        start(controller) {
+          let index = 0;
+          
+          function push() {
+            if (index < chunks.length) {
+              controller.enqueue(chunks[index]);
+              index++;
+              setTimeout(push, 50);  // 模拟流式传输
+            } else {
+              controller.close();
+            }
+          }
+          
+          push();
+        }
+      });
     }
   },
   // 普通非流式对话

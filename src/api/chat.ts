@@ -232,10 +232,9 @@ const createHeaders = (signal?: AbortSignal) => {
   return headers;
 };
 
-// 流式对话基础函数
-async function streamChat<T>(
-  url: string,
-  data: T,
+// RAG 流式对话
+export async function streamRAGChat(
+  request: RAGChatRequest,
   onMessage: (content: string, id?: string) => void,
   onError: (error: Error) => void,
   onComplete: () => void,
@@ -243,13 +242,13 @@ async function streamChat<T>(
 ) {
   try {
     const Authorization = localStorage.getItem('token') || '';
-    const response = await fetch(url, {
+    const response = await fetch('/api/document-ai/rag/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify(request),
       signal: abortController?.signal
     });
 
@@ -262,20 +261,42 @@ async function streamChat<T>(
       throw new Error('Response body is null');
     }
 
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let completeContent = '';
+
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const text = new TextDecoder().decode(value);
-      const lines = text.split('\n');
+      // 解码并添加到缓冲区
+      buffer += decoder.decode(value, { stream: true });
+      
+      // 处理事件流格式
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // 保留最后一个可能不完整的行
       
       for (const line of lines) {
-        if (line.trim()) {
+        if (line.trim() === '') continue;
+        
+        if (line.startsWith('data:')) {
+          const data = line.slice(5).trim();
+          
+          // 检查是否是结束标记
+          if (data === '[\"DONE\"]') {
+            console.log('Stream complete');
+            break;
+          }
+          
           try {
-            const data = JSON.parse(line);
-            onMessage(data.content, data.id);
+            // 解析事件数据
+            const parsedData = JSON.parse(data);
+            if (parsedData) {
+              completeContent += parsedData;
+              onMessage(completeContent);
+            }
           } catch (e) {
-            console.warn('Failed to parse line:', line);
+            console.warn('Failed to parse event data:', data, e);
           }
         }
       }
@@ -291,78 +312,158 @@ async function streamChat<T>(
   }
 }
 
-// RAG 流式对话
-export async function streamRAGChat(
-  request: RAGChatRequest,
-  onMessage: (content: string, id?: string) => void,
-  onError: (error: Error) => void,
-  onComplete: () => void,
-  abortController?: AbortController
-) {
-  return streamChat(
-    '/api/document-ai/ai/rag/streamChat',
-    request,
-    onMessage,
-    onError,
-    onComplete,
-    abortController
-  );
-}
-
 // 普通流式对话
 export async function streamNormalChat(
   request: NormalChatRequest,
   onMessage: (content: string, id?: string) => void,
   onError: (error: Error) => void,
   onComplete: () => void,
-  abortController?: AbortController
+  abortController?: AbortController,
+  onThinking?: (content: string) => void
 ) {
-  return streamChat(
-    '/api/document-ai/ai/poststreamPolish',
-    request,
-    onMessage,
-    onError,
-    onComplete,
-    abortController
-  );
+  try {
+    // 创建FormData（普通对话使用form-data格式）
+    const formData = new FormData();
+    // 添加基本请求字段
+    formData.append('prompt', request.prompt);
+    if (request.modelId) formData.append('modelId', request.modelId);
+    if (request.deepthinking !== undefined) formData.append('deepthinking', String(request.deepthinking));
+    if (request.rag !== undefined) formData.append('rag', String(request.rag));
+    
+    // 处理附件（最多3个，限制类型为docx、pdf和txt）
+    if (request.attachments && Array.isArray(request.attachments)) {
+      const allowedTypes = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/pdf', 'text/plain'];
+      const validAttachments = request.attachments
+        .filter(att => allowedTypes.includes(att.type))
+        .slice(0, 3); // 最多3个附件
+      
+      validAttachments.forEach((att, index) => {
+        if (att.file) {
+          formData.append(`attachment${index + 1}`, att.file);
+        }
+      });
+    }
+    
+    const Authorization = localStorage.getItem('token') || '';
+    const response = await fetch('/api/document-ai/ai/poststreamPolish', {
+      method: 'POST',
+      headers: {
+        Authorization
+      },
+      body: formData,
+      signal: abortController?.signal
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('Response body is null');
+    }
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+    let completeContent = '';
+    let thinkingContent = '';
+    let isThinking = false;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      // 解码并添加到缓冲区
+      buffer += decoder.decode(value, { stream: true });
+      
+      // 处理事件流格式
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || ''; // 保留最后一个可能不完整的行
+      
+      for (const line of lines) {
+        if (line.trim() === '') continue;
+        
+        if (line.startsWith('data:')) {
+          const data = line.slice(5).trim();
+          
+          // 检查是否是结束标记
+          if (data === '[\"DONE\"]') {
+            console.log('Stream complete');
+            break;
+          }
+          
+          try {
+            let content = data;
+            
+            // 检查是否包含思考标记
+            if (data.includes('<think>')) {
+              isThinking = true;
+              content = data.replace('<think>', '');
+              thinkingContent += content;
+              
+              // 调用思考内容回调
+              if (onThinking) {
+                onThinking(thinkingContent);
+              }
+              continue;
+            }
+            
+            if (data.includes('</think>')) {
+              isThinking = false;
+              continue;
+            }
+            
+            if (isThinking) {
+              thinkingContent += data;
+              // 调用思考内容回调
+              if (onThinking) {
+                onThinking(thinkingContent);
+              }
+              continue;
+            }
+            
+            // 非思考内容，添加到正常回复
+            completeContent += content;
+            onMessage(completeContent);
+          } catch (e) {
+            console.warn('Failed to parse event data:', data, e);
+          }
+        }
+      }
+    }
+
+    onComplete();
+  } catch (error: unknown) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.log('Fetch aborted');
+      return;
+    }
+    onError(error instanceof Error ? error : new Error('Unknown error occurred'));
+  }
 }
 
 // RAG 非流式对话
 export async function ragChat(request: RAGChatRequest): Promise<RAGChatResponse> {
-  const Authorization = localStorage.getItem('token') || '';
-  const response = await fetch('/api/document-ai/ai/rag/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization
-    },
-    body: JSON.stringify(request)
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
+  console.warn('非流式RAG对话已弃用，请使用流式对话函数streamRAGChat');
+  return {
+    code: 200,
+    data: {
+      answer: '该接口已弃用，请使用流式对话API(/api/document-ai/rag/chat)',
+      reference: undefined,
+      doc_aggs: undefined
+    }
+  };
 }
 
 // 普通非流式对话
 export async function normalChat(request: NormalChatRequest): Promise<NormalChatResponse> {
-  const Authorization = localStorage.getItem('token') || '';
-  const response = await fetch('/api/document-ai/ai/postPolish', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization
-    },
-    body: JSON.stringify(request)
-  });
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-  return response.json();
+  console.warn('非流式普通对话已弃用，请使用流式对话函数streamNormalChat');
+  return {
+    code: 200,
+    data: {
+      content: '该接口已弃用，请使用流式对话API(/api/document-ai/ai/poststreamPolish)'
+    }
+  };
 }
 
 /**
