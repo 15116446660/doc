@@ -1,16 +1,5 @@
 <template>
   <div>
-    <!-- 模型信息显示 -->
-    <div v-if="message.modelInfo" class="model-info">
-      <AIModelLogo 
-        v-if="message.modelInfo"
-        :model="message.modelInfo"
-        size="small"
-        class="model-info-logo"
-      />
-      <span class="model-info-name">{{ message.modelInfo.name }}</span>
-    </div>
-    
     <!-- 生成中状态 -->
     <div v-if="message.status === 'generating' || message.status === 'thinking'" class="generating-indicator">
       <div v-if="message.status === 'thinking'" class="thinking-text">思考中...</div>

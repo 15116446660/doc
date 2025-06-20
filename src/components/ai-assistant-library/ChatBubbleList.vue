@@ -333,13 +333,12 @@ const forceScrollToBottom = () => {
 
 // 监听消息列表变化，自动滚动到底部
 watch(() => props.messages, (messages, oldMessages) => {
-  try {
-    // 调试：打印assistant消息的modelInfo
-    messages.forEach(msg => {
-      if (msg.role === "assistant") {
-        console.log("Assistant message modelInfo:", msg.modelInfo);
-      }
-    });
+  // 调试：打印assistant消息的modelInfo
+  messages.forEach(msg => {
+    if (msg.role === "assistant") {
+      console.log("Assistant message modelInfo:", msg.modelInfo);
+    }
+  });
 
   try {
     // 如果设置了禁止自动滚动标记，则取消标记并直接返回
