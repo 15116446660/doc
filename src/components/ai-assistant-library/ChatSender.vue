@@ -438,11 +438,11 @@ const handleSendMessage = () => {
       if (command.hasSubCommands) {
         console.log(`命令 ${command.name} 有子命令，通过command事件处理`);
         emit('command', command);
-        
-        // 清理工作
-        inputMessage.value = '';
-        attachedFiles.value = [];
-        clearSelectedText();
+
+  // 清理工作
+  inputMessage.value = '';
+  attachedFiles.value = [];
+  clearSelectedText();
         return;
       }
       
@@ -455,7 +455,7 @@ const handleSendMessage = () => {
         if (selectedText.value) {
           messageToSend = messageToSend.replace(/{selectedText}/g, selectedText.value);
           console.log(`替换selectedText后的消息: ${messageToSend}`);
-        } else {
+  } else {
           // 如果没有选中文本，但提示词中有{selectedText}占位符，则替换为空字符串
           messageToSend = messageToSend.replace(/{selectedText}/g, '');
         }

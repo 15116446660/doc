@@ -678,7 +678,7 @@ export function usePromptCommands() {
       // 这样可以避免在批量更新命令时触发多次保存
       setTimeout(() => {
         console.log('延迟执行保存操作')
-        saveLocalCommands()
+    saveLocalCommands()
       }, 100)
     } else {
       console.log('没有需要保存的本地或私有命令')

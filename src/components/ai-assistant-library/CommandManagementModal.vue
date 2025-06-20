@@ -21,10 +21,10 @@
                 <el-icon><Search /></el-icon>
                 检查存储
               </el-button>
-              <el-button type="primary" size="small" @click="createNewCommand">
-                <el-icon><Plus /></el-icon>
-                新建命令
-              </el-button>
+            <el-button type="primary" size="small" @click="createNewCommand">
+              <el-icon><Plus /></el-icon>
+              新建命令
+            </el-button>
             </div>
           </div>
           
@@ -594,8 +594,8 @@ function confirmDeleteCommand(commandId: string) {
     '确定要删除此命令吗？此操作无法撤销。',
     '确认删除',
     {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
       type: 'warning',
     }
   ).then(() => {
@@ -708,7 +708,7 @@ watch(() => props.commands, (newCommands) => {
     console.log('命令列表详情:', newCommands.map(cmd => ({ id: cmd.id, name: cmd.name, shareType: cmd.shareType })))
     
     if (!selectedCommandId.value) {
-      // 默认选择第一个命令
+    // 默认选择第一个命令
       console.log('没有选中的命令，默认选择第一个:', newCommands[0].id)
       selectCommand(newCommands[0].id)
     } else {
@@ -719,7 +719,7 @@ watch(() => props.commands, (newCommands) => {
       if (!commandExists) {
         // 如果选中的命令不存在了，选择第一个命令
         console.log('选中的命令不存在，默认选择第一个:', newCommands[0].id)
-        selectCommand(newCommands[0].id)
+    selectCommand(newCommands[0].id)
       }
     }
   } else {

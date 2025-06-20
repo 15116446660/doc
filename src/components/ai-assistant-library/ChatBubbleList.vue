@@ -116,14 +116,15 @@
         </div>
         
         <!-- 停止生成按钮 -->
-        <div class="stop-button" v-if="message.role === 'assistant' && message.status === 'generating'">
-          <el-button 
-            size="small" 
+        <div class="stop-button-container" v-if="message.role === 'assistant' && message.status === 'generating'">
+          <button 
+            class="stop-button"
             @click="$emit('stop')"
             :title="'停止生成'"
           >
-            停止生成
-          </el-button>
+            <span class="stop-icon"></span>
+            <span class="stop-text">停止生成</span>
+          </button>
         </div>
       </div>
     </template>
@@ -756,10 +757,72 @@ defineExpose({
 }
 
 /* 停止生成按钮 */
-.stop-button {
+.stop-button-container {
   display: flex;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 12px;
+  position: relative;
+}
+
+.stop-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  background-color: var(--el-color-danger-light-9);
+  border: 1px solid var(--el-color-danger-light-5);
+  color: var(--el-color-danger);
+  border-radius: 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 6px rgba(245, 108, 108, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.stop-button:hover {
+  background-color: var(--el-color-danger-light-8);
+  border-color: var(--el-color-danger-light-3);
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(245, 108, 108, 0.15);
+}
+
+.stop-button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(245, 108, 108, 0.1);
+}
+
+.stop-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 5px;
+  height: 5px;
+  background: rgba(245, 108, 108, 0.3);
+  opacity: 0;
+  border-radius: 100%;
+  transform: scale(1) translate(-50%, -50%);
+  transform-origin: 50% 50%;
+}
+
+.stop-button:active::after {
+  animation: ripple 0.6s ease-out;
+}
+
+.stop-icon {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  background-color: var(--el-color-danger);
+  border-radius: 2px;
+  margin-right: 6px;
+}
+
+.stop-text {
+  line-height: 1;
 }
 
 /* 编辑消息样式 */
@@ -818,6 +881,22 @@ defineExpose({
     background-color: #2d2d2d;
     border-color: #444;
     color: #a8abb2;
+  }
+  
+  /* 深色模式下的停止按钮 */
+  .stop-button {
+    background-color: rgba(245, 108, 108, 0.1);
+    border-color: rgba(245, 108, 108, 0.3);
+    color: #ff6b6b;
+  }
+  
+  .stop-button:hover {
+    background-color: rgba(245, 108, 108, 0.2);
+    border-color: rgba(245, 108, 108, 0.4);
+  }
+  
+  .stop-icon {
+    background-color: #ff6b6b;
   }
   
   /* Dark mode message actions are now handled by the MessageActions component */
