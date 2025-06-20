@@ -1,7 +1,7 @@
 <template>
   <el-dropdown trigger="click" @command="handleCommandCommand" popper-class="beautiful-popper">
     <div class="command-selector">
-      <el-icon class="command-icon"><component :is="'List'" /></el-icon>
+      <el-icon class="command-icon"><component :is="'Operation'" /></el-icon>
       <span>命令</span>
       <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
     </div>
