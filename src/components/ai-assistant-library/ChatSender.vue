@@ -418,6 +418,7 @@ const handleSendMessage = () => {
   if (!canSend.value) return;
 
   let messageToSend = inputMessage.value;
+  let commandId: string | undefined;
   
   // 检查是否是命令格式（以/开头，后面跟着命令名称和可能的空格及参数）
   const commandRegex = /^\/(\S+)(?:\s+(.*))?$/;
@@ -439,23 +440,35 @@ const handleSendMessage = () => {
         console.log(`命令 ${command.name} 有子命令，通过command事件处理`);
         emit('command', command);
 
-  // 清理工作
-  inputMessage.value = '';
-  attachedFiles.value = [];
-  clearSelectedText();
+        // 清理工作
+        inputMessage.value = '';
+        attachedFiles.value = [];
+        clearSelectedText();
         return;
       }
       
       // 替换命令为提示词
       if (command.prompt) {
-        // 替换{input}占位符
-        messageToSend = command.prompt.replace(/{input}/g, commandInput);
+        // 使用命令的提示词和用户输入
+        // 保留原始命令提示词
+        let promptTemplate = command.prompt;
+        
+        // 如果提示词中包含{input}占位符，则替换为用户输入
+        if (promptTemplate.includes('{input}')) {
+          messageToSend = promptTemplate.replace(/{input}/g, commandInput);
+        } else {
+          // 如果提示词中没有{input}占位符，则在提示词后添加用户输入
+          messageToSend = promptTemplate;
+          if (commandInput) {
+            messageToSend += '\n\n' + commandInput;
+          }
+        }
         
         // 替换{selectedText}占位符
         if (selectedText.value) {
           messageToSend = messageToSend.replace(/{selectedText}/g, selectedText.value);
           console.log(`替换selectedText后的消息: ${messageToSend}`);
-  } else {
+        } else {
           // 如果没有选中文本，但提示词中有{selectedText}占位符，则替换为空字符串
           messageToSend = messageToSend.replace(/{selectedText}/g, '');
         }
@@ -464,11 +477,10 @@ const handleSendMessage = () => {
       }
       
       // 发送消息时附带命令ID
-      emit('send', messageToSend, attachedFiles.value, command.id);
+      commandId = command.id;
     } else {
       console.warn(`未找到命令: ${commandName}`);
       // 未找到命令时，仍然发送原始消息
-      emit('send', messageToSend, attachedFiles.value);
     }
   } else {
     // 不是命令格式，直接发送
@@ -477,13 +489,14 @@ const handleSendMessage = () => {
       messageToSend = messageToSend.replace(/{selectedText}/g, selectedText.value);
       console.log(`替换普通消息中的selectedText: ${messageToSend}`);
     }
-    
-    emit('send', messageToSend, attachedFiles.value);
   }
+  
+  emit('send', messageToSend, attachedFiles.value, commandId);
 
   // 清理工作
   inputMessage.value = '';
   attachedFiles.value = [];
+  selectedCommandId.value = null;
   clearSelectedText();
 };
 
@@ -565,6 +578,12 @@ const handleKeydown = (e: KeyboardEvent) => {
         activeSubCommand.value = null;
         break;
     }
+  } else {
+    // 命令面板未显示时，回车键发送消息
+    if (e.key === 'Enter' && !e.shiftKey && !e.ctrlKey && !e.metaKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
   }
 };
 
@@ -619,7 +638,7 @@ const selectCommand = async (cmd: BaseCommand) => {
     
     inputMessage.value = commandPrompt;
     showCommandSuggestions.value = false;
-    selectedCommandId.value = null;
+    selectedCommandId.value = cmd.id;  // 保存选中的命令ID，以便在发送时使用
     activeSubCommand.value = null;
     // 聚焦输入框并将光标定位到最后
     focusInputAndSetCursorToEnd();
@@ -668,7 +687,7 @@ const selectSubCommand = (subCmd: SubCommandType) => {
   inputMessage.value = commandPrompt;
   showCommandSuggestions.value = false;
   activeSubCommand.value = null;
-  selectedCommandId.value = null;
+  selectedCommandId.value = subCmd.id;  // 保存选中的子命令ID，以便在发送时使用
   // 聚焦输入框并将光标定位到最后
   focusInputAndSetCursorToEnd();
 };

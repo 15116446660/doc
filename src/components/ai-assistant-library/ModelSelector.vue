@@ -5,8 +5,8 @@
         v-if="currentModel" 
         :model="currentModel" 
         size="small" 
-        class="model-logo"
-      />
+          class="model-logo" 
+        />
       <el-icon v-else class="model-logo-default"><Cpu /></el-icon>
       <span>{{ currentModelName }}</span>
       <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
@@ -25,8 +25,8 @@
             <AIModelLogo 
               :model="model" 
               size="small" 
-              class="model-logo"
-            />
+                class="model-logo" 
+              />
             <span>{{ model.name }}</span>
           </el-dropdown-item>
         </div>
