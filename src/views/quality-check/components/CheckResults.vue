@@ -1,5 +1,5 @@
 <template>
-  <div class="check-results">
+  <div class="check-results" :class="{ 'compact-mode': props.isCompact }">
     <div v-if="isLoading" class="loading-container">
       <el-icon class="is-loading"><Loading /></el-icon>
       <p>正在获取检查结果...</p>
@@ -8,12 +8,12 @@
     <div v-else-if="error" class="error-container">
       <el-icon color="red"><CircleClose /></el-icon>
       <p>{{ error }}</p>
-      <el-button @click="fetchTask">重试</el-button>
+      <el-button @click="fetchTask" :size="props.isCompact ? 'small' : 'default'">重试</el-button>
     </div>
     
     <div v-else class="results-content">
       <!-- 统计面板 -->
-      <el-row :gutter="20" class="stats-panel">
+      <el-row :gutter="props.isCompact ? 15 : 20" class="stats-panel">
         <el-col :span="12">
           <el-statistic title="总问题数" :value="filteredStats.total" />
         </el-col>
@@ -37,7 +37,7 @@
       <!-- 过滤和操作栏 -->
       <div class="filter-bar">
         <div class="filter-controls">
-          <el-select v-model="selectedCategory" placeholder="选择检查类型" clearable style="width: 200px;">
+          <el-select v-model="selectedCategory" placeholder="选择检查类型" clearable :style="{ width: props.isCompact ? '180px' : '200px' }">
             <el-option label="全部类型" value="" />
             <el-option 
               v-for="result in task?.results || []" 
@@ -47,7 +47,7 @@
             />
           </el-select>
           
-          <el-select v-model="selectedIssueType" placeholder="选择问题类型" clearable style="width: 150px;">
+          <el-select v-model="selectedIssueType" placeholder="选择问题类型" clearable :style="{ width: props.isCompact ? '130px' : '150px' }">
             <el-option label="全部问题" value="" />
             <el-option label="错误" value="error" />
             <el-option label="警告" value="warning" />
@@ -56,10 +56,10 @@
         </div>
         
         <div class="action-controls">
-          <el-button @click="expandAll" type="primary" plain size="small">
+          <el-button @click="expandAll" type="primary" plain :size="props.isCompact ? 'small' : 'small'">
             全部展开
           </el-button>
-          <el-button @click="collapseAll" type="primary" plain size="small">
+          <el-button @click="collapseAll" type="primary" plain :size="props.isCompact ? 'small' : 'small'">
             全部折叠
           </el-button>
         </div>
@@ -108,8 +108,11 @@
                 </div>
                 
                 <div class="issue-actions">
-                  <el-button type="primary" plain size="small">采纳建议</el-button>
-                  <el-button size="small">忽略</el-button>
+                  <el-button type="primary" plain :size="props.isCompact ? 'small' : 'small'">采纳建议</el-button>
+                  <el-button 
+                    :size="props.isCompact ? 'small' : 'small'"
+                    @click="handleIgnoreIssue(result.checkId, issue.id)"
+                  >忽略</el-button>
                 </div>
               </div>
             </div>
@@ -119,8 +122,8 @@
 
       <!-- 底部操作 -->
       <div class="footer-actions">
-        <el-button @click="$emit('re-check')">重新检查</el-button>
-        <el-button type="primary" icon="Download">导出报告</el-button>
+        <el-button @click="$emit('re-check')" :size="props.isCompact ? 'default' : 'default'">重新检查</el-button>
+        <el-button type="primary" icon="Download" :size="props.isCompact ? 'default' : 'default'">导出报告</el-button>
       </div>
     </div>
   </div>
@@ -134,9 +137,12 @@ import type { QualityCheckTask } from '@/types/qualityCheck';
 import { Loading, CircleClose, Warning, InfoFilled } from '@element-plus/icons-vue';
 import * as Diff from 'diff';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   taskId: string | null;
-}>();
+  isCompact?: boolean;
+}>(), {
+  isCompact: false
+});
 
 const emit = defineEmits(['re-check', 'check-completed']);
 
@@ -255,6 +261,21 @@ const createDiffHtml = (original: string, corrected: string) => {
   });
   return html;
 };
+
+const handleIgnoreIssue = (checkId: string, issueId: string) => {
+  if (!task.value) return;
+  
+  // 找到对应的检查结果
+  const result = task.value.results.find(r => r.checkId === checkId);
+  if (result) {
+    // 移除指定的问题
+    result.issues = result.issues.filter(i => i.id !== issueId);
+    // 更新问题计数
+    result.issueCount = result.issues.length;
+    
+    ElMessage.success('已忽略该问题');
+  }
+};
 </script>
 
 <style scoped>
@@ -275,13 +296,27 @@ const createDiffHtml = (original: string, corrected: string) => {
   gap: 20px;
 }
 
+.compact-mode .loading-container,
+.compact-mode .error-container {
+  padding: 30px;
+  gap: 15px;
+}
+
 .loading-container .el-icon {
   font-size: 48px;
   color: var(--el-color-primary);
 }
 
+.compact-mode .loading-container .el-icon {
+  font-size: 36px;
+}
+
 .error-container .el-icon {
   font-size: 48px;
+}
+
+.compact-mode .error-container .el-icon {
+  font-size: 36px;
 }
 
 .results-content {
@@ -299,8 +334,18 @@ const createDiffHtml = (original: string, corrected: string) => {
   flex-shrink: 0;
 }
 
+.compact-mode .stats-panel {
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
 .el-col {
   margin-bottom: 10px;
+}
+
+.compact-mode .el-col {
+  margin-bottom: 8px;
 }
 
 .filter-bar {
@@ -314,9 +359,19 @@ const createDiffHtml = (original: string, corrected: string) => {
   flex-shrink: 0;
 }
 
+.compact-mode .filter-bar {
+  margin-bottom: 15px;
+  padding: 12px;
+  border-radius: 6px;
+}
+
 .filter-controls {
   display: flex;
   gap: 15px;
+}
+
+.compact-mode .filter-controls {
+  gap: 12px;
 }
 
 .action-controls {
@@ -324,10 +379,18 @@ const createDiffHtml = (original: string, corrected: string) => {
   gap: 10px;
 }
 
+.compact-mode .action-controls {
+  gap: 8px;
+}
+
 .results-list-container {
   flex: 1;
   overflow-y: auto;
   padding-right: 10px;
+}
+
+.compact-mode .results-list-container {
+  padding-right: 8px;
 }
 
 .results-collapse {
@@ -338,12 +401,21 @@ const createDiffHtml = (original: string, corrected: string) => {
   margin-bottom: 15px;
 }
 
+.compact-mode .el-collapse-item {
+  margin-bottom: 12px;
+}
+
 :deep(.el-collapse-item__header) {
   border: 1px solid #e4e7ed;
   border-radius: 8px;
   padding: 0 20px;
   background-color: #fff;
   transition: all 0.2s ease;
+}
+
+.compact-mode :deep(.el-collapse-item__header) {
+  border-radius: 6px;
+  padding: 0 15px;
 }
 
 :deep(.el-collapse-item__header.is-active) {
@@ -360,8 +432,17 @@ const createDiffHtml = (original: string, corrected: string) => {
   border-bottom-right-radius: 8px;
 }
 
+.compact-mode :deep(.el-collapse-item__wrap) {
+  border-bottom-left-radius: 6px;
+  border-bottom-right-radius: 6px;
+}
+
 :deep(.el-collapse-item__content) {
   padding: 20px;
+}
+
+.compact-mode :deep(.el-collapse-item__content) {
+  padding: 15px;
 }
 
 .collapse-title {
@@ -370,8 +451,16 @@ const createDiffHtml = (original: string, corrected: string) => {
   color: #303133;
 }
 
+.compact-mode .collapse-title {
+  font-size: 14px;
+}
+
 .collapse-badge {
   margin-left: 15px;
+}
+
+.compact-mode .collapse-badge {
+  margin-left: 12px;
 }
 
 .no-issues {
@@ -381,10 +470,19 @@ const createDiffHtml = (original: string, corrected: string) => {
   font-size: 16px;
 }
 
+.compact-mode .no-issues {
+  padding: 15px;
+  font-size: 14px;
+}
+
 .issue-list {
   display: flex;
   flex-direction: column;
   gap: 25px;
+}
+
+.compact-mode .issue-list {
+  gap: 20px;
 }
 
 .issue-item {
@@ -394,11 +492,21 @@ const createDiffHtml = (original: string, corrected: string) => {
   background-color: #fcfcfc;
 }
 
+.compact-mode .issue-item {
+  border-radius: 6px;
+  padding: 15px;
+}
+
 .issue-header {
   display: flex;
   align-items: center;
   gap: 10px;
   margin-bottom: 15px;
+}
+
+.compact-mode .issue-header {
+  gap: 8px;
+  margin-bottom: 12px;
 }
 
 .issue-type-label {
@@ -409,6 +517,11 @@ const createDiffHtml = (original: string, corrected: string) => {
   border-radius: 10px;
 }
 
+.compact-mode .issue-type-label {
+  font-size: 11px;
+  padding: 1px 6px;
+}
+
 .explanation {
   color: #606266;
   font-size: 14px;
@@ -416,11 +529,22 @@ const createDiffHtml = (original: string, corrected: string) => {
   line-height: 1.6;
 }
 
+.compact-mode .explanation {
+  font-size: 13px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+
 .diff-container {
   border: 1px solid #e4e7ed;
   border-radius: 6px;
   overflow: hidden;
   margin-bottom: 15px;
+}
+
+.compact-mode .diff-container {
+  border-radius: 4px;
+  margin-bottom: 12px;
 }
 
 .diff-header {
@@ -439,6 +563,11 @@ const createDiffHtml = (original: string, corrected: string) => {
   gap: 4px;
 }
 
+.compact-mode .diff-tab {
+  padding: 8px 12px;
+  gap: 2px;
+}
+
 .diff-tab:last-child {
   border-right: none;
 }
@@ -449,9 +578,17 @@ const createDiffHtml = (original: string, corrected: string) => {
   color: #303133;
 }
 
+.compact-mode .diff-tab-label {
+  font-size: 13px;
+}
+
 .diff-tab-count {
   font-size: 12px;
   color: #909399;
+}
+
+.compact-mode .diff-tab-count {
+  font-size: 11px;
 }
 
 .diff-content {
@@ -463,9 +600,20 @@ const createDiffHtml = (original: string, corrected: string) => {
   min-height: 60px;
 }
 
+.compact-mode .diff-content {
+  padding: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  min-height: 50px;
+}
+
 .issue-actions {
   margin-top: 20px;
   text-align: right;
+}
+
+.compact-mode .issue-actions {
+  margin-top: 15px;
 }
 
 .footer-actions {
@@ -474,6 +622,11 @@ const createDiffHtml = (original: string, corrected: string) => {
   padding-top: 20px;
   border-top: 1px solid #e4e7ed;
   flex-shrink: 0;
+}
+
+.compact-mode .footer-actions {
+  margin-top: 15px;
+  padding-top: 15px;
 }
 
 /* 滚动条样式 */

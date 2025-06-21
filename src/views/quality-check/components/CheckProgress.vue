@@ -1,5 +1,5 @@
 <template>
-  <div class="check-progress">
+  <div class="check-progress" :class="{ 'compact-mode': isCompact }">
     <div v-if="isLoading" class="loading-container">
       <el-icon class="is-loading"><Loading /></el-icon>
       <p>正在获取检查进度...</p>
@@ -8,7 +8,7 @@
     <div v-else-if="error" class="error-container">
       <el-icon color="red"><CircleClose /></el-icon>
       <p>{{ error }}</p>
-      <el-button @click="fetchTask">重试</el-button>
+      <el-button @click="fetchTask" :size="isCompact ? 'small' : 'default'">重试</el-button>
     </div>
     
     <div v-else class="progress-content">
@@ -25,7 +25,7 @@
             :timestamp="getStatusText(item.status)"
             :type="getTimelineType(item.status)"
             :icon="getTimelineIcon(item.status)"
-            size="large"
+            :size="isCompact ? 'default' : 'large'"
             class="timeline-item"
           >
             <div class="item-content">
@@ -33,7 +33,7 @@
               <el-progress 
                 :percentage="item.progress" 
                 :status="getProgressStatus(item.status)"
-                :stroke-width="10"
+                :stroke-width="isCompact ? 8 : 10"
                 striped
                 striped-flow
               />
@@ -52,9 +52,12 @@ import { getQualityCheckTask } from '@/api/qualityCheck';
 import type { QualityCheckTask, CheckStatus } from '@/types/qualityCheck';
 import { Loading, CircleClose, Check, Clock, Warning } from '@element-plus/icons-vue';
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   taskId: string | null;
-}>();
+  isCompact?: boolean;
+}>(), {
+  isCompact: false
+});
 
 const emit = defineEmits(['check-completed']);
 
@@ -165,13 +168,27 @@ const getProgressStatus = (status: CheckStatus) => {
   gap: 20px;
 }
 
+.compact-mode .loading-container,
+.compact-mode .error-container {
+  padding: 30px;
+  gap: 15px;
+}
+
 .loading-container .el-icon {
   font-size: 48px;
   color: var(--el-color-primary);
 }
 
+.compact-mode .loading-container .el-icon {
+  font-size: 36px;
+}
+
 .error-container .el-icon {
   font-size: 48px;
+}
+
+.compact-mode .error-container .el-icon {
+  font-size: 36px;
 }
 
 .progress-content {
@@ -186,6 +203,10 @@ const getProgressStatus = (status: CheckStatus) => {
   flex-shrink: 0;
 }
 
+.compact-mode .progress-header {
+  margin-bottom: 20px;
+}
+
 .progress-header h3 {
   font-size: 20px;
   font-weight: 500;
@@ -193,9 +214,18 @@ const getProgressStatus = (status: CheckStatus) => {
   margin: 0 0 10px 0;
 }
 
+.compact-mode .progress-header h3 {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+}
+
 .progress-header p {
   color: #909399;
   margin: 0;
+}
+
+.compact-mode .progress-header p {
+  font-size: 13px;
 }
 
 .progress-list-container {
@@ -205,14 +235,28 @@ const getProgressStatus = (status: CheckStatus) => {
   max-height: 500px;
 }
 
+.compact-mode .progress-list-container {
+  padding: 0 15px;
+  max-height: 450px;
+}
+
 .timeline-item h4 {
   font-weight: 500;
   margin-bottom: 10px;
   color: #303133;
 }
 
+.compact-mode .timeline-item h4 {
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
 .item-content {
   padding-bottom: 20px;
+}
+
+.compact-mode .item-content {
+  padding-bottom: 15px;
 }
 
 /* 滚动条样式 */

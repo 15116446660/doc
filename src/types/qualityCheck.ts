@@ -64,3 +64,4 @@ export interface QualityCheckTask {
   progress: ProgressItem[];
   results: CheckResult[];
 }
+

@@ -1,5 +1,5 @@
 <template>
-  <div class="check-selector">
+  <div class="check-selector" :class="{ 'compact-mode': isCompact }">
     <el-alert
       title="请选择您需要对文档进行的质量检查项，我们建议您至少选择所有常规检查。"
       type="info"
@@ -9,9 +9,9 @@
     />
 
     <div class="preset-buttons">
-      <el-button @click="selectPreset('routine')">仅常规检查</el-button>
-      <el-button type="primary" @click="selectPreset('recommended')">推荐检查 (常规+专项)</el-button>
-      <el-button type="success" @click="selectPreset('full')">全面检查 (全部)</el-button>
+      <el-button @click="selectPreset('routine')" :size="isCompact ? 'small' : 'default'">仅常规检查</el-button>
+      <el-button type="primary" @click="selectPreset('recommended')" :size="isCompact ? 'small' : 'default'">推荐检查 (常规+专项)</el-button>
+      <el-button type="success" @click="selectPreset('full')" :size="isCompact ? 'small' : 'default'">全面检查 (全部)</el-button>
     </div>
 
     <div v-for="(category, key) in checkCategories" :key="key" class="category-section">
@@ -23,6 +23,7 @@
             link 
             @click="toggleCategoryAll(key)"
             :disabled="options[key].length === 0"
+            :size="isCompact ? 'small' : 'default'"
           >
             {{ isCategoryAllSelected(key) ? '取消全选' : '全选' }}
           </el-button>
@@ -32,10 +33,10 @@
         </div>
       </div>
       <el-checkbox-group v-model="selectedChecks">
-        <el-row :gutter="20">
+        <el-row :gutter="isCompact ? 15 : 20">
           <el-col :span="12" v-for="item in options[key]" :key="item.id">
             <div class="check-item-wrapper">
-              <el-checkbox :label="item.id" size="large">
+              <el-checkbox :label="item.id" :size="isCompact ? 'default' : 'large'">
                 <div class="card-content">
                   <div class="item-header">
                     <span class="item-name">{{ item.name }}</span>
@@ -43,7 +44,7 @@
                       v-if="item.description.length > 80" 
                       type="primary" 
                       link 
-                      size="small"
+                      :size="isCompact ? 'small' : 'small'"
                       @click.stop="showDescriptionDialog(item)"
                       class="detail-btn"
                     >
@@ -64,7 +65,7 @@
     <div class="start-button-container">
       <el-button 
         type="primary" 
-        size="large" 
+        :size="isCompact ? 'default' : 'large'"
         @click="handleStartCheck" 
         :disabled="selectedChecks.length === 0 || isLoading"
         :loading="isLoading"
@@ -105,6 +106,12 @@ interface ExtendedCheckOptions {
   special: ExtendedCheckItem[];
   advanced: ExtendedCheckItem[];
 }
+
+const props = withDefaults(defineProps<{
+  isCompact?: boolean;
+}>(), {
+  isCompact: false
+});
 
 const emit = defineEmits(['start-check']);
 
@@ -211,9 +218,17 @@ const handleStartCheck = async () => {
   flex-direction: column;
 }
 
+.check-selector.compact-mode {
+  padding: 0 5px;
+}
+
 .info-alert {
   margin-bottom: 20px;
   flex-shrink: 0;
+}
+
+.compact-mode .info-alert {
+  margin-bottom: 15px;
 }
 
 .preset-buttons {
@@ -223,9 +238,18 @@ const handleStartCheck = async () => {
   flex-shrink: 0;
 }
 
+.compact-mode .preset-buttons {
+  margin-bottom: 20px;
+  gap: 10px;
+}
+
 .category-section {
   margin-bottom: 30px;
   flex-shrink: 0;
+}
+
+.compact-mode .category-section {
+  margin-bottom: 20px;
 }
 
 .category-header {
@@ -235,11 +259,19 @@ const handleStartCheck = async () => {
   margin-bottom: 20px;
 }
 
+.compact-mode .category-header {
+  margin-bottom: 15px;
+}
+
 .category-title {
   font-size: 18px;
   font-weight: 500;
   color: #303133;
   margin: 0;
+}
+
+.compact-mode .category-title {
+  font-size: 16px;
 }
 
 .category-actions {
@@ -248,9 +280,17 @@ const handleStartCheck = async () => {
   gap: 10px;
 }
 
+.compact-mode .category-actions {
+  gap: 8px;
+}
+
 .category-count {
   font-size: 14px;
   color: #909399;
+}
+
+.compact-mode .category-count {
+  font-size: 12px;
 }
 
 .check-item-wrapper {
@@ -259,6 +299,11 @@ const handleStartCheck = async () => {
   border-radius: 8px;
   margin-bottom: 20px;
   transition: all 0.2s ease-in-out;
+}
+
+.compact-mode .check-item-wrapper {
+  border-radius: 6px;
+  margin-bottom: 15px;
 }
 
 .check-item-wrapper:hover {
@@ -273,12 +318,20 @@ const handleStartCheck = async () => {
   align-items: flex-start;
 }
 
+.compact-mode .check-item-wrapper .el-checkbox {
+  padding: 15px;
+}
+
 .card-content {
   display: flex;
   flex-direction: column;
   margin-left: 12px;
   white-space: normal;
   width: 100%;
+}
+
+.compact-mode .card-content {
+  margin-left: 8px;
 }
 
 .item-header {
@@ -288,10 +341,18 @@ const handleStartCheck = async () => {
   margin-bottom: 8px;
 }
 
+.compact-mode .item-header {
+  margin-bottom: 6px;
+}
+
 .item-name {
   font-weight: 500;
   font-size: 16px;
   color: var(--el-text-color-primary);
+}
+
+.compact-mode .item-name {
+  font-size: 14px;
 }
 
 .detail-btn {
@@ -302,12 +363,22 @@ const handleStartCheck = async () => {
   font-size: 12px;
 }
 
+.compact-mode .detail-btn {
+  padding: 1px 6px;
+  font-size: 11px;
+}
+
 .item-description {
   font-size: 13px;
   color: var(--el-text-color-secondary);
   line-height: 1.5;
   margin: 0;
   word-break: break-word;
+}
+
+.compact-mode .item-description {
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .item-description.truncated {
@@ -324,11 +395,20 @@ const handleStartCheck = async () => {
   flex-shrink: 0;
 }
 
+.compact-mode .start-button-container {
+  margin-top: 20px;
+}
+
 /* 滚动区域 */
 .category-section .el-row {
   max-height: 400px;
   overflow-y: auto;
   padding-right: 10px;
+}
+
+.compact-mode .category-section .el-row {
+  max-height: 350px;
+  padding-right: 8px;
 }
 
 .category-section .el-row::-webkit-scrollbar {
