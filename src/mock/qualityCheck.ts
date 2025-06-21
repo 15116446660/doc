@@ -2,7 +2,7 @@ import type { CheckOptions, QualityCheckTask, ProgressItem, CheckResult, IssueDe
 
 const checkOptions: CheckOptions = {
   routine: [
-    { id: 'c1', name: '章节标题检查', description: '检查章节标题层级、格式是否符合规范。', category: 'routine' },
+    { id: 'c1', name: '章节标题检查', description: '检查章节标题层级、格式是否符合规范。检查章节标题层级、格式是否符合规范。检查章节标题层级、格式是否符合规范。检查章节标题层级、格式是否符合规范。检查章节标题层级、格式是否符合规范。检查章节标题层级、格式是否符合规范。', category: 'routine' },
     { id: 'c2', name: '页眉页脚一致性', description: '确保文档所有页面的页眉页脚格式统一。', category: 'routine' },
     { id: 'c3', name: '标点符号规范', description: '检查标点符号是否使用正确，如中英文标点混用。', category: 'routine' },
     { id: 'c4', name: '编号连续性', description: '检查各级标题、图表、表格的编号是否连续无误。', category: 'routine' },

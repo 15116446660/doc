@@ -8,15 +8,15 @@
       <!-- 快捷命令按钮区 -->
       <div class="command-section">
         <div class="command-section-title">快捷命令</div>
-        <div class="chat-header-actions">
-          <div 
-            v-for="cmd in quickCommands" 
-            :key="cmd.id" 
-            class="quick-command-btn"
-            @click="handleQuickCommand(cmd)"
-          >
-            <el-icon><component :is="cmd.icon || 'ChatLineRound'" /></el-icon>
-            <span>{{ cmd.name }}</span>
+      <div class="chat-header-actions">
+        <div 
+          v-for="cmd in quickCommands" 
+          :key="cmd.id" 
+          class="quick-command-btn"
+          @click="handleQuickCommand(cmd)"
+        >
+          <el-icon><component :is="cmd.icon || 'ChatLineRound'" /></el-icon>
+          <span>{{ cmd.name }}</span>
           </div>
         </div>
       </div>
@@ -84,7 +84,7 @@
               :message="message"
               @sub-command-click="handleSubCommandClick"
               :find-parent-command="findParentCommand"
-            />
+              />
           </template>
           
           <!-- 附件列表 -->
@@ -93,8 +93,8 @@
             :attachments="message.attachments || []"
             @attachment-click="handleAttachmentClick"
           />
-        </div>
-        
+              </div>
+              
         <!-- 消息底部操作栏 - 移到外部，排除AI命令类型消息 -->
         <div 
           v-if="!isCommandMessage(message)" 
@@ -102,7 +102,7 @@
           :class="[
             message.role === 'user' ? 'user-actions' : 'assistant-actions'
           ]"
-        >
+            >
           <MessageActions
             :role="message.role"
             :status="message.status"
@@ -113,15 +113,15 @@
             @edit="startEdit(message)"
             @feedback="(value: 'like' | 'dislike') => $emit('feedback', message.id, value)"
           />
-        </div>
-        
-        <!-- 停止生成按钮 -->
+          </div>
+          
+          <!-- 停止生成按钮 -->
         <div class="stop-button-container" v-if="message.role === 'assistant' && message.status === 'generating'">
           <button 
             class="stop-button"
-            @click="$emit('stop')"
-            :title="'停止生成'"
-          >
+              @click="$emit('stop')"
+              :title="'停止生成'"
+            >
             <span class="stop-icon"></span>
             <span class="stop-text">停止生成</span>
           </button>
@@ -338,9 +338,9 @@ watch(() => props.messages, (messages, oldMessages) => {
   messages.forEach(msg => {
     if (msg.role === "assistant") {
       console.log("Assistant message modelInfo:", msg.modelInfo);
-    }
-  });
-
+      }
+    });
+    
   try {
     // 如果设置了禁止自动滚动标记，则取消标记并直接返回
     if (disableAutoScroll.value) {
