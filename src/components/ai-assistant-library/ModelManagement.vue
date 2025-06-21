@@ -18,8 +18,8 @@
             <AIModelLogo 
               :model="model"
               size="small"
-              class="model-logo"
-            />
+                class="model-logo" 
+              />
             <div class="model-details">
               <div class="model-name">
                 {{ model.name }}

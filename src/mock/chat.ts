@@ -458,14 +458,14 @@ const mockApi: MockMethod[] = [
               index++;
               setTimeout(push, 50);  // 模拟流式传输
             } else {
-              controller.close();
+          controller.close();
             }
           }
           
           push();
         }
       });
-      
+
       return {
         code: 200,
         body: stream,

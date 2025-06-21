@@ -53,16 +53,74 @@ const md: MarkdownIt = new MarkdownIt({
   }
 })
 
+// 存储表格的原始Markdown
+const tableMarkdownMap = new Map<string, string>()
+
+// 重写表格渲染规则，保存原始Markdown
+const defaultTableRender = md.renderer.rules.table_open || function(tokens, idx, options, env, self) {
+  return self.renderToken(tokens, idx, options)
+}
+
+md.renderer.rules.table_open = function(tokens, idx, options, env, self) {
+  // 生成唯一ID
+  const tableId = `table-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`
+  
+  // 查找表格的开始和结束索引
+  let endIdx = idx
+  while (endIdx < tokens.length && tokens[endIdx].type !== 'table_close') {
+    endIdx++
+  }
+  
+  // 获取表格的原始Markdown
+  if (env && env.src) {
+    // 尝试从原始源提取表格Markdown
+    const tableMarkdown = extractTableMarkdown(env.src, tokens, idx, endIdx)
+    if (tableMarkdown) {
+      tableMarkdownMap.set(tableId, tableMarkdown)
+    }
+  }
+  
+  // 添加ID和data-markdown属性
+  tokens[idx].attrPush(['id', tableId])
+  if (tableMarkdownMap.has(tableId)) {
+    tokens[idx].attrPush(['data-markdown', tableMarkdownMap.get(tableId) || ''])
+  }
+  
+  return defaultTableRender(tokens, idx, options, env, self)
+}
+
+// 从源文本中提取表格的Markdown
+function extractTableMarkdown(src: string, tokens: any[], startIdx: number, endIdx: number): string | null {
+  try {
+    // 这是一个简化的实现，实际上需要更复杂的逻辑来准确提取表格
+    // 在实际应用中，可能需要根据token的map属性来确定表格在源文本中的位置
+    
+    // 如果token有map属性，它包含了源文本中的行号范围
+    if (tokens[startIdx].map) {
+      const [startLine, endLine] = tokens[startIdx].map
+      // 分割源文本为行，并提取表格所在的行
+      const lines = src.split('\n')
+      return lines.slice(startLine, endLine + 1).join('\n')
+    }
+    return null
+  } catch (error) {
+    console.error('提取表格Markdown失败:', error)
+    return null
+  }
+}
+
 // 渲染Markdown内容
 const renderedContent = computed(() => {
   if (!props.content) return ''
-  return md.render(props.content)
+  // 传递源文本给渲染器
+  return md.render(props.content, { src: props.content })
 })
 
 // 渲染思考内容
 const renderedThinking = computed(() => {
   if (!props.thinking) return ''
-  return md.render(props.thinking)
+  // 传递源文本给渲染器
+  return md.render(props.thinking, { src: props.thinking })
 })
 
 // 切换思考内容显示状态
@@ -123,21 +181,52 @@ const addCopyButtonToTables = () => {
     table.parentNode?.insertBefore(container, table)
     container.appendChild(table)
     
+    // 存储表格的原始Markdown格式 - 使用自定义属性
+    const originalMarkdown = table.getAttribute('data-markdown') || ''
+    
     const copyBtn = document.createElement('button')
     copyBtn.className = 'table-copy-button'
     copyBtn.innerHTML = '复制表格'
     copyBtn.addEventListener('click', (e) => {
       e.stopPropagation()
-      const rows = table.querySelectorAll('tr')
-      const tsv = Array.from(rows).map(row => {
-        const cells = row.querySelectorAll('th, td')
-        return Array.from(cells).map(cell => cell.textContent?.trim() || '').join('\t')
-      }).join('\n')
       
-      navigator.clipboard.writeText(tsv)
+      if (originalMarkdown) {
+        // 如果有存储的原始Markdown，直接使用
+        navigator.clipboard.writeText(originalMarkdown)
+          .then(() => {
+            copyBtn.innerHTML = '已复制'
+            ElMessage.success('表格已复制 (Markdown格式)')
+            setTimeout(() => {
+              copyBtn.innerHTML = '复制表格'
+            }, 2000)
+          })
+          .catch(err => {
+            console.error('复制表格失败:', err)
+            ElMessage.error('复制表格失败')
+          })
+      } else {
+        // 否则，生成Markdown格式的表格
+      const rows = table.querySelectorAll('tr')
+        let markdownTable = ''
+        
+        // 处理每一行
+        Array.from(rows).forEach((row, rowIndex) => {
+        const cells = row.querySelectorAll('th, td')
+          const isHeader = rowIndex === 0 && row.querySelector('th')
+          
+          // 添加表格内容行
+          markdownTable += '| ' + Array.from(cells).map(cell => cell.textContent?.trim() || '').join(' | ') + ' |\n'
+          
+          // 如果是表头，添加分隔行
+          if (rowIndex === 0 && isHeader) {
+            markdownTable += '| ' + Array.from(cells).map(() => '---').join(' | ') + ' |\n'
+          }
+        })
+      
+        navigator.clipboard.writeText(markdownTable)
         .then(() => {
           copyBtn.innerHTML = '已复制'
-          ElMessage.success('表格内容已复制 (TSV格式)')
+            ElMessage.success('表格已复制 (Markdown格式)')
           setTimeout(() => {
             copyBtn.innerHTML = '复制表格'
           }, 2000)
@@ -146,6 +235,7 @@ const addCopyButtonToTables = () => {
           console.error('复制表格失败:', err)
           ElMessage.error('复制表格失败')
         })
+      }
     })
     
     container.appendChild(copyBtn)

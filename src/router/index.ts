@@ -140,6 +140,15 @@ const routes: Array<RouteRecordRaw> = [
         name: 'DocumentApproval',
         component: () => import('../views/document/approval/index.vue'),
         meta: { title: '审批中心' }
+      },
+      {
+        path: 'quality-check',
+        name: 'QualityCheck',
+        component: () => import('@/views/quality-check/index.vue'),
+        meta: {
+          title: '质量检查',
+          icon: 'CircleCheck'
+        }
       }
     ]
   },

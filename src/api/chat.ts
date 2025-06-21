@@ -344,19 +344,19 @@ export async function streamNormalChat(
       });
     }
     
-    const Authorization = localStorage.getItem('token') || '';
+  const Authorization = localStorage.getItem('token') || '';
     const response = await fetch('/api/document-ai/ai/poststreamPolish', {
-      method: 'POST',
-      headers: {
-        Authorization
-      },
+    method: 'POST',
+    headers: {
+      Authorization
+    },
       body: formData,
       signal: abortController?.signal
-    });
+  });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
+  }
 
     const reader = response.body?.getReader();
     if (!reader) {

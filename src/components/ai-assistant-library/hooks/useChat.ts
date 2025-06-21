@@ -239,7 +239,7 @@ export function useChat(initialConfig: ChatConfig = {
           (thinking: string) => {
             // 保存思考内容
             aiMessage.thinking = thinking;
-          }
+            }
         );
       }
     } catch (err: any) {
@@ -550,7 +550,7 @@ export function useChat(initialConfig: ChatConfig = {
           deepthinking: isDeepThinkingMode.value,
           attachments: userMessage.attachments
         };
-        
+
         // 使用新的流式函数
         await streamNormalChat(
           normalRequest,
@@ -565,10 +565,10 @@ export function useChat(initialConfig: ChatConfig = {
             if (onCompletedCallback) onCompletedCallback();
           },
           () => {
-            updateMessageStatus(aiMessage.id, 'completed');
+        updateMessageStatus(aiMessage.id, 'completed');
             isGenerating.value = false;
             abortController.value = null;
-            if (onCompletedCallback) onCompletedCallback();
+        if (onCompletedCallback) onCompletedCallback();
           },
           abortController.value,
           (thinking: string) => {
@@ -648,4 +648,4 @@ export function useChat(initialConfig: ChatConfig = {
     startEditingMessage,
     cancelEditingMessage
   }
-}
+} 
