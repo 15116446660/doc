@@ -185,17 +185,49 @@ const getComponentProps = (item: FilterFormItem): Record<string, any> => {
     return {
       ...baseProps,
       type: 'daterange',
-      startPlaceholder: '开始日期',
-      endPlaceholder: '结束日期',
-      valueFormat: 'YYYY-MM-DD'
+      startPlaceholder: item.props?.startPlaceholder || '开始日期',
+      endPlaceholder: item.props?.endPlaceholder || '结束日期',
+      valueFormat: item.props?.valueFormat || 'YYYY-MM-DD',
+      format: item.props?.format || 'YYYY-MM-DD',
+      // 支持快捷选项
+      shortcuts: item.props?.shortcuts || [
+        {
+          text: '最近一周',
+          value: () => {
+            const end = new Date()
+            const start = new Date()
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 7)
+            return [start, end]
+          }
+        },
+        {
+          text: '最近一个月',
+          value: () => {
+            const end = new Date()
+            const start = new Date()
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 30)
+            return [start, end]
+          }
+        },
+        {
+          text: '最近三个月',
+          value: () => {
+            const end = new Date()
+            const start = new Date()
+            start.setTime(start.getTime() - 3600 * 1000 * 24 * 90)
+            return [start, end]
+          }
+        }
+      ]
     }
   }
 
   if (item.type === 'date') {
-  return {
-    ...baseProps,
+    return {
+      ...baseProps,
       type: 'date',
-      valueFormat: 'YYYY-MM-DD'
+      valueFormat: item.props?.valueFormat || 'YYYY-MM-DD',
+      format: item.props?.format || 'YYYY-MM-DD'
     }
   }
 
@@ -239,8 +271,10 @@ const getColSpan = (item: FilterFormItem): number => {
 
 // 处理表单项变化
 const handleItemChange = (): void => {
+  // 处理日期范围的特殊逻辑
+  const processedValues = processFilterValues(formData.value)
   emit('filter-change', {
-    values: formData.value,
+    values: processedValues,
     isAdvanced: showAdvanced.value
   })
 }
@@ -251,8 +285,10 @@ const handleSearch = async (): Promise<void> => {
   
   try {
     await formRef.value.validate()
+    // 处理日期范围的特殊逻辑
+    const processedValues = processFilterValues(formData.value)
     emit('filter-change', {
-      values: formData.value,
+      values: processedValues,
       isAdvanced: showAdvanced.value
     })
   } catch (error) {
@@ -265,8 +301,10 @@ const handleReset = (): void => {
   if (!formRef.value) return
   
   formRef.value.resetFields()
+  // 重置后也需要处理日期范围
+  const processedValues = processFilterValues(formData.value)
   emit('filter-change', {
-    values: formData.value,
+    values: processedValues,
     isAdvanced: showAdvanced.value
   })
 }
@@ -276,11 +314,54 @@ const toggleAdvanced = (): void => {
   showAdvanced.value = !showAdvanced.value
 }
 
+// 处理过滤值，特别处理日期范围
+const processFilterValues = (values: Record<string, any>): Record<string, any> => {
+  const processed: Record<string, any> = {}
+  
+  Object.keys(values).forEach(key => {
+    const value = values[key]
+    const filterItem = props.filterConfig.find(item => item.field === key)
+    
+    if (filterItem?.type === 'daterange' && Array.isArray(value) && value.length === 2) {
+      // 日期范围类型，分离起止时间
+      const [startDate, endDate] = value
+      processed[`${key}Start`] = startDate
+      processed[`${key}End`] = endDate
+      // 保留原始数组值
+      processed[key] = value
+    } else {
+      // 其他类型直接赋值
+      processed[key] = value
+    }
+  })
+  
+  return processed
+}
+
 // 初始化表单数据
 onMounted(() => {
   // 初始化表单数据
   props.filterConfig.forEach(item => {
-    formData.value[item.field] = item.defaultValue !== undefined ? item.defaultValue : null
+    if (item.type === 'daterange') {
+      // 日期范围类型的特殊处理
+      if (item.defaultValue !== undefined) {
+        if (Array.isArray(item.defaultValue)) {
+          // 如果默认值是数组，直接使用
+          formData.value[item.field] = item.defaultValue
+        } else if (typeof item.defaultValue === 'object' && item.defaultValue.start && item.defaultValue.end) {
+          // 如果默认值是对象格式 {start: '2024-01-01', end: '2024-01-31'}
+          formData.value[item.field] = [item.defaultValue.start, item.defaultValue.end]
+        } else {
+          // 其他情况设为空数组
+          formData.value[item.field] = []
+        }
+      } else {
+        formData.value[item.field] = []
+      }
+    } else {
+      // 其他类型的处理
+      formData.value[item.field] = item.defaultValue !== undefined ? item.defaultValue : null
+    }
   })
 })
 </script>
