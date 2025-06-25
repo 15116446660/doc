@@ -1,5 +1,6 @@
 import { get, post, put, del } from './request'
 import type { Message, Conversation, AIModel, Command, KnowledgeBase, RAGChatRequest, RAGChatResponse, NormalChatRequest, NormalChatResponse, Reference, SubCommand } from '@/types/chat'
+import { parseSSEStream } from '@/utils/sseStreamParser'
 
 /**
  * 发送消息并获取AI回复
@@ -252,67 +253,30 @@ export async function streamRAGChat(
       signal: abortController?.signal
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    if (!response.ok || !response.body) {
+      const errorData = await response.json().catch(() => ({ msg: '请求失败' }));
+      throw new Error(errorData.msg || `HTTP error! status: ${response.status}`);
     }
 
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('Response body is null');
+    await parseSSEStream(response, {
+      onMessage: (data, id) => {
+        onMessage(data, id);
+      },
+      onComplete,
+      onError
+    });
+
+  } catch (err: any) {
+    if (err.name !== 'AbortError') {
+      console.error('RAG Chat Streaming failed:', err);
+      onError(err);
     }
-
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let completeContent = '';
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      // 解码并添加到缓冲区
-      buffer += decoder.decode(value, { stream: true });
-      
-      // 处理事件流格式
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // 保留最后一个可能不完整的行
-      
-      for (const line of lines) {
-        if (line.trim() === '') continue;
-        
-        if (line.startsWith('data:')) {
-          const data = line.slice(5).trim();
-          
-          // 检查是否是结束标记
-          if (data === '[\"DONE\"]') {
-            console.log('Stream complete');
-            break;
-          }
-          
-          try {
-            // 解析事件数据
-            const parsedData = JSON.parse(data);
-            if (parsedData) {
-              completeContent += parsedData;
-              onMessage(completeContent);
-            }
-          } catch (e) {
-            console.warn('Failed to parse event data:', data, e);
-          }
-        }
-      }
-    }
-
-    onComplete();
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.log('Fetch aborted');
-      return;
-    }
-    onError(error instanceof Error ? error : new Error('Unknown error occurred'));
   }
 }
 
-// 普通流式对话
+/**
+ * 获取流式常规对话回复
+ */
 export async function streamNormalChat(
   request: NormalChatRequest,
   onMessage: (content: string, id?: string) => void,
@@ -322,123 +286,52 @@ export async function streamNormalChat(
   onThinking?: (content: string) => void
 ) {
   try {
-    // 创建FormData（普通对话使用form-data格式）
-    const formData = new FormData();
-    // 添加基本请求字段
-    formData.append('prompt', request.prompt);
-    if (request.modelId) formData.append('modelId', request.modelId);
-    if (request.deepthinking !== undefined) formData.append('deepthinking', String(request.deepthinking));
-    if (request.rag !== undefined) formData.append('rag', String(request.rag));
-    
-    // 处理附件（最多3个，限制类型为docx、pdf和txt）
-    if (request.attachments && Array.isArray(request.attachments)) {
-      const allowedTypes = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/pdf', 'text/plain'];
-      const validAttachments = request.attachments
-        .filter(att => allowedTypes.includes(att.type))
-        .slice(0, 3); // 最多3个附件
-      
-      validAttachments.forEach((att, index) => {
-        if (att.file) {
-          formData.append(`attachment${index + 1}`, att.file);
-        }
-      });
-    }
-    
-  const Authorization = localStorage.getItem('token') || '';
-    const response = await fetch('/api/document-ai/ai/poststreamPolish', {
-    method: 'POST',
-    headers: {
-      Authorization
-    },
-      body: formData,
+    const Authorization = localStorage.getItem('token') || '';
+    const response = await fetch('/api/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization,
+      },
+      body: JSON.stringify({
+        ...request,
+        stream: true
+      }),
       signal: abortController?.signal
-  });
+    });
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-
-    const reader = response.body?.getReader();
-    if (!reader) {
-      throw new Error('Response body is null');
+    if (!response.ok || !response.body) {
+      const errorData = await response.json().catch(() => ({ msg: '请求失败' }));
+      throw new Error(errorData.msg || `HTTP error! status: ${response.status}`);
     }
 
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let completeContent = '';
-    let thinkingContent = '';
-    let isThinking = false;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      // 解码并添加到缓冲区
-      buffer += decoder.decode(value, { stream: true });
-      
-      // 处理事件流格式
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || ''; // 保留最后一个可能不完整的行
-      
-      for (const line of lines) {
-        if (line.trim() === '') continue;
-        
-        if (line.startsWith('data:')) {
-          const data = line.slice(5).trim();
+    await parseSSEStream(response, {
+      onMessage: (data, id) => {
+        try {
+          // 常规对话的 data 可能是 JSON 字符串，需要解析
+          const parsedData = JSON.parse(data);
           
-          // 检查是否是结束标记
-          if (data === '[\"DONE\"]') {
-            console.log('Stream complete');
-            break;
+          if (parsedData.type === 'thinking') {
+            onThinking?.(parsedData.content);
+          } else if (parsedData.type === 'data') {
+            onMessage(parsedData.content, parsedData.id || id);
+          } else if (parsedData.type === 'doc_aggs') {
+            // Handle document aggregations if needed
           }
-          
-          try {
-            let content = data;
-            
-            // 检查是否包含思考标记
-            if (data.includes('<think>')) {
-              isThinking = true;
-              content = data.replace('<think>', '');
-              thinkingContent += content;
-              
-              // 调用思考内容回调
-              if (onThinking) {
-                onThinking(thinkingContent);
-              }
-              continue;
-            }
-            
-            if (data.includes('</think>')) {
-              isThinking = false;
-              continue;
-            }
-            
-            if (isThinking) {
-              thinkingContent += data;
-              // 调用思考内容回调
-              if (onThinking) {
-                onThinking(thinkingContent);
-              }
-              continue;
-            }
-            
-            // 非思考内容，添加到正常回复
-            completeContent += content;
-            onMessage(completeContent);
-          } catch (e) {
-            console.warn('Failed to parse event data:', data, e);
-          }
+        } catch(e) {
+          // 如果解析失败，说明 data 是纯字符串
+          onMessage(data, id);
         }
-      }
-    }
+      },
+      onComplete,
+      onError
+    });
 
-    onComplete();
-  } catch (error: unknown) {
-    if (error instanceof Error && error.name === 'AbortError') {
-      console.log('Fetch aborted');
-      return;
+  } catch (err: any) {
+    if (err.name !== 'AbortError') {
+      console.error('Normal Chat Streaming failed:', err);
+      onError(err);
     }
-    onError(error instanceof Error ? error : new Error('Unknown error occurred'));
   }
 }
 

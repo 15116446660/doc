@@ -365,18 +365,26 @@ onMounted(() => {
   /* 表格样式 */
   table {
     border-collapse: collapse;
+    border-spacing: 0;
     width: 100%;
-    margin: 1em 0;
-  }
-  
-  table th, table td {
-    border: 1px solid #dfe2e5;
-    padding: 6px 13px;
-  }
-  
-  table th {
-    background-color: #f6f8fa;
-    font-weight: 600;
+    margin-top: 0;
+    margin-bottom: 16px;
+    display: table;
+    
+    tr {
+      background-color: transparent;
+      border-top: 1px solid #dfe2e5;
+    }
+
+    th,
+    td {
+      padding: 6px 13px;
+      border: 1px solid #dfe2e5;
+    }
+
+    th {
+      font-weight: 600;
+    }
   }
   
   /* 引用样式 */

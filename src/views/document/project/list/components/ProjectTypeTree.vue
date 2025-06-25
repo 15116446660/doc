@@ -67,17 +67,17 @@ const formRules: FormRules = {
 const mockProjectTypes: ProjectType[] = [
   {
     id: '1',
-    name: '工程项目',
+    name: '硬件产品',
     children: [
       {
         id: '11',
-        name: '市政工程',
+        name: '通信产品',
         parentId: '1',
         sort: 1
       },
       {
         id: '12',
-        name: '房建工程',
+        name: '计存产品',
         parentId: '1',
         sort: 2
       }
@@ -86,17 +86,17 @@ const mockProjectTypes: ProjectType[] = [
   },
   {
     id: '2',
-    name: '产品项目',
+    name: '软件项目',
     children: [
       {
         id: '21',
-        name: '软件产品',
+        name: '文档管理',
         parentId: '2',
         sort: 1
       },
       {
         id: '22',
-        name: '硬件产品',
+        name: '标书管理',
         parentId: '2',
         sort: 2
       }

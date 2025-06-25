@@ -164,3 +164,121 @@ classDiagram
 - `src/components/ai-assistant-library/hooks/usePromptCommands.ts` - 命令系统的核心逻辑
 
 要添加新的预设命令，可以在 `presetCommands.ts` 文件中添加命令定义，系统会自动加载并显示这些命令。
+
+# AI Chat with SSE Streaming
+
+This implementation provides a robust solution for displaying AI chat responses in real-time using Server-Sent Events (SSE) while properly handling Markdown content and addressing common streaming issues.
+
+## Features
+
+- Real-time typing effect for AI responses
+- Proper handling of Markdown content with code highlighting
+- Robust SSE event parsing
+- Handling of incomplete/partial messages
+- Clean solution for escaped newlines
+- Smooth scrolling and UI updates
+
+## How It Works
+
+### 1. SSE Stream Parser
+
+The core of the implementation is the `sseStreamParser.ts` utility which handles:
+
+- Parsing SSE events from a fetch response stream
+- Handling incomplete messages across buffer reads
+- Properly accumulating complete messages
+- Providing hooks for message updates, completion, and errors
+
+```typescript
+// Using the parser in your code
+import { fetchSSE } from '@/utils/sseStreamParser';
+
+await fetchSSE('/api/chat', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ messages: [/* your messages */] }),
+}, {
+  onMessage: (chunk) => {
+    // Process each chunk as it arrives
+    content += chunk;
+    updateUI();
+  },
+  onComplete: () => {
+    // Handle completion
+    finishProcessing();
+  },
+  onError: (error) => {
+    // Handle errors
+    showErrorMessage(error.message);
+  }
+});
+```
+
+### 2. Addressing Common SSE Issues
+
+#### Partial Messages
+
+The parser accumulates data in a buffer and only processes complete SSE events (those ending with `\n\n`). Any incomplete data is kept in the buffer for the next iteration.
+
+#### Non-standard Format Chunks
+
+By waiting for complete messages with double newlines (`\n\n`), we avoid issues with partial data prefixes like when `"data:"` gets split across chunks.
+
+#### Escaped Newlines in Content
+
+The parser processes complete events rather than splitting on every newline character, preserving escaped newlines (`\n`) in the content.
+
+#### Content Integrity
+
+The implementation preserves the complete content structure by properly handling all edge cases in the SSE stream.
+
+## Components
+
+### StreamingChat.vue
+
+A full-featured chat interface that:
+- Shows chat history
+- Renders Markdown with code highlighting
+- Shows typing indicators
+- Provides proper error handling
+- Auto-scrolls to new messages
+
+### SSE Parser Utility
+
+A reusable utility that can be used in any project needing SSE streaming capabilities.
+
+## Mock API for Testing
+
+The implementation includes a mock API that simulates streaming responses with configurable delays, allowing for testing without a real backend.
+
+## Usage
+
+1. Import the components:
+```typescript
+import StreamingChat from '@/components/StreamingChat.vue';
+```
+
+2. Use in your template:
+```html
+<StreamingChat />
+```
+
+3. Make sure to include the SSE parser utility and mock API in your project.
+
+## How to Test
+
+1. Try sending a message with the word "markdown" to see formatting examples
+2. Try asking about "streaming" or "sse issues" to see an explanation of how the implementation works
+3. Observe the real-time typing effect and proper Markdown rendering
+
+## Technical Details
+
+The implementation solves several key challenges:
+
+1. **Parsing SSE format**: Properly handling the `data:` prefix and event boundaries
+2. **Buffer management**: Dealing with chunks that might split in the middle of events
+3. **Content preservation**: Maintaining newlines and special characters in the content
+4. **Reactivity**: Updating the UI smoothly as content arrives
+5. **Markdown rendering**: Properly rendering formatted content while it's being received
+
+This approach ensures a smooth, reliable streaming experience with correct rendering of all content.

@@ -1,4 +1,3 @@
-import request from '@/utils/request'
 import type {
   Project,
   Document,
@@ -11,94 +10,55 @@ import { get, post } from './request'
 
 // Project APIs
 export const getProjectList = (params: any) => {
-  return request<PageResult<Project>>({
-    url: '/api/project/list',
-    method: 'get',
-    params
-  })
+  return get<PageResult<Project>>('/api/project/list', { params })
 }
 
 export const getProjectTypeOptions = () => {
-  return request<OptionItem[]>({
-    url: '/api/project/type-options',
-    method: 'get'
-  })
+  return get<OptionItem[]>('/api/project/type-options')
 }
 
 export const getProjectStatusOptions = () => {
-  return request<OptionItem[]>({
-    url: '/api/project/status-options',
-    method: 'get'
-  })
+  return get<OptionItem[]>('/api/project/status-options')
 }
 
 export const getProjectCategoryOptions = () => {
-  return request<OptionItem[]>({
-    url: '/api/project/category-options',
-    method: 'get'
-  })
+  return get<OptionItem[]>('/api/project/category-options')
 }
 
 export const getDepartmentOptions = () => {
-  return request<OptionItem[]>({
-    url: '/api/project/department-options',
-    method: 'get'
-  })
+  return get<OptionItem[]>('/api/project/department-options')
 }
 
 // Document APIs
 export const getDocumentList = (params: any) => {
-  return request<PageResult<Document>>({
-    url: '/api/document/list',
-    method: 'get',
-    params
-  })
+  return get<PageResult<Document>>('/api/document/list', params)
 }
 
 export const getDocumentTypeOptions = () => {
-  return request<OptionItem[]>({
-    url: '/api/document/type-options',
-    method: 'get'
-  })
+  return get<OptionItem[]>('/api/document/type-options')
 }
 
 export const getDocumentStatusOptions = () => {
-  return request<OptionItem[]>({
-    url: '/api/document/status-options',
-    method: 'get'
-  })
+  return get<OptionItem[]>('/api/document/status-options')
 }
 
 export const getDocumentTagOptions = () => {
-  return request<OptionItem[]>({
-    url: '/api/document/tag-options',
-    method: 'get'
-  })
+  return get<OptionItem[]>('/api/document/tag-options')
 }
 
 export const getDocumentVersions = (documentId: string) => {
-  return request<DocumentVersion[]>({
-    url: '/api/document/versions',
-    method: 'get',
-    params: { documentId }
-  })
+  return get<DocumentVersion[]>(`/api/document/versions`, { params: { documentId } })
 }
 
 export const getTemplateOptions = () => {
-  return request<OptionItem[]>({
-    url: '/api/template/options',
-    method: 'get'
-  })
+  return get<OptionItem[]>('/api/template/options')
 }
 
 /**
  * 获取负责人选项列表
  */
 export const getDirectorOptions = () => {
-  return request<any[]>({
-    url: '/api/project/director-options',
-    method: 'get'
-  })
+  return get<any[]>('/api/project/director-options')
 }
 
 export function getDocumentCollaborators(documentId: string) {
