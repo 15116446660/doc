@@ -5,7 +5,7 @@ import com.biaoshu.documentreview.enums.DocumentType;
 import com.biaoshu.documentreview.enums.SecurityLevel;
 import lombok.Data;
 
-import jakarta.validation.constraints.Size;
+import javax.validation.constraints.Size;
 
 /**
  * 文档更新DTO

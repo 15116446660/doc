@@ -54,32 +54,33 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .cors(cors -> cors.disable())
-                .csrf(csrf -> csrf.disable())
-                .exceptionHandling(ex -> ex.authenticationEntryPoint(unauthorizedHandler))
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(authz -> authz
+                .cors().disable()
+                .csrf().disable()
+                .exceptionHandling().authenticationEntryPoint(unauthorizedHandler)
+                .and()
+                .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                .and()
+                .authorizeRequests()
                     // 公开接口
-                    .requestMatchers("/auth/**").permitAll()
-                    .requestMatchers("/public/**").permitAll()
-                    .requestMatchers("/test/health", "/test/system-info").permitAll()
+                    .antMatchers("/auth/**").permitAll()
+                    .antMatchers("/public/**").permitAll()
+                    .antMatchers("/test/health", "/test/system-info").permitAll()
                     // 项目管理API（临时开放用于测试）
-                    .requestMatchers("/api/projects/**").permitAll()
+                    .antMatchers("/api/projects/**").permitAll()
                     // 文档管理API（临时开放用于测试）
-                    .requestMatchers("/api/documents/**").permitAll()
+                    .antMatchers("/api/documents/**").permitAll()
                     // Swagger文档
-                    .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                    .antMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                     // 健康检查
-                    .requestMatchers("/actuator/health").permitAll()
+                    .antMatchers("/actuator/health").permitAll()
                     // H2控制台
-                    .requestMatchers("/h2-console/**").permitAll()
+                    .antMatchers("/h2-console/**").permitAll()
                     // 静态资源
-                    .requestMatchers("/uploads/**").permitAll()
+                    .antMatchers("/uploads/**").permitAll()
                     // OPTIONS请求
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    .antMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                     // 其他请求需要认证
-                    .anyRequest().authenticated()
-                );
+                    .anyRequest().authenticated();
 
         // 添加JWT过滤器
         http.addFilterBefore(jwtAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);

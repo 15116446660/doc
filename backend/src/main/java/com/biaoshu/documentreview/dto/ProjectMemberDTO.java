@@ -3,7 +3,7 @@ package com.biaoshu.documentreview.dto;
 import com.biaoshu.documentreview.entity.ProjectMember;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
-import jakarta.validation.constraints.NotNull;
+import javax.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.time.LocalDateTime;
