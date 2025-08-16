@@ -380,8 +380,8 @@ const loadDocuments = async () => {
     }
 
     const response = await documentApi.getDocuments(params)
-    documentList.value = response.data.content
-    pagination.total = response.data.totalElements
+    documentList.value = response.content
+    pagination.total = response.totalElements
   } catch (error) {
     console.error('加载文档列表失败:', error)
     ElMessage.error('加载文档列表失败')
@@ -428,19 +428,7 @@ const handleView = (document: Document) => {
 
 const handleDownload = async (document: Document) => {
   try {
-    const response = await documentApi.downloadDocument(document.id)
-
-    // 创建下载链接
-    const blob = new Blob([response.data])
-    const url = window.URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    link.href = url
-    link.download = document.title
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    window.URL.revokeObjectURL(url)
-
+    await documentApi.downloadDocument(document.id)
     ElMessage.success('下载成功')
   } catch (error) {
     console.error('下载文档失败:', error)

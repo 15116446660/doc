@@ -70,8 +70,6 @@ export function updateDocumentCollaborators(documentId: string, collaborators: D
 }
 
 // 新的文档库管理API
-import { get, post, put, del, upload, download } from './request'
-
 export const documentApi = {
   // 获取文档列表
   getDocuments(params: any) {
