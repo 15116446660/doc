@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vue-tsc -b && vite build",
+    "build": "vite build",
+    "build:check": "vue-tsc -b && vite build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -30,11 +31,13 @@
     "@types/node": "^22.15.29",
     "@types/nprogress": "^0.2.3",
     "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-legacy": "^6.1.1",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/tsconfig": "^0.7.0",
     "lodash-es": "^4.17.21",
     "mockjs": "^1.1.0",
     "sass": "^1.89.1",
+    "terser": "^5.43.1",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-mock": "^3.0.2",

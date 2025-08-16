@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>兼容性测试页面</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-item {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .success { border-color: #28a745; background: #d4edda; }
+        .error { border-color: #dc3545; background: #f8d7da; }
+        .warning { border-color: #ffc107; background: #fff3cd; }
+        .test-result {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .test-details {
+            font-size: 0.9em;
+            color: #666;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #console-output {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+    <h1>浏览器兼容性测试页面</h1>
+    
+    <div id="browser-info"></div>
+    
+    <h2>JavaScript特性测试</h2>
+    <div id="js-tests"></div>
+    
+    <h2>Element Plus组件测试</h2>
+    <div id="element-tests">
+        <button onclick="testElementPlus()">测试Element Plus加载</button>
+        <div id="element-result"></div>
+    </div>
+    
+    <h2>Vue 3特性测试</h2>
+    <div id="vue-tests">
+        <button onclick="testVue3()">测试Vue 3特性</button>
+        <div id="vue-result"></div>
+    </div>
+    
+    <h2>控制台输出</h2>
+    <div id="console-output"></div>
+    
+    <script>
+        // 重写console.log以显示在页面上
+        const originalLog = console.log;
+        const originalError = console.error;
+        const originalWarn = console.warn;
+        const consoleOutput = document.getElementById('console-output');
+        
+        function addToConsole(type, message) {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleOutput.textContent += `[${timestamp}] ${type}: ${message}\n`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole('LOG', args.join(' '));
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole('ERROR', args.join(' '));
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole('WARN', args.join(' '));
+        };
+        
+        // 捕获全局错误
+        window.addEventListener('error', function(event) {
+            addToConsole('ERROR', `${event.message} at ${event.filename}:${event.lineno}`);
+        });
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            addToConsole('ERROR', `Unhandled Promise Rejection: ${event.reason}`);
+        });
+        
+        // 浏览器信息检测
+        function detectBrowser() {
+            const ua = navigator.userAgent;
+            let browserInfo = {
+                name: 'Unknown',
+                version: 'Unknown',
+                isSupported: false
+            };
+            
+            if (ua.indexOf('Chrome') > -1) {
+                const match = ua.match(/Chrome\/(\d+)/);
+                if (match) {
+                    browserInfo.name = 'Chrome';
+                    browserInfo.version = parseInt(match[1]);
+                    browserInfo.isSupported = browserInfo.version >= 72;
+                }
+            } else if (ua.indexOf('Firefox') > -1) {
+                const match = ua.match(/Firefox\/(\d+)/);
+                if (match) {
+                    browserInfo.name = 'Firefox';
+                    browserInfo.version = parseInt(match[1]);
+                    browserInfo.isSupported = browserInfo.version >= 60;
+                }
+            } else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) {
+                const match = ua.match(/Version\/(\d+)/);
+                if (match) {
+                    browserInfo.name = 'Safari';
+                    browserInfo.version = parseInt(match[1]);
+                    browserInfo.isSupported = browserInfo.version >= 12;
+                }
+            }
+            
+            return browserInfo;
+        }
+        
+        // JavaScript特性测试
+        function testJSFeatures() {
+            const tests = [
+                {
+                    name: 'ES6 Classes',
+                    test: () => typeof class {} === 'function'
+                },
+                {
+                    name: 'Arrow Functions',
+                    test: () => {
+                        try {
+                            return (() => true)();
+                        } catch (e) {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'Template Literals',
+                    test: () => {
+                        try {
+                            return `test` === 'test';
+                        } catch (e) {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'Destructuring',
+                    test: () => {
+                        try {
+                            const [a] = [1];
+                            return a === 1;
+                        } catch (e) {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'Spread Operator',
+                    test: () => {
+                        try {
+                            const a = [...[1, 2]];
+                            return a.length === 2;
+                        } catch (e) {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'Promise',
+                    test: () => typeof Promise !== 'undefined'
+                },
+                {
+                    name: 'Async/Await',
+                    test: () => {
+                        try {
+                            return (async () => true) instanceof Promise;
+                        } catch (e) {
+                            return false;
+                        }
+                    }
+                },
+                {
+                    name: 'Proxy',
+                    test: () => typeof Proxy !== 'undefined'
+                },
+                {
+                    name: 'Symbol',
+                    test: () => typeof Symbol !== 'undefined'
+                },
+                {
+                    name: 'Map/Set',
+                    test: () => typeof Map !== 'undefined' && typeof Set !== 'undefined'
+                }
+            ];
+            
+            const container = document.getElementById('js-tests');
+            tests.forEach(test => {
+                const result = test.test();
+                const div = document.createElement('div');
+                div.className = `test-item ${result ? 'success' : 'error'}`;
+                div.innerHTML = `
+                    <div class="test-result">${result ? '✅' : '❌'} ${test.name}</div>
+                    <div class="test-details">${result ? '支持' : '不支持'}</div>
+                `;
+                container.appendChild(div);
+                
+                console.log(`${test.name}: ${result ? 'PASS' : 'FAIL'}`);
+            });
+        }
+        
+        // Element Plus测试
+        function testElementPlus() {
+            const resultDiv = document.getElementById('element-result');
+            resultDiv.innerHTML = '<p>正在测试Element Plus...</p>';
+            
+            try {
+                // 尝试加载Element Plus的CSS
+                const link = document.createElement('link');
+                link.rel = 'stylesheet';
+                link.href = 'https://unpkg.com/element-plus/dist/index.css';
+                document.head.appendChild(link);
+                
+                // 尝试加载Element Plus的JS
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/element-plus';
+                script.onload = function() {
+                    resultDiv.innerHTML = `
+                        <div class="test-item success">
+                            <div class="test-result">✅ Element Plus加载成功</div>
+                            <div class="test-details">CDN版本加载正常</div>
+                        </div>
+                    `;
+                    console.log('Element Plus loaded successfully');
+                };
+                script.onerror = function() {
+                    resultDiv.innerHTML = `
+                        <div class="test-item error">
+                            <div class="test-result">❌ Element Plus加载失败</div>
+                            <div class="test-details">CDN版本加载失败</div>
+                        </div>
+                    `;
+                    console.error('Element Plus failed to load');
+                };
+                document.head.appendChild(script);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="test-item error">
+                        <div class="test-result">❌ Element Plus测试异常</div>
+                        <div class="test-details">${error.message}</div>
+                    </div>
+                `;
+                console.error('Element Plus test error:', error);
+            }
+        }
+        
+        // Vue 3测试
+        function testVue3() {
+            const resultDiv = document.getElementById('vue-result');
+            resultDiv.innerHTML = '<p>正在测试Vue 3...</p>';
+            
+            try {
+                // 尝试加载Vue 3
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/vue@next';
+                script.onload = function() {
+                    if (window.Vue) {
+                        resultDiv.innerHTML = `
+                            <div class="test-item success">
+                                <div class="test-result">✅ Vue 3加载成功</div>
+                                <div class="test-details">版本: ${window.Vue.version || 'Unknown'}</div>
+                            </div>
+                        `;
+                        console.log('Vue 3 loaded successfully, version:', window.Vue.version);
+                    } else {
+                        throw new Error('Vue object not found');
+                    }
+                };
+                script.onerror = function() {
+                    resultDiv.innerHTML = `
+                        <div class="test-item error">
+                            <div class="test-result">❌ Vue 3加载失败</div>
+                            <div class="test-details">CDN版本加载失败</div>
+                        </div>
+                    `;
+                    console.error('Vue 3 failed to load');
+                };
+                document.head.appendChild(script);
+                
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="test-item error">
+                        <div class="test-result">❌ Vue 3测试异常</div>
+                        <div class="test-details">${error.message}</div>
+                    </div>
+                `;
+                console.error('Vue 3 test error:', error);
+            }
+        }
+        
+        // 页面加载完成后执行测试
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('页面加载完成，开始兼容性测试');
+            
+            // 显示浏览器信息
+            const browserInfo = detectBrowser();
+            const browserDiv = document.getElementById('browser-info');
+            browserDiv.innerHTML = `
+                <div class="test-item ${browserInfo.isSupported ? 'success' : 'warning'}">
+                    <div class="test-result">浏览器: ${browserInfo.name} ${browserInfo.version}</div>
+                    <div class="test-details">
+                        ${browserInfo.isSupported ? '✅ 支持本应用' : '⚠️ 可能存在兼容性问题'}
+                    </div>
+                </div>
+            `;
+            
+            console.log(`浏览器信息: ${browserInfo.name} ${browserInfo.version}, 支持: ${browserInfo.isSupported}`);
+            
+            // 执行JavaScript特性测试
+            testJSFeatures();
+        });
+    </script>
+</body>
+</html>

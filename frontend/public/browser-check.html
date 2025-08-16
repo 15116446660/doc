@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>浏览器兼容性检测</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .browser-info {
+            background: #e9ecef;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .upgrade-links {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .upgrade-link {
+            display: block;
+            padding: 15px;
+            background: #007bff;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            text-align: center;
+            transition: background-color 0.3s;
+        }
+        .upgrade-link:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>浏览器兼容性检测</h1>
+    
+    <div id="browser-info" class="browser-info">
+        <h3>当前浏览器信息</h3>
+        <p id="user-agent"></p>
+        <p id="browser-version"></p>
+    </div>
+
+    <div id="compatibility-result"></div>
+
+    <div id="recommendations"></div>
+
+    <script>
+        // 获取浏览器信息
+        function getBrowserInfo() {
+            const ua = navigator.userAgent;
+            const browserInfo = {
+                name: 'Unknown',
+                version: 'Unknown',
+                isSupported: false
+            };
+
+            // Chrome检测
+            if (ua.indexOf('Chrome') > -1) {
+                const match = ua.match(/Chrome\/(\d+)/);
+                if (match) {
+                    browserInfo.name = 'Chrome';
+                    browserInfo.version = parseInt(match[1]);
+                    browserInfo.isSupported = browserInfo.version >= 80; // 推荐Chrome 80+
+                }
+            }
+            // Firefox检测
+            else if (ua.indexOf('Firefox') > -1) {
+                const match = ua.match(/Firefox\/(\d+)/);
+                if (match) {
+                    browserInfo.name = 'Firefox';
+                    browserInfo.version = parseInt(match[1]);
+                    browserInfo.isSupported = browserInfo.version >= 75; // 推荐Firefox 75+
+                }
+            }
+            // Safari检测
+            else if (ua.indexOf('Safari') > -1 && ua.indexOf('Chrome') === -1) {
+                const match = ua.match(/Version\/(\d+)/);
+                if (match) {
+                    browserInfo.name = 'Safari';
+                    browserInfo.version = parseInt(match[1]);
+                    browserInfo.isSupported = browserInfo.version >= 13; // 推荐Safari 13+
+                }
+            }
+            // Edge检测
+            else if (ua.indexOf('Edg') > -1) {
+                const match = ua.match(/Edg\/(\d+)/);
+                if (match) {
+                    browserInfo.name = 'Edge';
+                    browserInfo.version = parseInt(match[1]);
+                    browserInfo.isSupported = browserInfo.version >= 80; // 推荐Edge 80+
+                }
+            }
+
+            return browserInfo;
+        }
+
+        // 检测JavaScript特性支持
+        function checkJSFeatures() {
+            const features = {
+                'ES6 Classes': typeof class {} === 'function',
+                'Arrow Functions': (() => true)(),
+                'Template Literals': `test` === 'test',
+                'Destructuring': (() => { try { const [a] = [1]; return true; } catch(e) { return false; } })(),
+                'Spread Operator': (() => { try { const a = [...[1,2]]; return true; } catch(e) { return false; } })(),
+                'Async/Await': (async () => true) instanceof Promise,
+                'Proxy': typeof Proxy !== 'undefined',
+                'Symbol': typeof Symbol !== 'undefined',
+                'Map/Set': typeof Map !== 'undefined' && typeof Set !== 'undefined',
+                'Promise': typeof Promise !== 'undefined'
+            };
+
+            return features;
+        }
+
+        // 显示结果
+        function displayResults() {
+            const browserInfo = getBrowserInfo();
+            const jsFeatures = checkJSFeatures();
+            
+            // 显示浏览器信息
+            document.getElementById('user-agent').textContent = `User Agent: ${navigator.userAgent}`;
+            document.getElementById('browser-version').textContent = `浏览器: ${browserInfo.name} ${browserInfo.version}`;
+
+            // 显示兼容性结果
+            const resultDiv = document.getElementById('compatibility-result');
+            const unsupportedFeatures = Object.entries(jsFeatures).filter(([name, supported]) => !supported);
+            
+            if (browserInfo.isSupported && unsupportedFeatures.length === 0) {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <h3>✅ 浏览器兼容性良好</h3>
+                        <p>您的浏览器支持本应用所需的所有特性，可以正常使用。</p>
+                    </div>
+                `;
+            } else {
+                let message = '';
+                if (!browserInfo.isSupported) {
+                    message += `<p><strong>浏览器版本过低:</strong> 当前${browserInfo.name} ${browserInfo.version}版本可能无法正常运行本应用。</p>`;
+                }
+                if (unsupportedFeatures.length > 0) {
+                    message += `<p><strong>不支持的JavaScript特性:</strong> ${unsupportedFeatures.map(([name]) => name).join(', ')}</p>`;
+                }
+                
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <h3>⚠️ 浏览器兼容性问题</h3>
+                        ${message}
+                        <p>建议升级浏览器或使用以下推荐浏览器访问本应用。</p>
+                    </div>
+                `;
+            }
+
+            // 显示推荐
+            const recommendationsDiv = document.getElementById('recommendations');
+            recommendationsDiv.innerHTML = `
+                <h3>推荐浏览器版本</h3>
+                <div class="upgrade-links">
+                    <a href="https://www.google.com/chrome/" class="upgrade-link" target="_blank">
+                        Chrome 80+<br>
+                        <small>推荐使用</small>
+                    </a>
+                    <a href="https://www.mozilla.org/firefox/" class="upgrade-link" target="_blank">
+                        Firefox 75+<br>
+                        <small>推荐使用</small>
+                    </a>
+                    <a href="https://www.microsoft.com/edge" class="upgrade-link" target="_blank">
+                        Edge 80+<br>
+                        <small>推荐使用</small>
+                    </a>
+                    <a href="https://www.apple.com/safari/" class="upgrade-link" target="_blank">
+                        Safari 13+<br>
+                        <small>Mac用户推荐</small>
+                    </a>
+                </div>
+                
+                <div class="warning">
+                    <h4>如果您必须使用Chrome 72版本</h4>
+                    <p>我们已经为旧版浏览器添加了兼容性支持，但仍可能遇到以下问题：</p>
+                    <ul>
+                        <li>页面加载速度较慢</li>
+                        <li>某些动画效果可能不流畅</li>
+                        <li>部分新特性可能无法使用</li>
+                    </ul>
+                    <p>如果遇到白屏问题，请尝试：</p>
+                    <ol>
+                        <li>清除浏览器缓存和Cookie</li>
+                        <li>禁用浏览器扩展</li>
+                        <li>使用无痕模式访问</li>
+                        <li>检查控制台错误信息</li>
+                    </ol>
+                </div>
+            `;
+        }
+
+        // 页面加载完成后执行检测
+        document.addEventListener('DOMContentLoaded', displayResults);
+    </script>
+</body>
+</html>
