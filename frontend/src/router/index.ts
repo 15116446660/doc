@@ -85,7 +85,7 @@ const routes: Array<RouteRecordRaw> = [
       {
         path: 'library',
         name: 'DocumentLibrary',
-        component: () => import('@/views/document/project/list/index.vue'),
+        component: () => import('@/views/document/library/index.vue'),
         meta: {
           title: '文档库',
           icon: 'Folder'

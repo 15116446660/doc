@@ -1,0 +1,44 @@
+# 开发环境配置
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  
+  redis:
+    host: localhost
+    port: 6379
+    database: 1
+
+# 开发环境日志级别
+logging:
+  level:
+    root: INFO
+    com.biaoshu.documentreview: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+
+# 开发环境文件存储
+file:
+  upload:
+    path: ./uploads/
+
+# 开发环境邮件配置（使用控制台输出）
+# spring:
+#   mail:
+#     host: localhost
+#     port: 1025 # MailHog测试邮件服务器

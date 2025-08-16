@@ -1,0 +1,169 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+spring:
+  application:
+    name: document-review-system
+
+  profiles:
+    active: dev
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+      enabled: true
+  
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/document_review?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    username: root
+    password: 123456
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      auto-commit: true
+      idle-timeout: 30000
+      pool-name: DocumentReviewHikariCP
+      max-lifetime: 1800000
+      connection-timeout: 30000
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+  
+  redis:
+    host: localhost
+    port: 6379
+    password: 
+    database: 0
+    timeout: 3000ms
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1ms
+        max-idle: 8
+        min-idle: 0
+  
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000
+      cache-null-values: false
+  
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: your-email@qq.com
+    password: your-password
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+  
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+# JWT配置
+jwt:
+  secret: biaoshu-document-review-jwt-secret-key-2024
+  expiration: 86400000 # 24小时
+  refresh-expiration: 604800000 # 7天
+
+# 文件存储配置
+file:
+  upload:
+    path: /data/uploads/
+    max-size: 100MB
+    allowed-types: pdf,doc,docx,txt,md,xlsx,xls,ppt,pptx
+
+# 审核流程配置
+review:
+  workflow:
+    default-timeout: 72 # 默认审核超时时间（小时）
+    reminder-intervals: 24,48,72 # 提醒间隔（小时）
+    max-parallel-reviewers: 5 # 最大并行审核人数
+  
+  ai:
+    enabled: true
+    max-tokens: 4000
+    temperature: 0.3
+
+# 日志配置
+logging:
+  level:
+    com.biaoshu.documentreview: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/document-review.log
+    max-size: 10MB
+    max-history: 30
+
+# Actuator监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# Swagger配置
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operations-sorter: method
+    tags-sorter: alpha
+  packages-to-scan: com.biaoshu.documentreview.controller
+
+# 跨域配置
+cors:
+  allowed-origins: http://localhost:5173,http://localhost:3000,http://localhost:5174
+  allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+  allowed-headers: "*"
+  allow-credentials: true
+  max-age: 3600
+
+# 应用配置
+app:
+  name: 标书审查系统
+  version: 1.0.0
+  description: 基于AI的智能标书审查与管理系统
+  file:
+    upload-dir: ./uploads

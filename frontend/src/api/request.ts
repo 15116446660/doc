@@ -36,8 +36,8 @@ service.interceptors.response.use(
     const res = response.data
 
     if (res.code !== 200) {
-      ElMessage.error(res.msg || 'Request failed')
-      return Promise.reject(new Error(res.msg || 'Error'))
+      ElMessage.error(res.message || 'Request failed')
+      return Promise.reject(new Error(res.message || 'Error'))
     }
 
     // If rawResponse is true, return the full axios response object
@@ -53,8 +53,8 @@ service.interceptors.response.use(
     
     // 获取错误信息
     let message = '请求失败'
-    if (error.response?.data?.msg) {
-      message = error.response.data.msg
+    if (error.response?.data?.message) {
+      message = error.response.data.message
     } else if (error.message) {
       message = error.message
     }

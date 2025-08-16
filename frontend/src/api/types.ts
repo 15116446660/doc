@@ -2,7 +2,8 @@
 export interface ApiResponse<T = any> {
   code: number;
   data: T;
-  msg?: string;
+  message?: string;
+  timestamp?: number;
 }
 
 // 分页参数接口
@@ -13,10 +14,13 @@ export interface PaginationParams {
 
 // 分页响应接口
 export interface PaginationResponse<T> {
-  records: T[];
+  data: T[];
+  pageNum: number;
+  pageSize: number;
   total: number;
-  current: number;
-  size: number;
+  pages: number;
+  hasNext: boolean;
+  hasPrevious: boolean;
 }
 
 // 通用查询参数接口

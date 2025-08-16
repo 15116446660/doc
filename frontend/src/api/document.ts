@@ -6,7 +6,7 @@ import type {
   DocumentCollaborator
 } from '@/types/document'
 import type { PageResult } from '@/types/global'
-import { get, post } from './request'
+import { get, post, put, del, upload, download } from './request'
 
 // Project APIs
 export const getProjectList = (params: any) => {
@@ -67,4 +67,44 @@ export function getDocumentCollaborators(documentId: string) {
 
 export function updateDocumentCollaborators(documentId: string, collaborators: DocumentCollaborator[]) {
   return post(`/api/document/collaborators/update?documentId=${documentId}`, { collaborators })
+}
+
+// 新的文档库管理API
+import { get, post, put, del, upload, download } from './request'
+
+export const documentApi = {
+  // 获取文档列表
+  getDocuments(params: any) {
+    return get<any>('/api/documents', params)
+  },
+
+  // 获取文档详情
+  getDocument(id: number) {
+    return get<any>(`/api/documents/${id}`)
+  },
+
+  // 创建文档
+  createDocument(data: any) {
+    return post('/api/documents', data)
+  },
+
+  // 上传文档
+  uploadDocument(data: FormData) {
+    return upload('/api/documents/upload', data)
+  },
+
+  // 更新文档
+  updateDocument(id: number, data: any) {
+    return put(`/api/documents/${id}`, data)
+  },
+
+  // 删除文档
+  deleteDocument(id: number) {
+    return del(`/api/documents/${id}`)
+  },
+
+  // 下载文档
+  downloadDocument(id: number) {
+    return download(`/api/documents/${id}/download`)
+  }
 }

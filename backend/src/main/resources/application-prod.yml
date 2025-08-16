@@ -1,0 +1,45 @@
+# 生产环境配置
+spring:
+  datasource:
+    url: jdbc:mysql://prod-db-host:3306/document_review_prod?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=Asia/Shanghai
+    username: ${DB_USERNAME:prod_user}
+    password: ${DB_PASSWORD:prod_password}
+    hikari:
+      minimum-idle: 10
+      maximum-pool-size: 50
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  
+  redis:
+    host: ${REDIS_HOST:prod-redis-host}
+    port: ${REDIS_PORT:6379}
+    password: ${REDIS_PASSWORD:}
+    database: 0
+
+# 生产环境日志级别
+logging:
+  level:
+    root: WARN
+    com.biaoshu.documentreview: INFO
+  file:
+    name: /var/log/document-review/application.log
+
+# 生产环境文件存储
+file:
+  upload:
+    path: /data/document-review/uploads/
+
+# 生产环境安全配置
+jwt:
+  secret: ${JWT_SECRET:your-production-jwt-secret-key}
+
+# 生产环境邮件配置
+spring:
+  mail:
+    host: ${MAIL_HOST:smtp.company.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:noreply@company.com}
+    password: ${MAIL_PASSWORD:mail_password}
