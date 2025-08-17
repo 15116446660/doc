@@ -212,6 +212,9 @@ public class ProjectDTO {
         @Schema(description = "项目优先级")
         private Project.ProjectPriority priority;
 
+        @Schema(description = "分类ID")
+        private Long categoryId;
+
         @Schema(description = "计划开始时间（起始）")
         @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
         private LocalDateTime plannedStartTimeFrom;

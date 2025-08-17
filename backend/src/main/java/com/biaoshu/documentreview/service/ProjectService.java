@@ -8,6 +8,8 @@ import com.biaoshu.documentreview.entity.ProjectMember;
 import com.biaoshu.documentreview.entity.ProjectMilestone;
 import com.biaoshu.documentreview.entity.User;
 import com.biaoshu.documentreview.exception.BusinessException;
+import com.biaoshu.documentreview.entity.ProjectCategory;
+import com.biaoshu.documentreview.repository.ProjectCategoryRepository;
 import com.biaoshu.documentreview.repository.ProjectMemberRepository;
 import com.biaoshu.documentreview.repository.ProjectMilestoneRepository;
 import com.biaoshu.documentreview.repository.ProjectRepository;
@@ -40,6 +42,7 @@ public class ProjectService {
     private final ProjectRepository projectRepository;
     private final ProjectMemberRepository projectMemberRepository;
     private final ProjectMilestoneRepository projectMilestoneRepository;
+    private final ProjectCategoryRepository categoryRepository;
     private final UserRepository userRepository;
 
     /**
@@ -194,12 +197,20 @@ public class ProjectService {
         Sort sort = Sort.by(Sort.Direction.fromString(request.getSortDir()), request.getSortBy());
         Pageable pageable = PageRequest.of(request.getPage() - 1, request.getSize(), sort);
 
+        // 处理分类ID
+        List<Long> categoryIds = null;
+        if (request.getCategoryId() != null) {
+            categoryIds = getAllSubCategoryIds(request.getCategoryId());
+            categoryIds.add(request.getCategoryId());
+        }
+
         // 查询项目
         Page<Project> projectPage = projectRepository.findProjectsWithConditions(
                 request.getName(),
                 request.getStatus(),
                 request.getManagerId(),
                 request.getPriority(),
+                categoryIds,
                 pageable
         );
 
@@ -237,6 +248,16 @@ public class ProjectService {
      */
     public List<Object[]> getProjectStatusStatistics() {
         return projectRepository.countProjectsByStatus();
+    }
+
+    private List<Long> getAllSubCategoryIds(Long parentId) {
+        List<Long> allIds = new ArrayList<>();
+        List<ProjectCategory> directChildren = categoryRepository.findByParentId(parentId);
+        for (ProjectCategory child : directChildren) {
+            allIds.add(child.getId());
+            allIds.addAll(getAllSubCategoryIds(child.getId()));
+        }
+        return allIds;
     }
 
     /**

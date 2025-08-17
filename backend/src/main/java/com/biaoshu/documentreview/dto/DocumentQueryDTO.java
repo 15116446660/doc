@@ -47,6 +47,11 @@ public class DocumentQueryDTO {
     private Long projectId;
 
     /**
+     * 分类ID (用于按层级筛选项目/文档)
+     */
+    private Long categoryId;
+
+    /**
      * 部门ID
      */
     private Long departmentId;

@@ -4,7 +4,9 @@ import com.biaoshu.documentreview.common.ResultCode;
 import com.biaoshu.documentreview.dto.auth.LoginRequest;
 import com.biaoshu.documentreview.dto.auth.LoginResponse;
 import com.biaoshu.documentreview.entity.User;
+import com.biaoshu.documentreview.entity.ProjectCategory;
 import com.biaoshu.documentreview.exception.BusinessException;
+import com.biaoshu.documentreview.repository.ProjectCategoryRepository;
 import com.biaoshu.documentreview.repository.UserRepository;
 import com.biaoshu.documentreview.security.JwtTokenProvider;
 import com.biaoshu.documentreview.security.UserPrincipal;
@@ -12,10 +14,14 @@ import com.biaoshu.documentreview.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.RedisTemplate;
-import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.ldap.core.AttributesMapper;
+import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.filter.EqualsFilter;
+import org.springframework.ldap.filter.Filter;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,9 +40,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthServiceImpl implements AuthService {
 
-    private final AuthenticationManager authenticationManager;
     private final JwtTokenProvider tokenProvider;
     private final UserRepository userRepository;
+    private final LdapTemplate ldapTemplate;
+    private final ProjectCategoryRepository categoryRepository;
     private final RedisTemplate<String, Object> redisTemplate;
 
     private static final String TOKEN_BLACKLIST_PREFIX = "blacklist:token:";
@@ -45,20 +52,33 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public LoginResponse login(LoginRequest loginRequest) {
-        // 认证用户
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getUsernameOrEmail(),
-                        loginRequest.getPassword()
-                )
-        );
+        // 1. LDAP 认证
+        String username = loginRequest.getUsernameOrEmail();
+        String password = loginRequest.getPassword();
 
-        UserPrincipal userPrincipal = (UserPrincipal) authentication.getPrincipal();
+        try {
+            Filter filter = new EqualsFilter("uid", username);
+            // The authenticate method returns true on success and throws an exception on failure
+            ldapTemplate.authenticate("", filter.encode(), password);
+        } catch (Exception e) {
+            log.error("LDAP authentication failed for user: {}", username, e);
+            throw new BusinessException(ResultCode.USER_LOGIN_ERROR, "用户名或密码错误");
+        }
+
+        // 2. 获取或创建本地用户
+        User user = userRepository.findByUsername(username)
+                .orElseGet(() -> createUserFromLdap(username));
+
+        UserPrincipal userPrincipal = UserPrincipal.create(user);
 
         // 更新用户登录信息
-        updateUserLoginInfo(userPrincipal.getId());
+        updateUserLoginInfo(user.getId());
 
-        // 生成Token
+        // 3. 生成JWT
+        // Manually create Authentication object after successful LDAP auth
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+            userPrincipal, null, userPrincipal.getAuthorities()
+        );
         String accessToken = tokenProvider.generateToken(authentication);
         String refreshToken = tokenProvider.generateRefreshToken(authentication);
 
@@ -100,6 +120,36 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("用户登录成功: {}", userPrincipal.getUsername());
         return response;
+    }
+
+    private User createUserFromLdap(String username) {
+        log.info("User '{}' not found locally. Creating from LDAP.", username);
+        Filter filter = new EqualsFilter("uid", username);
+        return ldapTemplate.search("", filter.encode(), (AttributesMapper<User>) attrs -> {
+            User newUser = new User();
+            newUser.setUsername((String) attrs.get("uid").get());
+            newUser.setRealName((String) attrs.get("cn").get());
+            newUser.setEmail((String) attrs.get("mail").get());
+
+            // Handle department mapping
+            if (attrs.get("ou") != null) {
+                String deptName = (String) attrs.get("ou").get();
+                ProjectCategory department = categoryRepository.findByNameAndType(deptName, ProjectCategory.CategoryType.DEPARTMENT)
+                    .orElseGet(() -> {
+                        log.info("Department '{}' not found, creating it.", deptName);
+                        ProjectCategory newDept = new ProjectCategory();
+                        newDept.setName(deptName);
+                        newDept.setType(ProjectCategory.CategoryType.DEPARTMENT);
+                        return categoryRepository.save(newDept);
+                    });
+                newUser.setDepartmentId(department.getId());
+                newUser.setDepartmentName(department.getName());
+            }
+
+            newUser.setStatus(User.UserStatus.ACTIVE);
+            // In a real scenario, map LDAP groups to local roles.
+            return userRepository.save(newUser);
+        }).stream().findFirst().orElseThrow(() -> new BusinessException("Could not find user details in LDAP after authentication."));
     }
 
     @Override

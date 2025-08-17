@@ -34,12 +34,12 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/store/auth' // 导入 auth store
+import { useAuth } from '@/hooks/useAuth' // 导入 useAuth hook
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 
 const router = useRouter()
-const authStore = useAuthStore()
+const { login } = useAuth() // 使用 useAuth hook
 
 const loginFormRef = ref<FormInstance>()
 const loginForm = reactive({
@@ -70,7 +70,7 @@ const handleLogin = async () => {
     }
 
     loading.value = true
-    await authStore.login(loginForm.username, loginForm.password)
+    await login(loginForm.username, loginForm.password) // 调用新的 login 方法
     // 登录成功，重定向到仪表盘
     router.push({ path: '/dashboard' })
   } catch (error: any) {

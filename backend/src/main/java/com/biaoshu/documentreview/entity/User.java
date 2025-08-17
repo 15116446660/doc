@@ -91,6 +91,12 @@ public class User extends BaseEntity {
     private String position;
 
     /**
+     * 部门名称 (冗余字段，用于显示)
+     */
+    @Column(name = "department_name", length = 100)
+    private String departmentName;
+
+    /**
      * 用户状态
      */
     @Enumerated(EnumType.STRING)

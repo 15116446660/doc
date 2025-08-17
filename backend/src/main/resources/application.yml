@@ -80,6 +80,16 @@ spring:
             enable: true
 
   
+  ldap:
+    urls: ldap://localhost:389
+    base: dc=biaoshu,dc=com
+    username: cn=admin,dc=biaoshu,dc=com
+    password: admin-password
+    user-search-filter: (uid={0})
+    user-search-base: ou=people
+    group-search-base: ou=groups
+    group-search-filter: (uniqueMember={0})
+
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
@@ -167,3 +177,9 @@ app:
   description: 基于AI的智能标书审查与管理系统
   file:
     upload-dir: ./uploads
+  backend-url: http://localhost:8080
+
+# OnlyOffice配置
+onlyoffice:
+  doc-server:
+    url: http://localhost:8081

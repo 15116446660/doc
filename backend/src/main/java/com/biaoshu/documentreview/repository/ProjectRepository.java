@@ -76,11 +76,13 @@ public interface ProjectRepository extends JpaRepository<Project, Long> {
            "(:name IS NULL OR p.name LIKE %:name%) AND " +
            "(:status IS NULL OR p.status = :status) AND " +
            "(:managerId IS NULL OR p.managerId = :managerId) AND " +
-           "(:priority IS NULL OR p.priority = :priority)")
+           "(:priority IS NULL OR p.priority = :priority) AND " +
+           "(:categoryIds IS NULL OR p.categoryId IN :categoryIds)")
     Page<Project> findProjectsWithConditions(@Param("name") String name,
                                             @Param("status") Project.ProjectStatus status,
                                             @Param("managerId") Long managerId,
                                             @Param("priority") Project.ProjectPriority priority,
+                                            @Param("categoryIds") List<Long> categoryIds,
                                             Pageable pageable);
 
     /**

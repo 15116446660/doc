@@ -53,6 +53,15 @@ public class Project extends BaseEntity {
     @Column(name = "manager_id")
     private Long managerId;
 
+    @Schema(description = "所属分类ID")
+    @Column(name = "category_id")
+    private Long categoryId;
+
+    @Schema(description = "所属分类")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "category_id", insertable = false, updatable = false)
+    private ProjectCategory category;
+
     @Schema(description = "项目负责人")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "manager_id", insertable = false, updatable = false)

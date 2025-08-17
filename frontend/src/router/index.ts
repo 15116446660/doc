@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
-import { useAuthStore } from '@/store/auth'
+import { useAuth } from '@/hooks/useAuth'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -335,14 +335,21 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, from, next) => {
   NProgress.start()
-  const authStore = useAuthStore()
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const { state } = useAuth()
+  const isAuthenticated = state.isAuthenticated
 
-  if (requiresAuth && !authStore.isAuthenticated) {
-    next('/login')
-  } else if (to.path === '/login' && authStore.isAuthenticated) {
-    next('/')
-  } else {
+  // If the route is not the login page and the user is not authenticated,
+  // redirect to the login page.
+  if (to.path !== '/login' && !isAuthenticated) {
+    next({ path: '/login' })
+  }
+  // If the user is authenticated and tries to access the login page,
+  // redirect them to the dashboard.
+  else if (to.path === '/login' && isAuthenticated) {
+    next({ path: '/dashboard' })
+  }
+  // Otherwise, allow navigation.
+  else {
     next()
   }
 })

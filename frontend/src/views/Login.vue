@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useAuthStore } from '@/store/auth'
+import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 
-const authStore = useAuthStore()
+const { login } = useAuth()
 const router = useRouter()
 
 const loginForm = ref({
@@ -22,7 +22,7 @@ const handleLogin = async () => {
 
   loading.value = true
   try {
-    await authStore.login(loginForm.value.username, loginForm.value.password)
+    await login(loginForm.value.username, loginForm.value.password)
     ElMessage.success('登录成功')
     router.push('/')
   } catch (error) {

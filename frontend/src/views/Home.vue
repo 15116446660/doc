@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { useAuthStore } from '@/store/auth'
+import { useAuth } from '@/hooks/useAuth'
 
-const authStore = useAuthStore()
+const { state: authState } = useAuth()
 </script>
 
 <template>
@@ -13,28 +13,28 @@ const authStore = useAuthStore()
         </div>
       </template>
       <div class="user-info">
-        <el-avatar :size="64" :src="authStore.user?.avatar" />
+        <el-avatar :size="64" :src="authState.user?.avatar" />
         <div class="user-details">
-          <h3>{{ authStore.user?.name }}</h3>
-          <p>{{ authStore.user?.department }} - {{ authStore.user?.role }}</p>
+          <h3>{{ authState.user?.name }}</h3>
+          <p>{{ authState.user?.department }} - {{ authState.user?.role }}</p>
         </div>
       </div>
     </el-card>
 
     <!-- 根据用户角色显示不同的快捷操作卡片 -->
-    <div class="quick-actions">
+    <div class="quick-actions" v-if="authState.user?.permissions">
       <el-row :gutter="20">
-        <el-col :span="8" v-if="authStore.user?.permissions.includes('project:create')">
+        <el-col :span="8" v-if="authState.user.permissions.includes('project:create')">
           <el-card class="action-card">
             <el-button type="primary" icon="Plus">创建新项目</el-button>
           </el-card>
         </el-col>
-        <el-col :span="8" v-if="authStore.user?.permissions.includes('document:edit')">
+        <el-col :span="8" v-if="authState.user.permissions.includes('document:edit')">
           <el-card class="action-card">
             <el-button type="success" icon="Document">编辑文档</el-button>
           </el-card>
         </el-col>
-        <el-col :span="8" v-if="authStore.user?.permissions.includes('document:review')">
+        <el-col :span="8" v-if="authState.user.permissions.includes('document:review')">
           <el-card class="action-card">
             <el-button type="warning" icon="View">审核文档</el-button>
           </el-card>

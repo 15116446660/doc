@@ -1,11 +1,11 @@
 import { ref, computed } from 'vue';
 import type { BaseCommand, SubCommand, CommandContext, CommandResult } from '@/types/command';
 import { CommandManager } from '@/services/command/manager';
-import { useUserStore } from '@/stores/user';
+import { useAuth } from './useAuth';
 
 export function useCommands() {
   const commandManager = CommandManager.getInstance();
-  const userStore = useUserStore();
+  const { state: authState } = useAuth();
   const commands = ref<BaseCommand[]>(commandManager.getCommands());
   const activeCommand = ref<BaseCommand | null>(null);
   const subCommands = ref<SubCommand[]>([]);
@@ -29,7 +29,7 @@ export function useCommands() {
       activeCommand.value = command;
       subCommands.value = await commandManager.getSubCommands(commandId, {
         ...context,
-        userId: userStore.userId
+        userId: authState.user?.id || ''
       });
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to fetch sub commands';
@@ -47,7 +47,7 @@ export function useCommands() {
     try {
       const result = await commandManager.executeCommand(commandId, {
         ...context,
-        userId: userStore.userId
+        userId: authState.user?.id || ''
       });
       return result;
     } catch (err) {

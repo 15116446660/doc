@@ -9,8 +9,10 @@ import com.biaoshu.documentreview.entity.User;
 import com.biaoshu.documentreview.enums.DocumentStatus;
 import com.biaoshu.documentreview.enums.DocumentType;
 import com.biaoshu.documentreview.enums.SecurityLevel;
+import com.biaoshu.documentreview.entity.ProjectCategory;
 import com.biaoshu.documentreview.exception.BusinessException;
 import com.biaoshu.documentreview.repository.DocumentRepository;
+import com.biaoshu.documentreview.repository.ProjectCategoryRepository;
 import com.biaoshu.documentreview.repository.UserRepository;
 import com.biaoshu.documentreview.service.DocumentService;
 import com.biaoshu.documentreview.service.FileStorageService;
@@ -46,6 +48,7 @@ public class DocumentServiceImpl implements DocumentService {
     private final DocumentRepository documentRepository;
     private final UserRepository userRepository;
     private final FileStorageService fileStorageService;
+    private final ProjectCategoryRepository categoryRepository;
 
     @Override
     public Page<DocumentVO> getDocuments(DocumentQueryDTO queryDTO, Pageable pageable) {
@@ -206,6 +209,13 @@ public class DocumentServiceImpl implements DocumentService {
             predicates.add(criteriaBuilder.equal(root.get("isDeleted"), false));
             
             if (queryDTO != null) {
+                 // 分类ID查询（包括所有子分类）
+                if (queryDTO.getCategoryId() != null) {
+                    List<Long> allCategoryIds = getAllSubCategoryIds(queryDTO.getCategoryId());
+                    allCategoryIds.add(queryDTO.getCategoryId());
+                    predicates.add(root.get("categoryId").in(allCategoryIds));
+                }
+
                 // 标题模糊查询
                 if (StringUtils.hasText(queryDTO.getTitle())) {
                     predicates.add(criteriaBuilder.like(root.get("title"), "%" + queryDTO.getTitle() + "%"));
@@ -272,6 +282,16 @@ public class DocumentServiceImpl implements DocumentService {
             
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private List<Long> getAllSubCategoryIds(Long parentId) {
+        List<Long> allIds = new ArrayList<>();
+        List<ProjectCategory> directChildren = categoryRepository.findByParentId(parentId);
+        for (ProjectCategory child : directChildren) {
+            allIds.add(child.getId());
+            allIds.addAll(getAllSubCategoryIds(child.getId()));
+        }
+        return allIds;
     }
 
     /**

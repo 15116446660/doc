@@ -4,7 +4,14 @@
       <!-- 左侧分类树 -->
       <div class="project-type-sidebar" :class="{ 'collapsed': sidebarCollapsed }">
         <div v-if="!sidebarCollapsed" class="sidebar-content">
-          <project-type-tree ref="treeRef" @select="handleTypeSelect" />
+          <el-tree
+            ref="treeRef"
+            :data="categoryTree"
+            :props="treeProps"
+            node-key="id"
+            highlight-current
+            @node-click="handleNodeClick"
+          />
         </div>
       </div>
 
@@ -16,6 +23,7 @@
           title="项目列表"
           :filter-config="filterConfig"
           :columns="columns"
+          :request-params="requestParams"
           :enable-advanced-filter="true"
           :enable-view-switch="true"
           :request-api="getProjectList"
@@ -95,7 +103,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { 
   Plus, 
@@ -113,6 +121,7 @@ import ProjectCreateDialog from './dialogs/ProjectCreateDialog.vue'
 import dialogInstance from '@/hooks/useDialog'
 import type { FilterFormItem, OptionItem, TableColumn, CardConfig, ViewType, ActionItem } from '@/components/BaseList/types'
 import { getProjectList, getProjectStatusOptions, getProjectRiskOptions, getTeamMemberOptions } from '@/api/project'
+import { getCategoryTree, type ProjectCategoryNode } from '@/api/projectCategory'
 import type { Project } from '@/api/project'
 import { useRouter } from 'vue-router'
 
@@ -120,6 +129,21 @@ import { useRouter } from 'vue-router'
 const listRef = ref()
 const projectCreateDialogRef = ref()
 const router = useRouter()
+
+// 分类树
+const treeRef = ref()
+const categoryTree = ref<ProjectCategoryNode[]>([]);
+const treeProps = {
+  children: 'children',
+  label: 'name',
+};
+const requestParams = reactive({
+  categoryId: null as number | null,
+});
+
+onMounted(async () => {
+  categoryTree.value = await getCategoryTree();
+});
 
 // 表格列配置
 const columns = ref<TableColumn[]>([
@@ -436,9 +460,9 @@ const toggleSidebar = () => {
 }
 
 // 处理类型选择
-const treeRef = ref()
-const handleTypeSelect = (type: string) => {
-  console.log('Type selected:', type)
+const handleNodeClick = (node: ProjectCategoryNode) => {
+  requestParams.categoryId = node.id;
+  listRef.value?.refresh();
 }
 </script>
 

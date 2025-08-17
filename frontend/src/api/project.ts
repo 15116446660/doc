@@ -58,7 +58,7 @@ export function getProjectCategories(): Promise<ApiResponse<ProjectCategory[]>> 
 
 // 获取项目列表
 export function getProjectList(params: ProjectListParams) {
-  return get<ProjectListResponse>('/api/project/list', params)
+  return get<ProjectListResponse>('/api/projects', params)
 }
 
 // 获取项目状态选项

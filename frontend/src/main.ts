@@ -5,8 +5,7 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import './styles/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
-import { createPinia } from 'pinia'
-import { useAuthStore } from '@/store/auth' // 导入 auth store
+import { useAuth } from '@/hooks/useAuth' // 导入 useAuth hook
 import './api/request' // 导入请求配置
 
 // 浏览器兼容性检查
@@ -173,16 +172,14 @@ try {
   checkBrowserCompatibility()
 
   const app = createApp(App)
-  const pinia = createPinia()
 
   // 设置错误处理
   setupErrorHandling(app)
 
-  app.use(pinia)
-
-  // 初始化 auth store
-  const authStore = useAuthStore()
-  authStore.initializeAuth()
+  // 初始化认证状态
+  // 这必须在 router initalization 之前，以便路由守卫可以访问正确的状态
+  const { initializeAuth } = useAuth()
+  initializeAuth()
 
   app.use(router)
   app.use(ElementPlus)

@@ -69,14 +69,14 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/store/auth'
+import { useAuth } from '@/hooks/useAuth'
 import SidebarItem from './components/SidebarItem.vue'
 import Breadcrumb from './components/Breadcrumb.vue'
 import { Fold, Expand, CaretBottom } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const route = useRoute()
-const authStore = useAuthStore()
+const { state: authState, logout } = useAuth()
 
 // 侧边栏折叠状态
 const isCollapse = ref(false)
@@ -100,12 +100,12 @@ const activeMenu = computed(() => {
 
 // 用户信息
 const userInfo = computed(() => {
-  return authStore.user || { name: '未登录' }
+  return authState.user || { name: '未登录' }
 })
 
 // 退出登录
 const handleLogout = async () => {
-  await authStore.logout()
+  await logout()
   router.push('/login')
 }
 </script>
