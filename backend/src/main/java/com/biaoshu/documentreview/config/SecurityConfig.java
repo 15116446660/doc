@@ -69,6 +69,12 @@ public class SecurityConfig {
                     .antMatchers("/api/projects/**").permitAll()
                     // 文档管理API（临时开放用于测试）
                     .antMatchers("/api/documents/**").permitAll()
+                    // 评审任务API（临时开放用于测试）
+                    .antMatchers("/api/review-tasks/**").permitAll()
+                    // AI测试API（临时开放用于测试）
+                    .antMatchers("/test/ai/**").permitAll()
+                    // AI状态API（临时开放用于测试）
+                    .antMatchers("/api/ai/status/**").permitAll()
                     // Swagger文档
                     .antMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                     // 健康检查

@@ -9,7 +9,6 @@ import lombok.Getter;
  * @author biaoshu
  */
 @Getter
-@AllArgsConstructor
 public enum DocumentStatus {
 
     /**
@@ -53,4 +52,8 @@ public enum DocumentStatus {
     EXPIRED("已过期");
 
     private final String description;
+
+    DocumentStatus(String description) {
+        this.description = description;
+    }
 }

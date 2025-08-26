@@ -37,6 +37,15 @@ file:
   upload:
     path: ./uploads/
 
+# AI配置
+ai:
+  enabled: true
+  qwen:
+    api-key: ${QWEN_API_KEY:}  # 从环境变量获取API密钥
+    model: qwen-max
+    max-tokens: 2000
+    temperature: 0.7
+
 # 开发环境邮件配置（使用控制台输出）
 # spring:
 #   mail:

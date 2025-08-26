@@ -65,6 +65,33 @@ const routes: Array<RouteRecordRaw> = [
         meta: { title: '项目看板' }
       },
       {
+        path: 'hierarchy',
+        name: 'ProjectHierarchy',
+        component: () => import('../views/project/hierarchy/index.vue'),
+        meta: {
+          title: '层级管理',
+          icon: 'Operation'
+        }
+      },
+      {
+        path: 'department',
+        name: 'ProjectDepartment',
+        component: () => import('../views/project/department/index.vue'),
+        meta: {
+          title: '部门管理',
+          icon: 'OfficeBuilding'
+        }
+      },
+      {
+        path: 'category',
+        name: 'ProjectCategory',
+        component: () => import('../views/project/category/index.vue'),
+        meta: {
+          title: '品类管理',
+          icon: 'Collection'
+        }
+      },
+      {
         path: 'detail/:id',
         name: 'ProjectDetail',
         component: () => import('../views/project/detail/index.vue'),
@@ -322,6 +349,69 @@ const routes: Array<RouteRecordRaw> = [
         name: 'AIAssistantDemo',
         component: () => import('../views/AIAssistantDemo.vue'),
         meta: { title: 'AI对话助手演示' }
+      }
+    ]
+  },
+  {
+    path: '/ai-analysis',
+    name: 'AIAnalysis',
+    component: () => import('../layout/index.vue'),
+    redirect: '/ai-analysis/dashboard',
+    meta: { title: 'AI智能分析', icon: 'MagicStick' },
+    children: [
+      {
+        path: 'dashboard',
+        name: 'AIAnalysisDashboard',
+        component: () => import('@/views/ai-analysis/dashboard/index.vue'),
+        meta: { title: 'AI分析概览' }
+      },
+      {
+        path: 'content-insertion',
+        name: 'AIContentInsertion',
+        component: () => import('@/views/ai-analysis/content-insertion/index.vue'),
+        meta: { title: 'AI内容反向插入' }
+      },
+      {
+        path: 'slice-tagging',
+        name: 'AISliceTagging',
+        component: () => import('@/views/ai-analysis/slice-tagging/index.vue'),
+        meta: { title: '智能切片标记' }
+      },
+      {
+        path: 'prompt-testing',
+        name: 'AIPromptTesting',
+        component: () => import('@/views/ai-analysis/prompt-testing/index.vue'),
+        meta: { title: '提示词测试工具' }
+      },
+      {
+        path: 'citation-marking',
+        name: 'AICitationMarking',
+        component: () => import('@/views/ai-analysis/citation-marking/index.vue'),
+        meta: { title: '引用来源标记' }
+      },
+      {
+        path: 'smart-formatting',
+        name: 'AISmartFormatting',
+        component: () => import('@/views/ai-analysis/smart-formatting/index.vue'),
+        meta: { title: 'AI智能格式化' }
+      },
+      {
+        path: 'long-text-interaction',
+        name: 'AILongTextInteraction',
+        component: () => import('@/views/ai-analysis/long-text-interaction/index.vue'),
+        meta: { title: '长文本交互' }
+      },
+      {
+        path: 'difference-comparison',
+        name: 'AIDifferenceComparison',
+        component: () => import('@/views/ai-analysis/difference-comparison/index.vue'),
+        meta: { title: '文档差异对比' }
+      },
+      {
+        path: 'review-task/:id',
+        name: 'AIReviewTask',
+        component: () => import('@/views/ai-analysis/review-task/index.vue'),
+        meta: { title: 'AI评审任务', hidden: true }
       }
     ]
   }

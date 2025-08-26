@@ -6,6 +6,9 @@ interface AuthState {
   user: UserInfo | null;
   token: string | null;
   refreshToken: string | null;
+  permissions: string[];
+  roles: string[];
+  managedNodes: Record<string, number[]>;
 }
 
 export const useAuthStore = defineStore('auth', {
@@ -13,7 +16,10 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: false,
     user: null,
     token: null,
-    refreshToken: null
+    refreshToken: null,
+    permissions: [],
+    roles: [],
+    managedNodes: {}
   }),
   actions: {
     async login(username: string, password: string): Promise<void> {

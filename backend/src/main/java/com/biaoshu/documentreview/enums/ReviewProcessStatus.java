@@ -9,7 +9,6 @@ import lombok.Getter;
  * @author biaoshu
  */
 @Getter
-@AllArgsConstructor
 public enum ReviewProcessStatus {
 
     /**
@@ -53,4 +52,8 @@ public enum ReviewProcessStatus {
     TIMEOUT("超时");
 
     private final String description;
+
+    ReviewProcessStatus(String description) {
+        this.description = description;
+    }
 }

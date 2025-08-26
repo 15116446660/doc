@@ -9,7 +9,6 @@ import lombok.Getter;
  * @author biaoshu
  */
 @Getter
-@AllArgsConstructor
 public enum PermissionType {
 
     /**
@@ -38,4 +37,8 @@ public enum PermissionType {
     FUNCTION("功能权限");
 
     private final String description;
+
+    PermissionType(String description) {
+        this.description = description;
+    }
 }

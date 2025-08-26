@@ -87,6 +87,19 @@ public class Project extends BaseEntity {
     @Column(name = "tags", length = 500)
     private String tags;
 
+    @Schema(description = "所属子品类ID")
+    @Column(name = "subcategory_id")
+    private Long subcategoryId;
+
+    @Schema(description = "所属子品类")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "subcategory_id", insertable = false, updatable = false)
+    private ProjectSubcategory subcategory;
+
+    @Schema(description = "排序号")
+    @Column(name = "sort_order")
+    private Integer sortOrder = 0;
+
     @Schema(description = "项目成员")
     @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProjectMember> members;

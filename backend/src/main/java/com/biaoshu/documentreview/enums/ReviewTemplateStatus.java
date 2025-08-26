@@ -9,7 +9,6 @@ import lombok.Getter;
  * @author biaoshu
  */
 @Getter
-@AllArgsConstructor
 public enum ReviewTemplateStatus {
 
     /**
@@ -33,4 +32,8 @@ public enum ReviewTemplateStatus {
     ARCHIVED("已归档");
 
     private final String description;
+
+    ReviewTemplateStatus(String description) {
+        this.description = description;
+    }
 }

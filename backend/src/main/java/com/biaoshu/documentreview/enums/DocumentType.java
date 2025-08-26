@@ -9,7 +9,6 @@ import lombok.Getter;
  * @author biaoshu
  */
 @Getter
-@AllArgsConstructor
 public enum DocumentType {
 
     /**
@@ -63,4 +62,8 @@ public enum DocumentType {
     OTHER("其他文档");
 
     private final String description;
+
+    DocumentType(String description) {
+        this.description = description;
+    }
 }

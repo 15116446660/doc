@@ -9,7 +9,6 @@ import lombok.Getter;
  * @author biaoshu
  */
 @Getter
-@AllArgsConstructor
 public enum UserStatus {
 
     /**
@@ -38,4 +37,8 @@ public enum UserStatus {
     DELETED("已删除");
 
     private final String description;
+
+    UserStatus(String description) {
+        this.description = description;
+    }
 }

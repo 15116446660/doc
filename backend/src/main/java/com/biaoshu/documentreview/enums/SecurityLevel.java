@@ -9,7 +9,6 @@ import lombok.Getter;
  * @author biaoshu
  */
 @Getter
-@AllArgsConstructor
 public enum SecurityLevel {
 
     /**
@@ -38,4 +37,8 @@ public enum SecurityLevel {
     RESTRICTED("限制");
 
     private final String description;
+
+    SecurityLevel(String description) {
+        this.description = description;
+    }
 }

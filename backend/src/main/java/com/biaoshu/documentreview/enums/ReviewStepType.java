@@ -9,7 +9,6 @@ import lombok.Getter;
  * @author biaoshu
  */
 @Getter
-@AllArgsConstructor
 public enum ReviewStepType {
 
     /**
@@ -68,4 +67,8 @@ public enum ReviewStepType {
     CUSTOM_REVIEW("自定义审核");
 
     private final String description;
+
+    ReviewStepType(String description) {
+        this.description = description;
+    }
 }
