@@ -1,42 +1,46 @@
 package com.biaoshu.documentreview.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.biaoshu.documentreview.dto.*;
+import com.biaoshu.documentreview.dto.request.CreateTaskRequest;
+import com.biaoshu.documentreview.dto.request.TaskQueryRequest;
 import com.biaoshu.documentreview.entity.ReviewTask;
+import com.biaoshu.documentreview.enums.TaskStatus;
 import com.biaoshu.documentreview.repository.ReviewTaskRepository;
 import com.biaoshu.documentreview.service.ReviewTaskService;
 import com.biaoshu.documentreview.service.ai.AIAnalysisService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import com.biaoshu.common.core.domain.Result;
+import com.biaoshu.common.exception.BusinessException;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 评审任务服务实现
+ *
+ * @author biaoshu
+ * @since 2024-01-01
  */
+@Slf4j
 @Service
-@Transactional
-public class ReviewTaskServiceImpl implements ReviewTaskService {
+@RequiredArgsConstructor
+@Transactional(rollbackFor = Exception.class)
+public class ReviewTaskServiceImpl extends ServiceImpl<ReviewTaskRepository, ReviewTask> implements ReviewTaskService {
 
-    private static final Logger logger = LoggerFactory.getLogger(ReviewTaskServiceImpl.class);
-
-    @Autowired
-    private ReviewTaskRepository reviewTaskRepository;
-
-    @Autowired
-    private AIAnalysisService aiAnalysisService;
+    private final ReviewTaskRepository reviewTaskRepository;
+    private final AIAnalysisService aiAnalysisService;
 
     @Override
     public ReviewTaskDTO createReviewTask(ReviewTaskCreateDTO createDTO, Long creatorId) {
-        logger.info("创建评审任务，创建者ID: {}", creatorId);
+        log.info("创建评审任务，创建者ID: {}", creatorId);
         
         ReviewTask reviewTask = new ReviewTask();
         reviewTask.setTaskName(createDTO.getTaskName());
@@ -50,22 +54,23 @@ public class ReviewTaskServiceImpl implements ReviewTaskService {
         reviewTask.setStatus(ReviewTask.ReviewTaskStatus.PENDING);
         reviewTask.setAiAnalysisStatus(ReviewTask.AIAnalysisStatus.PENDING);
         
-        reviewTask = reviewTaskRepository.save(reviewTask);
+        boolean saved = save(reviewTask);
+        if (!saved) {
+            throw new BusinessException("创建任务失败");
+        }
         
-        logger.info("评审任务创建成功，任务ID: {}", reviewTask.getId());
+        log.info("评审任务创建成功，任务ID: {}", reviewTask.getId());
         return convertToDTO(reviewTask);
     }
 
     @Override
     public ReviewTaskDTO updateReviewTask(Long taskId, ReviewTaskUpdateDTO updateDTO, Long userId) {
-        logger.info("更新评审任务，任务ID: {}, 操作用户ID: {}", taskId, userId);
-        
-        Optional<ReviewTask> taskOpt = reviewTaskRepository.findById(taskId);
-        if (!taskOpt.isPresent()) {
-            throw new RuntimeException("评审任务不存在");
+        log.info("更新评审任务，任务ID: {}, 操作用户ID: {}", taskId, userId);
+
+        ReviewTask reviewTask = getById(taskId);
+        if (reviewTask == null) {
+            throw new BusinessException("评审任务不存在");
         }
-        
-        ReviewTask reviewTask = taskOpt.get();
         
         if (updateDTO.getTaskName() != null) {
             reviewTask.setTaskName(updateDTO.getTaskName());

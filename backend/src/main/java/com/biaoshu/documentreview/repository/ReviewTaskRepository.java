@@ -1,47 +1,97 @@
 package com.biaoshu.documentreview.repository;
 
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.biaoshu.documentreview.entity.ReviewTask;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import com.biaoshu.documentreview.enums.TaskStatus;
+import com.biaoshu.documentreview.enums.Priority;
+import com.biaoshu.documentreview.enums.BusinessType;
+import org.apache.ibatis.annotations.*;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * 评审任务Repository
+ *
+ * @author biaoshu
+ * @since 2024-01-01
  */
 @Repository
-public interface ReviewTaskRepository extends JpaRepository<ReviewTask, Long> {
+@Mapper
+public interface ReviewTaskRepository extends BaseMapper<ReviewTask> {
 
     /**
-     * 根据项目ID查找评审任务
+     * 分页查询评审任务（带关联信息）
      */
-    Page<ReviewTask> findByProjectId(Long projectId, Pageable pageable);
-
-    /**
-     * 根据文档ID查找评审任务
-     */
-    Page<ReviewTask> findByDocumentId(Long documentId, Pageable pageable);
-
-    /**
-     * 根据创建者ID查找评审任务
-     */
-    Page<ReviewTask> findByCreatorId(Long creatorId, Pageable pageable);
-
-    /**
-     * 根据状态查找评审任务
-     */
-    Page<ReviewTask> findByStatus(ReviewTask.ReviewTaskStatus status, Pageable pageable);
-
-    /**
-     * 根据优先级查找评审任务
-     */
-    Page<ReviewTask> findByPriority(ReviewTask.ReviewTaskPriority priority, Pageable pageable);
+    @Select("""
+        <script>
+        SELECT
+            rt.*,
+            u.username as creator_name,
+            u.real_name as creator_real_name,
+            p.project_name,
+            rw.workflow_name
+        FROM review_tasks rt
+        LEFT JOIN users u ON rt.creator_id = u.id
+        LEFT JOIN projects p ON rt.project_id = p.id
+        LEFT JOIN review_workflows rw ON rt.review_template_id = rw.id
+        <where>
+            <if test="status != null">
+                AND rt.status = #{status}
+            </if>
+            <if test="priority != null">
+                AND rt.priority = #{priority}
+            </if>
+            <if test="businessType != null">
+                AND rt.business_type = #{businessType}
+            </if>
+            <if test="creatorId != null">
+                AND rt.creator_id = #{creatorId}
+            </if>
+            <if test="projectId != null">
+                AND rt.project_id = #{projectId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (rt.task_name LIKE CONCAT('%', #{keyword}, '%')
+                     OR rt.task_description LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="startDate != null">
+                AND rt.created_at >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND rt.created_at <= #{endDate}
+            </if>
+            <if test="overdue != null and overdue == true">
+                AND rt.deadline < NOW()
+                AND rt.status NOT IN ('COMPLETED', 'CANCELLED', 'ARCHIVED')
+            </if>
+        </where>
+        ORDER BY
+            CASE rt.priority
+                WHEN 'URGENT' THEN 4
+                WHEN 'HIGH' THEN 3
+                WHEN 'MEDIUM' THEN 2
+                WHEN 'LOW' THEN 1
+                ELSE 0
+            END DESC,
+            rt.created_at DESC
+        </script>
+    """)
+    IPage<ReviewTask> selectTasksWithDetails(
+        Page<ReviewTask> page,
+        @Param("status") TaskStatus status,
+        @Param("priority") Priority priority,
+        @Param("businessType") BusinessType businessType,
+        @Param("creatorId") Long creatorId,
+        @Param("projectId") Long projectId,
+        @Param("keyword") String keyword,
+        @Param("startDate") LocalDateTime startDate,
+        @Param("endDate") LocalDateTime endDate,
+        @Param("overdue") Boolean overdue
+    );
 
     /**
      * 查找指定用户分配的评审任务

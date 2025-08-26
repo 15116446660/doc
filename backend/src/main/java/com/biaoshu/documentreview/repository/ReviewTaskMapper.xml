@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biaoshu.documentreview.repository.ReviewTaskRepository">
+
+    <!-- 结果映射 -->
+    <resultMap id="ReviewTaskResultMap" type="com.biaoshu.documentreview.entity.ReviewTask">
+        <id column="id" property="id"/>
+        <result column="task_name" property="taskName"/>
+        <result column="task_description" property="taskDescription"/>
+        <result column="business_type" property="businessType"/>
+        <result column="confidentiality_level" property="confidentialityLevel"/>
+        <result column="priority" property="priority"/>
+        <result column="status" property="status"/>
+        <result column="review_template_id" property="reviewTemplateId"/>
+        <result column="project_id" property="projectId"/>
+        <result column="creator_id" property="creatorId"/>
+        <result column="deadline" property="deadline"/>
+        <result column="auto_assignment_enabled" property="autoAssignmentEnabled"/>
+        <result column="convergence_gate_enabled" property="convergenceGateEnabled"/>
+        <result column="convergence_deadline" property="convergenceDeadline"/>
+        <result column="review_conclusion" property="reviewConclusion"/>
+        <result column="conclusion_reason" property="conclusionReason"/>
+        <result column="progress_data" property="progressData"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <result column="created_by" property="createdBy"/>
+        <result column="updated_by" property="updatedBy"/>
+        
+        <!-- 关联对象 -->
+        <association property="creator" javaType="com.biaoshu.documentreview.entity.User">
+            <id column="creator_id" property="id"/>
+            <result column="creator_name" property="username"/>
+            <result column="creator_real_name" property="realName"/>
+            <result column="creator_email" property="email"/>
+        </association>
+    </resultMap>
+
+    <!-- 带详情的结果映射 -->
+    <resultMap id="ReviewTaskWithDetailsResultMap" type="com.biaoshu.documentreview.entity.ReviewTask" extends="ReviewTaskResultMap">
+        <result column="project_name" property="projectName"/>
+        <result column="workflow_name" property="workflowName"/>
+    </resultMap>
+
+    <!-- 基础查询字段 -->
+    <sql id="BaseColumns">
+        rt.id, rt.task_name, rt.task_description, rt.business_type, rt.confidentiality_level,
+        rt.priority, rt.status, rt.review_template_id, rt.project_id, rt.creator_id,
+        rt.deadline, rt.auto_assignment_enabled, rt.convergence_gate_enabled, rt.convergence_deadline,
+        rt.review_conclusion, rt.conclusion_reason, rt.progress_data,
+        rt.created_at, rt.updated_at, rt.created_by, rt.updated_by
+    </sql>
+
+    <!-- 带关联信息的查询字段 -->
+    <sql id="ColumnsWithDetails">
+        <include refid="BaseColumns"/>,
+        u.username as creator_name,
+        u.real_name as creator_real_name,
+        u.email as creator_email,
+        p.project_name,
+        rw.workflow_name
+    </sql>
+
+    <!-- 查询条件 -->
+    <sql id="QueryConditions">
+        <where>
+            <if test="status != null">
+                AND rt.status = #{status}
+            </if>
+            <if test="priority != null">
+                AND rt.priority = #{priority}
+            </if>
+            <if test="businessType != null">
+                AND rt.business_type = #{businessType}
+            </if>
+            <if test="creatorId != null">
+                AND rt.creator_id = #{creatorId}
+            </if>
+            <if test="projectId != null">
+                AND rt.project_id = #{projectId}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (rt.task_name LIKE CONCAT('%', #{keyword}, '%') 
+                     OR rt.task_description LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="startDate != null">
+                AND rt.created_at >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND rt.created_at <= #{endDate}
+            </if>
+            <if test="overdue != null and overdue == true">
+                AND rt.deadline &lt; NOW() 
+                AND rt.status NOT IN ('COMPLETED', 'CANCELLED', 'ARCHIVED')
+            </if>
+        </where>
+    </sql>
+
+    <!-- 分页查询评审任务（带关联信息） -->
+    <select id="selectTasksWithDetails" resultMap="ReviewTaskWithDetailsResultMap">
+        SELECT 
+            <include refid="ColumnsWithDetails"/>
+        FROM review_tasks rt
+        LEFT JOIN users u ON rt.creator_id = u.id
+        LEFT JOIN projects p ON rt.project_id = p.id
+        LEFT JOIN review_workflows rw ON rt.review_template_id = rw.id
+        <include refid="QueryConditions"/>
+        ORDER BY 
+            CASE rt.priority 
+                WHEN 'URGENT' THEN 4
+                WHEN 'HIGH' THEN 3
+                WHEN 'MEDIUM' THEN 2
+                WHEN 'LOW' THEN 1
+                ELSE 0
+            END DESC,
+            rt.created_at DESC
+    </select>
+
+    <!-- 根据ID查询任务详情 -->
+    <select id="selectTaskWithDetails" resultMap="ReviewTaskWithDetailsResultMap">
+        SELECT 
+            <include refid="ColumnsWithDetails"/>
+        FROM review_tasks rt
+        LEFT JOIN users u ON rt.creator_id = u.id
+        LEFT JOIN projects p ON rt.project_id = p.id
+        LEFT JOIN review_workflows rw ON rt.review_template_id = rw.id
+        WHERE rt.id = #{id}
+    </select>
+
+    <!-- 查询用户的评审任务 -->
+    <select id="selectUserTasks" resultMap="ReviewTaskResultMap">
+        SELECT DISTINCT 
+            <include refid="BaseColumns"/>
+        FROM review_tasks rt
+        LEFT JOIN review_task_assignments rta ON rt.id = rta.review_task_id
+        WHERE rt.creator_id = #{userId} 
+           OR rta.expert_id = #{userId}
+        ORDER BY rt.created_at DESC
+        <if test="limit != null">
+            LIMIT #{limit}
+        </if>
+    </select>
+
+    <!-- 查询待分派的任务 -->
+    <select id="selectPendingAssignmentTasks" resultMap="ReviewTaskResultMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM review_tasks rt
+        WHERE rt.status = 'EXPERT_ASSIGNMENT'
+          AND rt.auto_assignment_enabled = true
+          AND rt.created_at >= #{since}
+        ORDER BY 
+            CASE rt.priority 
+                WHEN 'URGENT' THEN 4
+                WHEN 'HIGH' THEN 3
+                WHEN 'MEDIUM' THEN 2
+                WHEN 'LOW' THEN 1
+                ELSE 0
+            END DESC,
+            rt.created_at ASC
+    </select>
+
+    <!-- 查询超时任务 -->
+    <select id="selectOverdueTasks" resultMap="ReviewTaskResultMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM review_tasks rt
+        WHERE rt.deadline &lt; NOW()
+          AND rt.status NOT IN ('COMPLETED', 'CANCELLED', 'ARCHIVED')
+        ORDER BY rt.deadline ASC
+    </select>
+
+    <!-- 查询即将超时的任务 -->
+    <select id="selectTasksDueSoon" resultMap="ReviewTaskResultMap">
+        SELECT <include refid="BaseColumns"/>
+        FROM review_tasks rt
+        WHERE rt.deadline BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL #{hours} HOUR)
+          AND rt.status NOT IN ('COMPLETED', 'CANCELLED', 'ARCHIVED')
+        ORDER BY rt.deadline ASC
+    </select>
+
+    <!-- 统计任务数量按状态 -->
+    <select id="countTasksByStatus" resultType="com.biaoshu.documentreview.repository.ReviewTaskRepository$TaskStatusCount">
+        SELECT 
+            rt.status,
+            COUNT(*) as count
+        FROM review_tasks rt
+        <where>
+            <if test="creatorId != null">
+                AND rt.creator_id = #{creatorId}
+            </if>
+            <if test="projectId != null">
+                AND rt.project_id = #{projectId}
+            </if>
+            <if test="startDate != null">
+                AND rt.created_at >= #{startDate}
+            </if>
+            <if test="endDate != null">
+                AND rt.created_at <= #{endDate}
+            </if>
+        </where>
+        GROUP BY rt.status
+    </select>
+
+    <!-- 统计任务数量按优先级 -->
+    <select id="countTasksByPriority" resultType="com.biaoshu.documentreview.repository.ReviewTaskRepository$TaskPriorityCount">
+        SELECT 
+            rt.priority,
+            COUNT(*) as count
+        FROM review_tasks rt
+        WHERE rt.status NOT IN ('COMPLETED', 'CANCELLED', 'ARCHIVED')
+        <if test="creatorId != null">
+            AND rt.creator_id = #{creatorId}
+        </if>
+        GROUP BY rt.priority
+    </select>
+
+    <!-- 更新任务状态 -->
+    <update id="updateTaskStatus">
+        UPDATE review_tasks 
+        SET status = #{status}, 
+            updated_at = NOW(),
+            updated_by = #{updatedBy}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 更新任务进度数据 -->
+    <update id="updateTaskProgress">
+        UPDATE review_tasks 
+        SET progress_data = #{progressData}, 
+            updated_at = NOW(),
+            updated_by = #{updatedBy}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 批量更新任务状态 -->
+    <update id="batchUpdateTaskStatus">
+        UPDATE review_tasks 
+        SET status = #{status}, 
+            updated_at = NOW(),
+            updated_by = #{updatedBy}
+        WHERE id IN
+        <foreach collection="ids" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+</mapper>

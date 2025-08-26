@@ -1,308 +1,251 @@
 package com.biaoshu.documentreview.entity;
 
-import javax.persistence.*;
+import com.baomidou.mybatisplus.annotation.*;
+import com.biaoshu.documentreview.enums.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
 /**
  * 评审任务实体
+ *
+ * @author biaoshu
+ * @since 2024-01-01
  */
-@Entity
-@Table(name = "review_tasks")
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("review_tasks")
 public class ReviewTask extends BaseEntity {
 
-    @Column(name = "task_name", nullable = false, length = 200)
+    /**
+     * 任务名称
+     */
+    @TableField("task_name")
     private String taskName;
 
-    @Column(name = "task_description", columnDefinition = "TEXT")
+    /**
+     * 任务描述
+     */
+    @TableField("task_description")
     private String taskDescription;
 
-    @Column(name = "document_id", nullable = false)
-    private Long documentId;
+    /**
+     * 业务类型
+     */
+    @TableField("business_type")
+    private BusinessType businessType;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "document_id", insertable = false, updatable = false)
-    private Document document;
+    /**
+     * 密级
+     */
+    @TableField("confidentiality_level")
+    private ConfidentialityLevel confidentialityLevel;
 
-    @Column(name = "project_id", nullable = false)
+    /**
+     * 优先级
+     */
+    @TableField("priority")
+    private Priority priority;
+
+    /**
+     * 任务状态
+     */
+    @TableField("status")
+    private TaskStatus status;
+
+    /**
+     * 评审模板ID
+     */
+    @TableField("review_template_id")
+    private Long reviewTemplateId;
+
+    /**
+     * 关联项目ID
+     */
+    @TableField("project_id")
     private Long projectId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "project_id", insertable = false, updatable = false)
-    private Project project;
-
-    @Column(name = "creator_id", nullable = false)
+    /**
+     * 创建人ID
+     */
+    @TableField("creator_id")
     private Long creatorId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "creator_id", insertable = false, updatable = false)
-    private User creator;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false)
-    private ReviewTaskStatus status = ReviewTaskStatus.PENDING;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "priority", nullable = false)
-    private ReviewTaskPriority priority = ReviewTaskPriority.MEDIUM;
-
-    @Column(name = "deadline")
+    /**
+     * 截止时间
+     */
+    @TableField("deadline")
     private LocalDateTime deadline;
 
-    @Column(name = "started_at")
-    private LocalDateTime startedAt;
+    /**
+     * 是否启用自动分派
+     */
+    @TableField("auto_assignment_enabled")
+    private Boolean autoAssignmentEnabled;
 
-    @Column(name = "completed_at")
-    private LocalDateTime completedAt;
+    /**
+     * 是否启用收敛闸门
+     */
+    @TableField("convergence_gate_enabled")
+    private Boolean convergenceGateEnabled;
 
-    @Column(name = "ai_analysis_enabled", nullable = false)
-    private Boolean aiAnalysisEnabled = true;
+    /**
+     * 收敛截止时间
+     */
+    @TableField("convergence_deadline")
+    private LocalDateTime convergenceDeadline;
 
-    @Column(name = "ai_analysis_status")
-    @Enumerated(EnumType.STRING)
-    private AIAnalysisStatus aiAnalysisStatus = AIAnalysisStatus.PENDING;
+    /**
+     * 评审结论
+     */
+    @TableField("review_conclusion")
+    private ReviewConclusion reviewConclusion;
 
-    @Column(name = "ai_analysis_progress")
-    private Integer aiAnalysisProgress = 0;
+    /**
+     * 结论原因
+     */
+    @TableField("conclusion_reason")
+    private String conclusionReason;
 
-    @Column(name = "ai_analysis_result", columnDefinition = "TEXT")
-    private String aiAnalysisResult;
+    /**
+     * 进度数据(JSON格式)
+     */
+    @TableField("progress_data")
+    private String progressData;
 
-    @Column(name = "ai_analysis_error", columnDefinition = "TEXT")
-    private String aiAnalysisError;
+    // ========== 关联对象 ==========
 
-    @OneToMany(mappedBy = "reviewTask", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    /**
+     * 创建人信息
+     */
+    @TableField(exist = false)
+    private User creator;
+
+    /**
+     * 关联文档列表
+     */
+    @TableField(exist = false)
+    private List<Document> documents;
+
+    /**
+     * 分派的专家列表
+     */
+    @TableField(exist = false)
     private List<ReviewTaskAssignment> assignments;
 
-    @OneToMany(mappedBy = "reviewTask", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    /**
+     * 评审问题列表
+     */
+    @TableField(exist = false)
+    private List<ReviewIssue> issues;
+
+    /**
+     * 评审评论列表
+     */
+    @TableField(exist = false)
     private List<ReviewComment> comments;
 
-    @OneToMany(mappedBy = "reviewTask", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<AIAnalysisResult> aiAnalysisResults;
+    /**
+     * 评审指标
+     */
+    @TableField(exist = false)
+    private ReviewMetrics metrics;
 
-    // 评审任务状态枚举
-    public enum ReviewTaskStatus {
-        PENDING("待开始"),
-        IN_PROGRESS("进行中"),
-        UNDER_REVIEW("评审中"),
-        COMPLETED("已完成"),
-        CANCELLED("已取消"),
-        REJECTED("已拒绝");
+    /**
+     * 工作流信息
+     */
+    @TableField(exist = false)
+    private ReviewWorkflow workflow;
 
-        private final String description;
+    // ========== 计算属性 ==========
 
-        ReviewTaskStatus(String description) {
-            this.description = description;
+    /**
+     * 获取任务进度百分比
+     */
+    public Integer getProgressPercentage() {
+        if (issues == null || issues.isEmpty()) {
+            return 0;
         }
 
-        public String getDescription() {
-            return description;
-        }
+        long resolvedCount = issues.stream()
+            .filter(issue -> issue.getStatus() == IssueStatus.RESOLVED
+                          || issue.getStatus() == IssueStatus.VERIFIED
+                          || issue.getStatus() == IssueStatus.CLOSED)
+            .count();
+
+        return (int) Math.round((double) resolvedCount / issues.size() * 100);
     }
 
-    // 评审任务优先级枚举
-    public enum ReviewTaskPriority {
-        LOW("低"),
-        MEDIUM("中"),
-        HIGH("高"),
-        URGENT("紧急");
-
-        private final String description;
-
-        ReviewTaskPriority(String description) {
-            this.description = description;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-    }
-
-    // AI分析状态枚举
-    public enum AIAnalysisStatus {
-        PENDING("待分析"),
-        RUNNING("分析中"),
-        COMPLETED("已完成"),
-        FAILED("分析失败"),
-        CANCELLED("已取消");
-
-        private final String description;
-
-        AIAnalysisStatus(String description) {
-            this.description = description;
+    /**
+     * 获取剩余时间(小时)
+     */
+    public Long getRemainingHours() {
+        if (deadline == null) {
+            return null;
         }
 
-        public String getDescription() {
-            return description;
+        LocalDateTime now = LocalDateTime.now();
+        if (now.isAfter(deadline)) {
+            return 0L;
         }
+
+        return java.time.Duration.between(now, deadline).toHours();
     }
 
-    // Getters and Setters
-    public String getTaskName() {
-        return taskName;
+    /**
+     * 是否超时
+     */
+    public Boolean isOverdue() {
+        if (deadline == null) {
+            return false;
+        }
+
+        return LocalDateTime.now().isAfter(deadline) &&
+               (status != TaskStatus.COMPLETED && status != TaskStatus.CANCELLED);
     }
 
-    public void setTaskName(String taskName) {
-        this.taskName = taskName;
+    /**
+     * 获取分派的专家数量
+     */
+    public Integer getAssignedExpertCount() {
+        return assignments != null ? assignments.size() : 0;
     }
 
-    public String getTaskDescription() {
-        return taskDescription;
+    /**
+     * 获取问题总数
+     */
+    public Integer getTotalIssueCount() {
+        return issues != null ? issues.size() : 0;
     }
 
-    public void setTaskDescription(String taskDescription) {
-        this.taskDescription = taskDescription;
+    /**
+     * 获取未解决问题数
+     */
+    public Integer getOpenIssueCount() {
+        if (issues == null) {
+            return 0;
+        }
+
+        return (int) issues.stream()
+            .filter(issue -> issue.getStatus() == IssueStatus.OPEN
+                          || issue.getStatus() == IssueStatus.IN_PROGRESS)
+            .count();
     }
 
-    public Long getDocumentId() {
-        return documentId;
+    /**
+     * 是否可以开始评审
+     */
+    public Boolean canStartReview() {
+        return status == TaskStatus.PENDING || status == TaskStatus.EXPERT_ASSIGNMENT;
     }
 
-    public void setDocumentId(Long documentId) {
-        this.documentId = documentId;
+    /**
+     * 是否可以完成评审
+     */
+    public Boolean canCompleteReview() {
+        return status == TaskStatus.IN_REVIEW && getOpenIssueCount() == 0;
     }
 
-    public Document getDocument() {
-        return document;
-    }
-
-    public void setDocument(Document document) {
-        this.document = document;
-    }
-
-    public Long getProjectId() {
-        return projectId;
-    }
-
-    public void setProjectId(Long projectId) {
-        this.projectId = projectId;
-    }
-
-    public Project getProject() {
-        return project;
-    }
-
-    public void setProject(Project project) {
-        this.project = project;
-    }
-
-    public Long getCreatorId() {
-        return creatorId;
-    }
-
-    public void setCreatorId(Long creatorId) {
-        this.creatorId = creatorId;
-    }
-
-    public User getCreator() {
-        return creator;
-    }
-
-    public void setCreator(User creator) {
-        this.creator = creator;
-    }
-
-    public ReviewTaskStatus getStatus() {
-        return status;
-    }
-
-    public void setStatus(ReviewTaskStatus status) {
-        this.status = status;
-    }
-
-    public ReviewTaskPriority getPriority() {
-        return priority;
-    }
-
-    public void setPriority(ReviewTaskPriority priority) {
-        this.priority = priority;
-    }
-
-    public LocalDateTime getDeadline() {
-        return deadline;
-    }
-
-    public void setDeadline(LocalDateTime deadline) {
-        this.deadline = deadline;
-    }
-
-    public LocalDateTime getStartedAt() {
-        return startedAt;
-    }
-
-    public void setStartedAt(LocalDateTime startedAt) {
-        this.startedAt = startedAt;
-    }
-
-    public LocalDateTime getCompletedAt() {
-        return completedAt;
-    }
-
-    public void setCompletedAt(LocalDateTime completedAt) {
-        this.completedAt = completedAt;
-    }
-
-    public Boolean getAiAnalysisEnabled() {
-        return aiAnalysisEnabled;
-    }
-
-    public void setAiAnalysisEnabled(Boolean aiAnalysisEnabled) {
-        this.aiAnalysisEnabled = aiAnalysisEnabled;
-    }
-
-    public AIAnalysisStatus getAiAnalysisStatus() {
-        return aiAnalysisStatus;
-    }
-
-    public void setAiAnalysisStatus(AIAnalysisStatus aiAnalysisStatus) {
-        this.aiAnalysisStatus = aiAnalysisStatus;
-    }
-
-    public Integer getAiAnalysisProgress() {
-        return aiAnalysisProgress;
-    }
-
-    public void setAiAnalysisProgress(Integer aiAnalysisProgress) {
-        this.aiAnalysisProgress = aiAnalysisProgress;
-    }
-
-    public String getAiAnalysisResult() {
-        return aiAnalysisResult;
-    }
-
-    public void setAiAnalysisResult(String aiAnalysisResult) {
-        this.aiAnalysisResult = aiAnalysisResult;
-    }
-
-    public String getAiAnalysisError() {
-        return aiAnalysisError;
-    }
-
-    public void setAiAnalysisError(String aiAnalysisError) {
-        this.aiAnalysisError = aiAnalysisError;
-    }
-
-    public List<ReviewTaskAssignment> getAssignments() {
-        return assignments;
-    }
-
-    public void setAssignments(List<ReviewTaskAssignment> assignments) {
-        this.assignments = assignments;
-    }
-
-    public List<ReviewComment> getComments() {
-        return comments;
-    }
-
-    public void setComments(List<ReviewComment> comments) {
-        this.comments = comments;
-    }
-
-    public List<AIAnalysisResult> getAiAnalysisResults() {
-        return aiAnalysisResults;
-    }
-
-    public void setAiAnalysisResults(List<AIAnalysisResult> aiAnalysisResults) {
-        this.aiAnalysisResults = aiAnalysisResults;
-    }
 }

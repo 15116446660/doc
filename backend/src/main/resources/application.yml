@@ -19,34 +19,43 @@ spring:
       enabled: true
   
   datasource:
+    type: com.alibaba.druid.pool.DruidDataSource
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://localhost:3306/document_review?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/review_system?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: root
     password: 123456
-    hikari:
-      minimum-idle: 5
-      maximum-pool-size: 20
-      auto-commit: true
-      idle-timeout: 30000
-      pool-name: DocumentReviewHikariCP
-      max-lifetime: 1800000
-      connection-timeout: 30000
-  
-  jpa:
-    hibernate:
-      ddl-auto: update
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
-    show-sql: true
-    properties:
-      hibernate:
-        dialect: org.hibernate.dialect.MySQL8Dialect
-        format_sql: true
-        use_sql_comments: true
-        jdbc:
-          batch_size: 20
-        order_inserts: true
-        order_updates: true
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 20
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1 FROM DUAL
+      test-while-idle: true
+      test-on-borrow: false
+      test-on-return: false
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      filters: stat,wall,slf4j
+      connection-properties: druid.stat.mergeSql=true;druid.stat.slowSqlMillis=5000
+      web-stat-filter:
+        enabled: true
+        url-pattern: /*
+        exclusions: "*.js,*.gif,*.jpg,*.png,*.css,*.ico,/druid/*"
+      stat-view-servlet:
+        enabled: true
+        url-pattern: /druid/*
+        reset-enable: false
+        login-username: admin
+        login-password: admin123
+
+  # Flyway数据库迁移配置
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    validate-on-migrate: true
   
   redis:
     host: localhost
@@ -83,10 +92,30 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss
     time-zone: GMT+8
+    default-property-inclusion: non_null
     serialization:
       write-dates-as-timestamps: false
+      fail-on-empty-beans: false
     deserialization:
       fail-on-unknown-properties: false
+
+# MyBatis Plus配置
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    cache-enabled: false
+    call-setters-on-nulls: true
+    jdbc-type-for-null: 'null'
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      id-type: auto
+      logic-delete-field: deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+    banner: false
+  mapper-locations: classpath*:mapper/**/*Mapper.xml
+  type-aliases-package: com.biaoshu.documentreview.entity
 
 # JWT配置
 jwt:
@@ -101,13 +130,23 @@ file:
     max-size: 100MB
     allowed-types: pdf,doc,docx,txt,md,xlsx,xls,ppt,pptx
 
-# 审核流程配置
+# 评审系统配置
 review:
+  # 默认SLA时间(小时)
+  default-sla-hours: 24
+  # 自动分派开关
+  auto-assignment-enabled: true
+  # 收敛闸门开关
+  convergence-gate-enabled: true
+  # AI分析开关
+  ai-analysis-enabled: true
+  # 最大并发评审数
+  max-concurrent-reviews: 10
   workflow:
     default-timeout: 72 # 默认审核超时时间（小时）
     reminder-intervals: 24,48,72 # 提醒间隔（小时）
     max-parallel-reviewers: 5 # 最大并行审核人数
-  
+
   ai:
     enabled: true
     max-tokens: 4000
@@ -162,8 +201,67 @@ cors:
 
 # 应用配置
 app:
-  name: 标书审查系统
+  name: 企业文档质量评审系统
   version: 1.0.0
-  description: 基于AI的智能标书审查与管理系统
+  description: 基于AI的企业文档质量评审系统
+
+  # 文件存储配置
   file:
-    upload-dir: ./uploads
+    storage:
+      type: minio # local, minio, oss
+      base-path: /data/review-system/files
+      max-size: 100MB
+      allowed-extensions:
+        - pdf
+        - doc
+        - docx
+        - xls
+        - xlsx
+        - ppt
+        - pptx
+        - txt
+        - md
+        - jpg
+        - jpeg
+        - png
+        - gif
+
+  # MinIO配置
+  minio:
+    endpoint: http://localhost:9000
+    access-key: minioadmin
+    secret-key: minioadmin
+    bucket-name: review-system
+
+  # OnlyOffice配置
+  onlyoffice:
+    document-server-url: http://localhost:8080
+    jwt-secret: onlyoffice-jwt-secret-2024
+    callback-url: /api/v1/onlyoffice/callback
+    storage-url: /api/v1/files
+
+  # AI配置
+  ai:
+    enabled: true
+    provider: dashscope # dashscope, openai, custom
+    dashscope:
+      api-key: ${DASHSCOPE_API_KEY:your-api-key}
+      model: qwen-plus
+      max-tokens: 2000
+      temperature: 0.7
+
+  # 通知配置
+  notification:
+    enabled: true
+    channels:
+      email:
+        enabled: true
+        smtp:
+          host: smtp.example.com
+          port: 587
+          username: noreply@example.com
+          password: password
+      sms:
+        enabled: false
+      webhook:
+        enabled: true
