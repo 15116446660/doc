@@ -70,6 +70,24 @@ public class ReviewIssue extends BaseEntity {
     private String locationInfo;
 
     /**
+     * 原始文本
+     */
+    @TableField("original_text")
+    private String originalText;
+
+    /**
+     * 建议文本
+     */
+    @TableField("suggested_text")
+    private String suggestedText;
+
+    /**
+     * 截止日期
+     */
+    @TableField("due_date")
+    private LocalDateTime dueDate;
+
+    /**
      * 报告人ID
      */
     @TableField("reporter_id")

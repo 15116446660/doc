@@ -86,6 +86,18 @@ public class ReviewTask extends BaseEntity {
     private Boolean autoAssignmentEnabled;
 
     /**
+     * 是否启用AI分析
+     */
+    @TableField("ai_analysis_enabled")
+    private Boolean aiAnalysisEnabled;
+
+    /**
+     * 专家要求 (JSON格式)
+     */
+    @TableField("expert_requirements")
+    private String expertRequirements;
+
+    /**
      * 是否启用收敛闸门
      */
     @TableField("convergence_gate_enabled")

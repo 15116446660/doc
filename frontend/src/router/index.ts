@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
 import { useAuthStore } from '@/store/auth'
+import { reviewSystemRoutes } from './review-system'
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -30,6 +31,7 @@ const routes: Array<RouteRecordRaw> = [
       }
     ]
   },
+  ...reviewSystemRoutes,
   {
     path: '/project',
     name: 'Project',
